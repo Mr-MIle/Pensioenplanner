@@ -339,11 +339,15 @@
     <h2 id="h-uitkering">Uitkeringspatroon</h2>
     <p class="samenvatting" id="uitkeringSamenvatting" style="margin: 10px 0 4px"></p>
     <p class="muted" id="scenario" style="margin: 0 0 4px"></p>
+    <label class="schakel" style="margin: 12px 0 0">
+      <span>Toon reële bedragen (koopkracht van vandaag)</span>
+      <input id="toonReeel" type="checkbox">
+    </label>
     <div id="uitkeringGrafiek" style="margin-top: 12px"></div>
     <div class="legenda">
-      <span style="--c: var(--accent)">Gekozen keuzes, per maand</span>
-      <span class="stippel" style="--c: var(--warm)">Reëel</span>
-      <span class="stippel" style="--c: var(--muted)">Standaardpensioen</span>
+      <span id="legNominaal" style="--c: var(--accent)">Gekozen keuzes, nominaal per maand</span>
+      <span id="legReeel" style="--c: var(--accent)" hidden>Gekozen keuzes, reëel per maand</span>
+      <span id="legStandaard" class="stippel" style="--c: var(--muted)">Standaardpensioen</span>
     </div>
   </section>
 
@@ -663,7 +667,11 @@
       return { leeftijd: p.leeftijd, nominaal: f(p.nominaal), reeel: f(p.reeel), standaard: f(p.standaard) };
     });
     var deelLabel = deel ? E.maandLabel(deel.idx) : null;
-    $('uitkeringGrafiek').innerHTML = tekenUitkering(punten, reeks.aowLeeftijd, reeks.deelLeeftijd, reeks.pensLeeftijd);
+    var toonReeel = $('toonReeel').checked;
+    $('uitkeringGrafiek').innerHTML = tekenUitkering(punten, reeks.aowLeeftijd, reeks.deelLeeftijd, reeks.pensLeeftijd, toonReeel);
+    $('legNominaal').hidden = toonReeel;
+    $('legReeel').hidden = !toonReeel;
+    $('legStandaard').hidden = toonReeel;
     $('scenario').textContent = 'Bandbreedte (Y-factor ' + pctFmt.format(C.rendement.yFactor) + '): ouderdomspensioen pessimistisch ' +
       eur0.format(maand(lo.standaard * 1)) + ' en optimistisch ' + eur0.format(maand(hi.standaard * 1)) + ' per maand (standaardpensioen, ' + basis + ').';
     $('uitkeringSamenvatting').textContent = samenvatting(u, splitten, gesplitst, pensLabel, basis, deelLabel);
@@ -752,14 +760,15 @@
       '</svg>';
   }
 
-  function tekenUitkering(pts, aow, deelL, pensL) {
+  function tekenUitkering(pts, aow, deelL, pensL, toonReeel) {
+    var sleutels = toonReeel ? ['reeel'] : ['nominaal', 'standaard'];
     var W = 720, H = 300, pl = 76, pr = 16, pt = 16, pb = 34;
     var n = pts.length;
     var minA = pts[0].leeftijd;
     var maxA = pts[n - 1].leeftijd + 1 / 12;
     var top = 0;
     pts.forEach(function (p) {
-      ['nominaal', 'standaard', 'reeel'].forEach(function (k) {
+      sleutels.forEach(function (k) {
         if (p[k] !== null && p[k] !== undefined) top = Math.max(top, p[k]);
       });
     });
@@ -795,9 +804,8 @@
     }
     return '<svg class="grafiek" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Maandelijkse uitkering per leeftijd, met deeltijd- en volledig pensioen">' +
       grid + ax + lijnen +
-      '<path d="' + pad('standaard') + '" fill="none" stroke="var(--muted)" stroke-width="1.25" stroke-dasharray="1 3"/>' +
-      '<path d="' + pad('reeel') + '" fill="none" stroke="var(--warm)" stroke-width="2" stroke-dasharray="5 4"/>' +
-      '<path d="' + pad('nominaal') + '" fill="none" stroke="var(--accent)" stroke-width="2.5"/>' +
+      (toonReeel ? '' : '<path d="' + pad('standaard') + '" fill="none" stroke="var(--muted)" stroke-width="1.25" stroke-dasharray="1 3"/>') +
+      '<path d="' + pad(toonReeel ? 'reeel' : 'nominaal') + '" fill="none" stroke="var(--accent)" stroke-width="2.5"/>' +
       '</svg>';
   }
 
