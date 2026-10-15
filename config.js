@@ -1,0 +1,86 @@
+/*
+  Pensioenplanner: configuratie.
+  Alle variabelen staan hier. Pas een waarde aan en laad de pagina opnieuw.
+  Alle waarden zijn fictief. Bedragen in euro, percentages als getal (2,5% = 0.025)
+  tenzij anders vermeld.
+*/
+window.PLANNER_CONFIG = {
+
+  // Calculatiedatum: de maand waarop de projectie start (jjjj-mm). Altijd de eerste van de maand.
+  calculatiedatum: "2026-11",
+
+  deelnemer: {
+    naam: "Voorbeeld deelnemer",
+    geboortedatum: "1986-03",   // jjjj-mm
+    startkapitaal: 85000,       // opgebouwd pensioenvermogen op de calculatiedatum (€)
+    brutoSalaris: 52000         // voltijd jaarsalaris op de calculatiedatum (€)
+  },
+
+  pensioenreglement: {
+    premiepercentage: 0.20,           // 20% van het pensioengevend salaris
+    franchise: 17500,                 // voltijd franchise per jaar (€), geïndexeerd met prijsinflatie
+    maxPensioengevendSalaris: 137000, // voltijd maximum per jaar (€), geïndexeerd met loon-inflatie
+    aowLeeftijdMaanden: 804,          // AOW-leeftijd in maanden (804 = 67 jaar)
+    eindLeeftijd: 100,                // laatste leeftijd in de uitkeringsgrafiek (jaren)
+    standaardPensioenleeftijd: 65,    // startwaarde in de planner (jaren)
+    partnerpensioenFractie: 0.70,     // partnerpensioen als deel van het ouderdomspensioen
+    // true  = er is standaard partnerpensioen gereserveerd (ouderdomspensioen wordt verlaagd als u dat wilt verlagen).
+    // false = er is standaard GEEN partnerpensioen; u kunt ouderdomspensioen inruilen naar partnerpensioen.
+    partnerpensioenStandaard: true
+  },
+
+  // Werkpercentage van het voltijdssalaris, vanaf een maand. Gesorteerd op datum.
+  werkpercentages: [
+    { vanaf: "2026-11", percentage: 80 },
+    { vanaf: "2028-11", percentage: 100 }
+  ],
+
+  rendement: {
+    overrendementNaRTS: 0.02,   // vast jaarlijks overrendement NA RTS-correctie
+    loonInflatie: 0.025,        // loon-inflatie per jaar, geïndexeerd op 1 januari
+    inflatiePrijs: 0.02,        // prijsinflatie per jaar, voor de reële bedragen
+    yFactor: 0.28               // Y-factor voor de bandbreedte (pessimistisch / optimistisch)
+  },
+
+  // Toedeelschaal uit de rekensystematiek: tot leeftijdStart de factorVoor, daarna lineair naar factorNa op leeftijdEind.
+  toedeelschaal: {
+    leeftijdStart: 50,
+    leeftijdEind: 67,
+    factorVoor: 1.05,
+    factorNa: 0.45
+  },
+
+  // Vereenvoudigde annuïteitsdelers (fictief): kapitaal gedeeld door deze factor = jaarlijks ouderdomspensioen.
+  // Hoe hoger de leeftijd, hoe lager de deler.
+  annuiteitsdelers: {
+    40: 25.5, 41: 25.2, 42: 24.9, 43: 24.6, 44: 24.3, 45: 24.0, 46: 23.7, 47: 23.4,
+    48: 23.1, 49: 22.8, 50: 22.5, 51: 22.2, 52: 21.9, 53: 21.6, 54: 21.3,
+    55: 21.0, 56: 20.7, 57: 20.4, 58: 20.1, 59: 19.8, 60: 19.5,
+    61: 19.2, 62: 18.9, 63: 18.6, 64: 18.3, 65: 18.0, 66: 17.7,
+    67: 17.4, 68: 17.1, 69: 16.8, 70: 16.5
+  },
+
+  // AOW-uitkering (bruto per maand, fictief) om het pensioen 'inclusief AOW' te tonen.
+  aowBrutoMaand: 1450,
+
+  // Fictieve, vereenvoudigde belastingindicatie voor de netto weergave. Geen officiële tarieven.
+  // schijven: tot welk jaarbedrag (€) welk tarief geldt. Het laatste bedrag is null (geen bovengrens).
+  // heffingskorting: jaarbedrag (€) dat alleen meetelt als 'loonheffingskorting toepassen' aan staat.
+  belasting: {
+    schijven: [
+      { tot: 38000, tarief: 0.37 },
+      { tot: 76000, tarief: 0.38 },
+      { tot: null, tarief: 0.495 }
+    ],
+    heffingskorting: 2900
+  },
+
+  // Pensioenopties.
+  // aowOverbrugging: hoog/laag verhoogt het pensioen vóór de AOW-leeftijd met deze fractie
+  // en verlaagt het daarna (laag/hoog is het omgekeerde). Vereenvoudigd kostenneutraal.
+  // uitruilRatio: partnerpensioen (€) per euro ouderdomspensioen dat u inruilt. Omgekeerd geldt: 1 euro partnerpensioen minder = 1/uitruilRatio euro ouderdomspensioen meer.
+  opties: {
+    aowOverbrugging: 0.25,
+    uitruilRatio: 1.5
+  }
+};
