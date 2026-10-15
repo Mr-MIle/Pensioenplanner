@@ -93,10 +93,11 @@
       S += over;
 
       // Premie over het pensioengevend salaris, pro rata met het parttimepercentage.
+      // Tijdens deeltijdpensioen daalt de premiebasis evenredig: parttimepercentage x (1 - deelpercentage).
       const deelPct = deel && i >= deel.idx ? deel.pct : 0;
       const schema = parttimePctVoor(i, lijst);
       const vorigSchema = parttimePctVoor(i - 1, lijst);
-      const werk = Math.max(0, schema - deelPct);
+      const werk = Math.max(0, schema * (1 - deelPct));
       const pe = Math.max(0, Math.min(cfg.deelnemer.brutoSalaris, reg.maxPensioengevendSalaris) * idxL - reg.franchise * idxP) * werk;
       const inleg = pe * reg.premiepercentage / 12;
       S += inleg;
@@ -186,31 +187,56 @@
 
   // Maandelijkse uitkeringsreeks van de pensioendatum tot de eindleeftijd.
   // Geeft per maand het nominale en reële bedrag, plus het standaardpensioen ter vergelijking.
+  // Maandelijkse uitkeringsreeks, van de start van het deeltijdpensioen (of de pensioendatum) tot de eindleeftijd.
+  // Vóór de pensioendatum: alleen het deeltijdpensioen (null = geen waarde). Vanaf de pensioendatum: volledig pensioen.
   function uitkeringsreeks(cfg, sim, u, pensioenLeeftijdJaar, deel) {
     const birth = maandIndex(cfg.deelnemer.geboortedatum);
     const calc = maandIndex(cfg.calculatiedatum);
     const reg = cfg.pensioenreglement;
     const pi = cfg.rendement.inflatiePrijs;
-    const start = birth + pensioenLeeftijdJaar * 12;
+    const pensIdx = birth + Math.round(pensioenLeeftijdJaar * 12);
+    const start = deel ? Math.min(deel.idx, pensIdx) : pensIdx;
     const eind = birth + reg.eindLeeftijd * 12;
     const aowIdx = birth + reg.aowLeeftijdMaanden;
     const punten = [];
 
     for (let i = start; i < eind; i++) {
-      const voorAow = i < aowIdx;
-      const jaarlijks = voorAow ? u.pre : u.post;
-      const deelMaand = deel && i >= deel.idx ? sim.deelJaar / 12 : 0;
-      const nominaal = jaarlijks / 12 + deelMaand;
-      punten.push({
-        leeftijd: (i - birth) / 12,
-        maand: maandLabel(i),
-        nominaal: nominaal,
-        reeel: nominaal / Math.pow(1 + pi, (i - calc) / 12),
-        standaard: u.standaard / 12
-      });
+      const index = Math.pow(1 + pi, (i - calc) / 12);
+      if (i < pensIdx) {
+        // Deeltijdfase: het deeltijdpensioen, verder niets.
+        const nominaal = deel && i >= deel.idx ? sim.deelJaar / 12 : null;
+        punten.push({
+          leeftijd: (i - birth) / 12,
+          maand: maandLabel(i),
+          nominaal: nominaal,
+          reeel: nominaal === null ? null : nominaal / index,
+          standaard: null,
+          fase: 'deeltijd'
+        });
+      } else {
+        const jaarlijks = i < aowIdx ? u.pre : u.post;
+        const nominaal = jaarlijks / 12 + (deel ? sim.deelJaar / 12 : 0);
+        punten.push({
+          leeftijd: (i - birth) / 12,
+          maand: maandLabel(i),
+          nominaal: nominaal,
+          reeel: nominaal / index,
+          standaard: u.standaard / 12,
+          fase: 'volledig'
+        });
+      }
     }
 
-    return { punten: punten, aowIdx: aowIdx, startIdx: start, eindIdx: eind, aowLeeftijd: reg.aowLeeftijdMaanden / 12 };
+    return {
+      punten: punten,
+      aowIdx: aowIdx,
+      startIdx: start,
+      pensIdx: pensIdx,
+      eindIdx: eind,
+      aowLeeftijd: reg.aowLeeftijdMaanden / 12,
+      deelLeeftijd: deel ? (deel.idx - birth) / 12 : null,
+      pensLeeftijd: pensIdx / 12 - birth / 12
+    };
   }
 
   // Netto jaarbedrag (€) uit bruto jaarinkomen, met de fictieve schijven en optioneel de heffingskorting.

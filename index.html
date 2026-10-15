@@ -369,6 +369,7 @@
             <th>Begin</th>
             <th><span class="dot" style="background: var(--accent)"></span>Inleg</th>
             <th><span class="dot" style="background: var(--warm)"></span>Overrendement</th>
+            <th>Effectief rendement</th>
             <th>Onttrokken</th>
             <th>Eind</th>
             <th>Eind reëel</th>
@@ -557,7 +558,8 @@
     $('uitruilWaarde').textContent = $('uitruil').value + '%';
     $('verschilWaarde').textContent = $('verschil').value + '%';
 
-    var jaar = start === 'aow' ? AOW_JAREN : Number($('leeftijd').value);
+    // Bij deeltijdpensioen gaat u volledig met pensioen op de AOW-datum.
+    var jaar = (start === 'aow' || deelAan) ? AOW_JAREN : Number($('leeftijd').value);
     var pensMaanden = Math.round(jaar * 12);
     var calcIdx = E.maandIndex(C.calculatiedatum);
     var birthIdx = E.maandIndex(C.deelnemer.geboortedatum);
@@ -575,6 +577,7 @@
         deel = { idx: dIdx, pct: Number($('deelPct').value) / 100 };
       }
     }
+    if (deelAan && start !== 'aow') melding = (melding ? melding + ' ' : '') + 'Bij deeltijdpensioen gaat u volledig met pensioen op de AOW-datum.';
     $('melding').textContent = melding;
     $('melding').hidden = !melding;
 
@@ -656,13 +659,14 @@
     var basis = $('basis').value;
     var lhk = $('lhk').checked;
     var punten = reeks.punten.filter(function (p) { return p.leeftijd <= C.pensioenreglement.grafiekEindLeeftijd; }).map(function (p) {
-      var f = function (m) { return basis === 'netto' ? E.nettoJaar(C, m * 12, lhk) / 12 : m; };
+      var f = function (m) { if (m === null || m === undefined) return null; return basis === 'netto' ? E.nettoJaar(C, m * 12, lhk) / 12 : m; };
       return { leeftijd: p.leeftijd, nominaal: f(p.nominaal), reeel: f(p.reeel), standaard: f(p.standaard) };
     });
-    $('uitkeringGrafiek').innerHTML = tekenUitkering(punten, reeks.aowLeeftijd);
+    var deelLabel = deel ? E.maandLabel(deel.idx) : null;
+    $('uitkeringGrafiek').innerHTML = tekenUitkering(punten, reeks.aowLeeftijd, reeks.deelLeeftijd, reeks.pensLeeftijd);
     $('scenario').textContent = 'Bandbreedte (Y-factor ' + pctFmt.format(C.rendement.yFactor) + '): ouderdomspensioen pessimistisch ' +
       eur0.format(maand(lo.standaard * 1)) + ' en optimistisch ' + eur0.format(maand(hi.standaard * 1)) + ' per maand (standaardpensioen, ' + basis + ').';
-    $('uitkeringSamenvatting').textContent = samenvatting(u, splitten, gesplitst, pensLabel, basis, lhk, reeks);
+    $('uitkeringSamenvatting').textContent = samenvatting(u, splitten, gesplitst, pensLabel, basis, deelLabel);
 
     // Maandtabel
     $('tInleg').textContent = eur0.format(sim.totalen.inleg);
@@ -671,10 +675,11 @@
       return '<tr class="' + (r.wijziging ? 'wijz' : '') + '">' +
         '<td>' + r.maand + '</td>' +
         '<td>' + r.leeftijd + '</td>' +
-        '<td>' + Math.round(r.schema * 100) + '%</td>' +
+        '<td>' + Math.round(r.werk * 100) + '%</td>' +
         '<td>' + eur0.format(r.begin) + '</td>' +
         '<td>' + eur2.format(r.inleg) + '</td>' +
         '<td>' + eur2.format(r.over) + '</td>' +
+        '<td>' + (rente * r.toed * 100).toFixed(2).replace('.', ',') + '%</td>' +
         '<td>' + (r.onttrokken ? eur0.format(r.onttrokken) : '–') + '</td>' +
         '<td>' + eur0.format(r.eind) + '</td>' +
         '<td>' + eur0.format(r.reeel) + '</td>' +
@@ -682,14 +687,18 @@
     }).join('');
   }
 
-  function samenvatting(u, splitten, gesplitst, pensLabel, basis, lhk, reeks) {
-    var t;
+  function samenvatting(u, splitten, gesplitst, pensLabel, basis, deelLabel) {
+    var t = '';
+    if (deelLabel) {
+      t = 'Van ' + deelLabel + ' tot ' + pensLabel + ' ontvangt u deeltijdpensioen van ' + eur0.format(maand(u.deelJaar)) +
+        ' per maand, en uw premie daalt in die periode evenredig. Vanaf ' + pensLabel + ' bent u volledig met pensioen. ';
+    }
     if (gesplitst) {
-      t = 'Van ' + pensLabel + ' tot de AOW-leeftijd ontvangt u ' + eur0.format(maand(u.pre)) + ' per maand' +
+      t += 'Van ' + pensLabel + ' tot de AOW-leeftijd ontvangt u ' + eur0.format(maand(u.pre)) + ' per maand' +
         (splitten === 'hoog' ? ' (hoger)' : ' (lager)') + '. Daarna ' + eur0.format(maand(u.post)) + ' per maand' +
         (splitten === 'hoog' ? ' (lager)' : ' (hoger)') + '.';
     } else {
-      t = 'Het ouderdomspensioen is ' + eur0.format(maand(u.pre)) + ' per maand en blijft gelijk.';
+      t += 'Het ouderdomspensioen is ' + eur0.format(maand(u.pre)) + ' per maand en blijft gelijk.';
     }
     return t;
   }
@@ -743,13 +752,17 @@
       '</svg>';
   }
 
-  function tekenUitkering(pts, aow) {
+  function tekenUitkering(pts, aow, deelL, pensL) {
     var W = 720, H = 300, pl = 76, pr = 16, pt = 16, pb = 34;
     var n = pts.length;
     var minA = pts[0].leeftijd;
     var maxA = pts[n - 1].leeftijd + 1 / 12;
     var top = 0;
-    pts.forEach(function (p) { top = Math.max(top, p.nominaal, p.standaard, p.reeel); });
+    pts.forEach(function (p) {
+      ['nominaal', 'standaard', 'reeel'].forEach(function (k) {
+        if (p[k] !== null && p[k] !== undefined) top = Math.max(top, p[k]);
+      });
+    });
     top = Math.ceil(top / 250) * 250 || 250;
     function x(a) { return pl + (W - pl - pr) * (a - minA) / (maxA - minA); }
     function y(v) { return H - pb - (H - pt - pb) * v / top; }
@@ -763,23 +776,28 @@
     for (var a = Math.ceil(minA / 5) * 5; a <= maxA; a += 5) {
       ax += '<text class="as" x="' + x(a) + '" y="' + (H - 10) + '" text-anchor="middle">' + a + ' j</text>';
     }
-    var aowLijn = '';
-    if (aow > minA && aow < maxA) {
-      aowLijn = '<line x1="' + x(aow) + '" x2="' + x(aow) + '" y1="' + pt + '" y2="' + (H - pb) + '" stroke="var(--muted)" stroke-dasharray="2 3"/>' +
-        '<text class="as" x="' + (x(aow) + 6) + '" y="' + (pt + 12) + '">AOW</text>';
+    function marker(age, label) {
+      if (age === null || age === undefined || age < minA || age > maxA) return '';
+      return '<line x1="' + x(age) + '" x2="' + x(age) + '" y1="' + pt + '" y2="' + (H - pb) + '" stroke="var(--muted)" stroke-dasharray="2 3"/>' +
+        '<text class="as" x="' + (x(age) + 6) + '" y="' + (pt + 12) + '">' + label + '</text>';
     }
-    var pN = '', pR = '', pS = '';
-    pts.forEach(function (p, i) {
-      var c = (i ? 'L' : 'M') + x(p.leeftijd).toFixed(1);
-      pN += c + ',' + y(p.nominaal).toFixed(1);
-      pR += c + ',' + y(p.reeel).toFixed(1);
-      pS += c + ',' + y(p.standaard).toFixed(1);
-    });
-    return '<svg class="grafiek" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Maandelijkse uitkering per leeftijd">' +
-      grid + ax + aowLijn +
-      '<path d="' + pS + '" fill="none" stroke="var(--muted)" stroke-width="1.25" stroke-dasharray="1 3"/>' +
-      '<path d="' + pR + '" fill="none" stroke="var(--warm)" stroke-width="2" stroke-dasharray="5 4"/>' +
-      '<path d="' + pN + '" fill="none" stroke="var(--accent)" stroke-width="2.5"/>' +
+    var lijnen = marker(deelL, 'Deeltijd') + marker(aow, 'AOW');
+    if (pensL !== null && Math.abs(pensL - aow) > 0.01) lijnen += marker(pensL, 'Volledig');
+    function pad(key) {
+      var d = '', vorigeLeeg = true;
+      pts.forEach(function (p) {
+        var v = p[key];
+        if (v === null || v === undefined) { vorigeLeeg = true; return; }
+        d += (vorigeLeeg ? 'M' : 'L') + x(p.leeftijd).toFixed(1) + ',' + y(v).toFixed(1);
+        vorigeLeeg = false;
+      });
+      return d;
+    }
+    return '<svg class="grafiek" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Maandelijkse uitkering per leeftijd, met deeltijd- en volledig pensioen">' +
+      grid + ax + lijnen +
+      '<path d="' + pad('standaard') + '" fill="none" stroke="var(--muted)" stroke-width="1.25" stroke-dasharray="1 3"/>' +
+      '<path d="' + pad('reeel') + '" fill="none" stroke="var(--warm)" stroke-width="2" stroke-dasharray="5 4"/>' +
+      '<path d="' + pad('nominaal') + '" fill="none" stroke="var(--accent)" stroke-width="2.5"/>' +
       '</svg>';
   }
 
