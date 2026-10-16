@@ -63,7 +63,7 @@ window.PLANNER_CONFIG = {
     overrendementNaRTS: 0.02,   // vast jaarlijks overrendement NA RTS-correctie
     loonInflatie: 0.025,        // loon-inflatie per jaar, geïndexeerd op 1 januari
     inflatiePrijs: 0.02,        // prijsinflatie per jaar, voor de reële bedragen
-    yFactor: 0.28               // Y-factor voor de bandbreedte (pessimistisch / optimistisch)
+    yFactor: 0.2               // Y-factor voor de bandbreedte (pessimistisch / optimistisch)
   },
 
   // Toedeelschaal uit de rekensystematiek: tot leeftijdStart de factorVoor, daarna lineair naar factorNa op leeftijdEind.

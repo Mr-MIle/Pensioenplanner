@@ -145,6 +145,12 @@
   .voet { font-size: 13px; color: var(--muted); }
   .voet p { margin: 0 0 6px; }
 
+  .seg-groep { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+  .seg { font: inherit; font-size: 14px; background: var(--bg); color: var(--fg); border: 0; padding: 8px 14px; cursor: pointer; }
+  .seg + .seg { border-left: 1px solid var(--line); }
+  .seg.actief { background: var(--accent); color: var(--surface); font-weight: 600; }
+  .seg:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
 </style>
 
@@ -321,6 +327,14 @@
   <section class="paneel" aria-labelledby="h-kapitaal">
     <h2 id="h-kapitaal">Ontwikkeling pensioenvermogen</h2>
     <p class="muted" style="margin: 6px 0 0">Het kapitaal groeit per maand door premie en overrendement. Er is geen beschermingsrendement.</p>
+    <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 14px 0 0">
+      <div class="seg-groep" role="group" aria-label="Scenario">
+        <button class="seg" type="button" data-sc="pess" aria-pressed="false">Pessimistisch</button>
+        <button class="seg actief" type="button" data-sc="basis" aria-pressed="true">Basis</button>
+        <button class="seg" type="button" data-sc="opt" aria-pressed="false">Optimistisch</button>
+      </div>
+      <span class="muted" id="scenarioRente" style="font-size: 14px"></span>
+    </div>
     <div class="kpis" style="margin: 14px 0">
       <div class="kpi">
         <div class="label">Kapitaal op de pensioendatum</div>
@@ -422,6 +436,7 @@
   };
 
   var state = {};
+  var scenario = 'basis';   // basis | pess | opt: welk overrendement de kapitaalgrafiek en kapitaalcijfers gebruiken
   var parttimeRows = [];
   var MAX_WERK = 6;
 
@@ -554,6 +569,18 @@
       });
     });
 
+    document.querySelectorAll('.seg').forEach(function (b) {
+      b.addEventListener('click', function () {
+        scenario = b.getAttribute('data-sc');
+        document.querySelectorAll('.seg').forEach(function (o) {
+          var aan = o === b;
+          o.classList.toggle('actief', aan);
+          o.setAttribute('aria-pressed', aan ? 'true' : 'false');
+        });
+        render();
+      });
+    });
+
     var inputs = document.querySelectorAll('input, select');
     for (var i = 0; i < inputs.length; i++) {
       inputs[i].addEventListener('input', render);
@@ -633,11 +660,18 @@
     var rente = C.rendement.overrendementNaRTS;
     var wl = parttimeLijst();
     var sk = Math.max(0, Number($('startkapitaal').value) || 0);
-    var sim = E.simuleer(C, { pensioenLeeftijdMaanden: pensMaanden, rente: rente, deeltijd: deel, parttimepercentages: wl, startkapitaal: sk });
-    var u = E.uitkeringen(C, sim, { uitruilPct: uitruil, splitten: splitten, fractie: fractie }, jaar);
     var marge = E.scenarioMarge(C, pensMaanden);
-    var lo = E.uitkeringen(C, E.simuleer(C, { pensioenLeeftijdMaanden: pensMaanden, rente: rente - marge, deeltijd: deel, parttimepercentages: wl, startkapitaal: sk }), { uitruilPct: uitruil, splitten: splitten, fractie: fractie }, jaar);
-    var hi = E.uitkeringen(C, E.simuleer(C, { pensioenLeeftijdMaanden: pensMaanden, rente: rente + marge, deeltijd: deel, parttimepercentages: wl, startkapitaal: sk }), { uitruilPct: uitruil, splitten: splitten, fractie: fractie }, jaar);
+    var sim = E.simuleer(C, { pensioenLeeftijdMaanden: pensMaanden, rente: rente, deeltijd: deel, parttimepercentages: wl, startkapitaal: sk });
+    var simLo = E.simuleer(C, { pensioenLeeftijdMaanden: pensMaanden, rente: rente - marge, deeltijd: deel, parttimepercentages: wl, startkapitaal: sk });
+    var simHi = E.simuleer(C, { pensioenLeeftijdMaanden: pensMaanden, rente: rente + marge, deeltijd: deel, parttimepercentages: wl, startkapitaal: sk });
+    var u = E.uitkeringen(C, sim, { uitruilPct: uitruil, splitten: splitten, fractie: fractie }, jaar);
+    var lo = E.uitkeringen(C, simLo, { uitruilPct: uitruil, splitten: splitten, fractie: fractie }, jaar);
+    var hi = E.uitkeringen(C, simHi, { uitruilPct: uitruil, splitten: splitten, fractie: fractie }, jaar);
+    // Kapitaal van het gekozen scenario (basis, pessimistisch of optimistisch).
+    var selSim = scenario === 'pess' ? simLo : (scenario === 'opt' ? simHi : sim);
+    var pct2 = new Intl.NumberFormat('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    $('scenarioRente').textContent = 'Overrendement per jaar na RTS: basis ' + pct2.format(rente * 100) + '%, pessimistisch ' +
+      pct2.format((rente - marge) * 100) + '%, optimistisch ' + pct2.format((rente + marge) * 100) + '%.';
 
     var pensLabel = E.maandLabel(pensIdx);
     var deelJaar = u.deelJaar;
@@ -690,11 +724,11 @@
     $('rPartner').textContent = 'Partner bij uw overlijden: ' + eur0.format(u.partner / 12) + ' per maand (bruto).';
 
     // Kapitaal
-    $('kKapitaal').textContent = eur0.format(sim.kapitaal);
-    $('kKapitaalReeel').textContent = 'Reëel: ' + eur0.format(sim.kapitaal / sim.inflIdx);
-    $('kInleg').textContent = eur0.format(sim.totalen.inleg);
-    $('kInlegSub').textContent = 'Overrendement: ' + eur0.format(sim.totalen.over);
-    $('grafiek').innerHTML = tekenKapitaal(sim.rows, sk);
+    $('kKapitaal').textContent = eur0.format(selSim.kapitaal);
+    $('kKapitaalReeel').textContent = 'Reëel: ' + eur0.format(selSim.kapitaal / selSim.inflIdx);
+    $('kInleg').textContent = eur0.format(selSim.totalen.inleg);
+    $('kInlegSub').textContent = 'Overrendement: ' + eur0.format(selSim.totalen.over);
+    $('grafiek').innerHTML = tekenKapitaal(selSim.rows, sk);
 
     // Uitkeringspatroon
     var reeks = E.uitkeringsreeks(C, sim, u, jaar, deel);
