@@ -20,6 +20,18 @@ window.PLANNER_CONFIG = {
   standaardDeelnemer: 0,   // index in deelnemers die bij het laden is geselecteerd
   deelnemer: null,         // wordt in de planner gezet op de gekozen deelnemer (kopie van deelnemers[i])
 
+  // Stabiliteitsrendement (rentehedge), alleen voor de pagina bij- en afschrijvingen.
+  // De grootste maandelijkse schok (fractie van het kapitaal) hangt af van de leeftijd van de deelnemer:
+  // jong (leeftijdJong) krijgt maxSchokJong, oud (leeftijdOud) krijgt maxSchokOud, daartussen lineair.
+  // Een schok ligt tussen ondergrensFractie x de maximale schok en de maximale schok zelf.
+  stabiliteit: {
+    maxSchokJong: 0.005,
+    maxSchokOud: 0.05,
+    leeftijdJong: 40,
+    leeftijdOud: 65,
+    ondergrensFractie: 0.2
+  },
+
   pensioenreglement: {
     premiepercentage: 0.20,           // 20% van het pensioengevend salaris
     franchise: 17500,                 // voltijd franchise per jaar (€), geïndexeerd met prijsinflatie
