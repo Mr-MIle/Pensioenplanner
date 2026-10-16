@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bij- en afschrijvingen</title>
+<script src="config.js"></script>
+<style>
+:root{--bg:#f6f7f9;--card:#ffffff;--text:#1d2630;--muted:#5b6675;--line:#dfe3e8;--accent:#0a4f9c;--pos:#1b7a3d;--neg:#b3261e;--head:#eef2f7;}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#111820;--card:#18212b;--text:#e8edf2;--muted:#9aa6b4;--line:#2b3744;--accent:#6aa9ff;--pos:#5fcf85;--neg:#ff8a80;--head:#1f2a36;}}
+:root[data-theme="dark"]{--bg:#111820;--card:#18212b;--text:#e8edf2;--muted:#9aa6b4;--line:#2b3744;--accent:#6aa9ff;--pos:#5fcf85;--neg:#ff8a80;--head:#1f2a36;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
+main{max-width:1100px;margin:0 auto;padding:24px 16px 48px}
+h1{color:var(--accent);font-size:1.6rem;margin:0 0 4px}
+h2{font-size:1.05rem;margin:28px 0 8px}
+.sub{color:var(--muted);margin:0 0 16px}
+.notice{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;color:var(--muted);font-size:.92rem}
+.kaarten{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:16px 0}
+.kaart{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:10px 12px}
+.kaart .lbl{color:var(--muted);font-size:.8rem}
+.kaart .wrd{font-size:1.05rem;font-weight:600;font-variant-numeric:tabular-nums}
+.uitleg{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px;font-size:.92rem}
+.uitleg p{margin:6px 0}
+.tabel{overflow-x:auto;background:var(--card);border:1px solid var(--line);border-radius:8px;margin-top:12px}
+table{border-collapse:collapse;width:100%;min-width:860px;font-size:.9rem;font-variant-numeric:tabular-nums}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap}
+th{background:var(--head);font-weight:600;position:sticky;top:0}
+th:first-child,td:first-child{text-align:left}
+tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
+.pos{color:var(--pos)} .neg{color:var(--neg)}
+.hoofd{font-size:.8rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Bij- en afschrijvingen</h1>
+  <p class="sub">Overzicht per maand van de inleg, het overrendement en het stabiliteitsrendement, met het verwachte pensioen bij het kapitaal van die maand.</p>
+  <div class="notice">Alle bedragen en rendementen op deze pagina zijn fictief. Het gaat om testdata van een voorbeeld deelnemer.</div>
+
+  <div class="kaarten" id="kaarten"></div>
+
+  <h2>Maandoverzicht</h2>
+  <div class="tabel">
+    <table>
+      <thead>
+        <tr>
+          <th>Maand</th>
+          <th>Premie-inleg</th>
+          <th>Overrendement</th>
+          <th>Stabiliteitsrendement</th>
+          <th>Kapitaal aan het eind</th>
+          <th>Verwacht pensioen per maand</th>
+          <th>Verandering pensioen</th>
+        </tr>
+      </thead>
+      <tbody id="rijen"></tbody>
+      <tfoot id="totaal"></tfoot>
+    </table>
+  </div>
+
+  <h2>Hoe de bedragen samenhangen</h2>
+  <div class="uitleg">
+    <p><strong>Kapitaal:</strong> het kapitaal van de vorige maand, plus de premie-inleg, plus het overrendement, plus het stabiliteitsrendement.</p>
+    <p><strong>Stabiliteitsrendement:</strong> een fictief beschermingsrendement. Een positief stabiliteitsrendement verhoogt het kapitaal en verlaagt het verwachte pensioen. Een negatief stabiliteitsrendement doet het omgekeerde.</p>
+    <p><strong>Verwacht pensioen:</strong> het verwachte ouderdomspensioen per jaar, gedeeld door 12. De ontwikkeling volgt het kapitaal, behalve het stabiliteitsrendement, dat in omgekeerde richting meetelt. De annuïteitsdeler is die van de pensioenleeftijd van <span id="pensLeeftijd"></span> jaar: <span id="deler"></span>.</p>
+  </div>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var cfg = window.PLANNER_CONFIG;
+
+  // Testdata: fictieve deelnemer. Pas de waarden hieronder aan om andere data te tonen.
+  var START_MAAND = { jaar: 2024, maand: 1 };
+  var EIND_MAAND = { jaar: 2026, maand: 10 };
+  var START_KAPITAAL = 280000;       // kapitaal aan het begin van de eerste maand (€)
+  var BASIS_PREMIE = 1850;           // premie-inleg per maand in het eerste jaar (€)
+  var PREMIE_INDEXATIE = 0.025;      // jaarlijkse stijging van de premie
+  var OVER_MIN = -0.012;             // overrendement per maand: ondergrens (fractie van het kapitaal)
+  var OVER_BEREIK = 0.027;           // overrendement per maand: bandbreedte
+  var STAB_BEREIK = 0.008;           // stabiliteitsrendement per maand: bandbreedte rond nul (±0,4%)
+  var SEED = 20260401;               // vaste seed: dezelfde testdata bij elke keer laden
+  var PENSIOEN_LEEFTIJD = cfg.pensioenreglement.standaardPensioenleeftijd;
+  var DELER = cfg.annuiteitsdelers[PENSIOEN_LEEFTIJD];
+
+  var MAANDEN = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+  var eur = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+
+  function mulberry32(a) {
+    return function () {
+      a |= 0; a = a + 0x6D2B79F5 | 0;
+      var t = Math.imul(a ^ a >>> 15, 1 | a);
+      t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+      return ((t ^ t >>> 14) >>> 0) / 4294967296;
+    };
+  }
+
+  function maandenLijst() {
+    var lijst = [];
+    var y = START_MAAND.jaar, m = START_MAAND.maand;
+    while (y * 12 + m <= EIND_MAAND.jaar * 12 + EIND_MAAND.maand) {
+      lijst.push({ jaar: y, maand: m });
+      m++; if (m > 12) { m = 1; y++; }
+    }
+    return lijst;
+  }
+
+  // Bouwt per maand: inleg, overrendement, stabiliteitsrendement, kapitaal en verwacht pensioen.
+  // Verwacht pensioen: kapitaal zonder de stabiliteitsrendementen (het stabiliteitsrendement telt dus omgekeerd mee).
+  function bouwReeks() {
+    var rnd = mulberry32(SEED);
+    var kap = START_KAPITAAL;
+    var kp = START_KAPITAAL;
+    var vorigPensioen = kp / DELER / 12;
+    var rijen = [];
+    maandenLijst().forEach(function (mnd) {
+      var jaarIdx = mnd.jaar - START_MAAND.jaar;
+      var inleg = Math.round(BASIS_PREMIE * Math.pow(1 + PREMIE_INDEXATIE, jaarIdx) * (1 + (rnd() - 0.5) * 0.06));
+      var over = Math.round(kap * (OVER_MIN + rnd() * OVER_BEREIK));
+      var stab = Math.round(kap * (rnd() - 0.5) * STAB_BEREIK);
+      kap += inleg + over + stab;
+      kp += inleg + over - stab;
+      var pensioen = kp / DELER / 12;
+      rijen.push({
+        label: MAANDEN[mnd.maand - 1] + ' ' + mnd.jaar,
+        inleg: inleg, over: over, stab: stab,
+        kapitaal: kap, pensioen: pensioen,
+        wijziging: pensioen - vorigPensioen
+      });
+      vorigPensioen = pensioen;
+    });
+    return rijen;
+  }
+
+  function geld(v) { return eur.format(Math.round(v)).replace(/ /g, ' '); }
+  function klasse(v) { return v > 0 ? 'pos' : (v < 0 ? 'neg' : ''); }
+  function cel(v, cls) { return '<td' + (cls ? ' class="' + cls + '"' : '') + '>' + geld(v) + '</td>'; }
+
+  function render() {
+    var rijen = bouwReeks();
+    var som = { inleg: 0, over: 0, stab: 0 };
+    var html = '';
+    rijen.forEach(function (r) {
+      som.inleg += r.inleg; som.over += r.over; som.stab += r.stab;
+      html += '<tr><td>' + r.label + '</td>' +
+        cel(r.inleg) + cel(r.over, klasse(r.over)) + cel(r.stab, klasse(r.stab)) +
+        cel(r.kapitaal) + cel(r.pensioen / 1, '') + cel(r.wijziging, klasse(r.wijziging)) + '</tr>';
+    });
+    document.getElementById('rijen').innerHTML = html;
+
+    var laatste = rijen[rijen.length - 1];
+    document.getElementById('totaal').innerHTML =
+      '<tr><td>Totaal ' + rijen.length + ' maanden</td>' +
+      cel(som.inleg) + cel(som.over, klasse(som.over)) + cel(som.stab, klasse(som.stab)) +
+      cel(laatste.kapitaal) + cel(laatste.pensioen) + '<td></td></tr>';
+
+    var kaarten = [
+      ['Startkapitaal', START_KAPITAAL],
+      ['Totale inleg', som.inleg],
+      ['Overrendement', som.over],
+      ['Stabiliteitsrendement', som.stab],
+      ['Kapitaal nu', laatste.kapitaal],
+      ['Verwacht pensioen per maand', laatste.pensioen]
+    ];
+    document.getElementById('kaarten').innerHTML = kaarten.map(function (k) {
+      return '<div class="kaart"><div class="lbl">' + k[0] + '</div><div class="wrd">' + geld(k[1]) + '</div></div>';
+    }).join('');
+
+    document.getElementById('pensLeeftijd').textContent = PENSIOEN_LEEFTIJD;
+    document.getElementById('deler').textContent = DELER.toFixed(1).replace('.', ',');
+  }
+
+  render();
+})();
+</script>
+</body>
+</html>
