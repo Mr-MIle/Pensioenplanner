@@ -6,9 +6,9 @@
 <title>Bij- en afschrijvingen</title>
 <script src="config.js"></script>
 <style>
-:root{--bg:#f6f7f9;--card:#ffffff;--text:#1d2630;--muted:#5b6675;--line:#dfe3e8;--accent:#0a4f9c;--pos:#1b7a3d;--neg:#b3261e;--head:#eef2f7;}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#111820;--card:#18212b;--text:#e8edf2;--muted:#9aa6b4;--line:#2b3744;--accent:#6aa9ff;--pos:#5fcf85;--neg:#ff8a80;--head:#1f2a36;}}
-:root[data-theme="dark"]{--bg:#111820;--card:#18212b;--text:#e8edf2;--muted:#9aa6b4;--line:#2b3744;--accent:#6aa9ff;--pos:#5fcf85;--neg:#ff8a80;--head:#1f2a36;}
+:root{--serie2:#b8741a;--bg:#f6f7f9;--card:#ffffff;--text:#1d2630;--muted:#5b6675;--line:#dfe3e8;--accent:#0a4f9c;--pos:#1b7a3d;--neg:#b3261e;--head:#eef2f7;}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--serie2:#f0b44c;--bg:#111820;--card:#18212b;--text:#e8edf2;--muted:#9aa6b4;--line:#2b3744;--accent:#6aa9ff;--pos:#5fcf85;--neg:#ff8a80;--head:#1f2a36;}}
+:root[data-theme="dark"]{--serie2:#f0b44c;--bg:#111820;--card:#18212b;--text:#e8edf2;--muted:#9aa6b4;--line:#2b3744;--accent:#6aa9ff;--pos:#5fcf85;--neg:#ff8a80;--head:#1f2a36;}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;line-height:1.5}
 main{max-width:1100px;margin:0 auto;padding:24px 16px 48px}
@@ -30,15 +30,36 @@ th:first-child,td:first-child{text-align:left}
 tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
 .pos{color:var(--pos)} .neg{color:var(--neg)}
 .hoofd{font-size:.8rem;color:var(--muted)}
+.grafiek-kaart{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px 8px;margin-top:8px}
+.legenda{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.88rem;color:var(--muted);margin-bottom:6px}
+.legenda i{display:inline-block;width:22px;height:0;border-top:3px solid;vertical-align:middle;margin-right:6px}
+.sw-k{border-color:var(--accent)} .sw-p{border-color:var(--serie2);border-top-style:dashed}
+#grafiek{width:100%;height:auto;display:block}
+#grafiek .raster{stroke:var(--line);stroke-width:1}
+#grafiek .as-tekst{fill:var(--muted);font-size:12px;font-family:inherit}
+#grafiek .as-titel{fill:var(--muted);font-size:12px;font-weight:600}
+#grafiek .lijn-k{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linejoin:round}
+#grafiek .lijn-p{fill:none;stroke:var(--serie2);stroke-width:2.5;stroke-dasharray:7 5;stroke-linejoin:round}
+#grafiek .punt-k{fill:var(--accent)} #grafiek .punt-p{fill:var(--serie2)}
 </style>
 </head>
 <body>
 <main>
+  <p class="hoofd"><a href="index.html" style="color: var(--accent)">&larr; Terug naar de pensioenplanner</a></p>
   <h1>Bij- en afschrijvingen</h1>
   <p class="sub">Overzicht per maand van de inleg, het overrendement en het stabiliteitsrendement, met het verwachte pensioen bij het kapitaal van die maand.</p>
   <div class="notice">Alle bedragen en rendementen op deze pagina zijn fictief. Het gaat om testdata van een voorbeeld deelnemer.</div>
 
   <div class="kaarten" id="kaarten"></div>
+
+  <h2>Ontwikkeling laatste 24 maanden</h2>
+  <div class="grafiek-kaart">
+    <div class="legenda">
+      <span><i class="sw-k"></i>Kapitaal (linker as)</span>
+      <span><i class="sw-p"></i>Verwacht pensioen per maand (rechter as)</span>
+    </div>
+    <svg id="grafiek" viewBox="0 0 960 380" role="img" aria-label="Lijngrafiek van het kapitaal en het verwachte pensioen per maand over de laatste 24 maanden"></svg>
+  </div>
 
   <h2>Maandoverzicht</h2>
   <div class="tabel">
@@ -140,6 +161,7 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
 
   function render() {
     var rijen = bouwReeks();
+    tekenGrafiek(rijen);
     var som = { inleg: 0, over: 0, stab: 0 };
     var html = '';
     rijen.forEach(function (r) {
@@ -170,6 +192,66 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
 
     document.getElementById('pensLeeftijd').textContent = PENSIOEN_LEEFTIJD;
     document.getElementById('deler').textContent = DELER.toFixed(1).replace('.', ',');
+  }
+
+  function kies(v) {
+    var ruw = v;
+    var macht = Math.pow(10, Math.floor(Math.log(ruw) / Math.LN10));
+    var f = ruw / macht;
+    return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * macht;
+  }
+
+  function assen(waarden, aantal) {
+    var min = Math.min.apply(null, waarden), max = Math.max.apply(null, waarden);
+    var stap = kies(Math.max((max - min) / aantal, 1));
+    var lo = Math.floor(min / stap) * stap, hi = Math.ceil(max / stap) * stap;
+    if (hi === lo) hi = lo + stap;
+    return { lo: lo, hi: hi, stap: stap };
+  }
+
+  function tekenGrafiek(rijen) {
+    var svg = document.getElementById('grafiek');
+    var data = rijen.slice(-24);
+    var W = 960, H = 380, L = 96, R = 96, T = 16, B = 44;
+    var pw = W - L - R, ph = H - T - B;
+    var n = data.length;
+    var k = assen(data.map(function (r) { return r.kapitaal; }), 4);
+    var p = assen(data.map(function (r) { return r.pensioen; }), 4);
+    function x(i) { return L + i * pw / (n - 1); }
+    function yK(v) { return T + ph * (1 - (v - k.lo) / (k.hi - k.lo)); }
+    function yP(v) { return T + ph * (1 - (v - p.lo) / (p.hi - p.lo)); }
+    var g = '';
+
+    for (var t = k.lo; t <= k.hi + k.stap / 2; t += k.stap) {
+      var yy = yK(t).toFixed(1);
+      g += '<line class="raster" x1="' + L + '" x2="' + (W - R) + '" y1="' + yy + '" y2="' + yy + '"/>';
+      g += '<text class="as-tekst" x="' + (L - 8) + '" y="' + (+yy + 4) + '" text-anchor="end">' + Math.round(t).toLocaleString('nl-NL') + '</text>';
+    }
+    for (var u = p.lo; u <= p.hi + p.stap / 2; u += p.stap) {
+      var y2 = yP(u).toFixed(1);
+      g += '<text class="as-tekst" x="' + (W - R + 8) + '" y="' + (+y2 + 4) + '" text-anchor="start">' + Math.round(u).toLocaleString('nl-NL') + '</text>';
+    }
+    g += '<text class="as-titel" x="' + (L - 8) + '" y="' + (T - 4) + '" text-anchor="end">Kapitaal (€)</text>';
+    g += '<text class="as-titel" x="' + (W - R + 8) + '" y="' + (T - 4) + '" text-anchor="start">Pensioen per maand (€)</text>';
+
+    data.forEach(function (r, i) {
+      if (i % 3 === 2) {
+        g += '<text class="as-tekst" x="' + x(i).toFixed(1) + '" y="' + (H - 14) + '" text-anchor="middle">' + r.label + '</text>';
+      }
+    });
+
+    var pk = [], pp = [];
+    data.forEach(function (r, i) {
+      pk.push(x(i).toFixed(1) + ',' + yK(r.kapitaal).toFixed(1));
+      pp.push(x(i).toFixed(1) + ',' + yP(r.pensioen).toFixed(1));
+    });
+    g += '<path class="lijn-k" d="M' + pk.join('L') + '"/>';
+    g += '<path class="lijn-p" d="M' + pp.join('L') + '"/>';
+    data.forEach(function (r, i) {
+      g += '<circle class="punt-k" cx="' + x(i).toFixed(1) + '" cy="' + yK(r.kapitaal).toFixed(1) + '" r="3.5"><title>' + r.label + ' · kapitaal ' + geld(r.kapitaal) + '</title></circle>';
+      g += '<circle class="punt-p" cx="' + x(i).toFixed(1) + '" cy="' + yP(r.pensioen).toFixed(1) + '" r="3.5"><title>' + r.label + ' · verwacht pensioen ' + geld(r.pensioen) + ' per maand</title></circle>';
+    });
+    svg.innerHTML = g;
   }
 
   render();
