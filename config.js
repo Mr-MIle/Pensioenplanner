@@ -9,12 +9,16 @@ window.PLANNER_CONFIG = {
   // Calculatiedatum: de maand waarop de projectie start (jjjj-mm). Altijd de eerste van de maand.
   calculatiedatum: "2026-11",
 
-  deelnemer: {
-    naam: "Voorbeeld deelnemer",
-    geboortedatum: "1986-03",   // jjjj-mm
-    startkapitaal: 85000,       // opgebouwd pensioenvermogen op de calculatiedatum (€)
-    brutoSalaris: 52000         // voltijd jaarsalaris op de calculatiedatum (€)
-  },
+  // Demo-deelnemers. In de planner kiest u er één via de keuzelijst bovenaan. Die bepaalt de geboortedatum
+  // (dd-mm-jjjj, alleen de maand telt mee), het startkapitaal en het salaris. Alle waarden zijn fictief.
+  deelnemers: [
+    { naam: "Deelnemer A", geboortedatum: "1990-07-01", startkapitaal: 80000,  brutoSalaris: 25000 },
+    { naam: "Deelnemer B", geboortedatum: "1980-05-01", startkapitaal: 125000, brutoSalaris: 37500 },
+    { naam: "Deelnemer C", geboortedatum: "1970-03-01", startkapitaal: 250000, brutoSalaris: 55000 },
+    { naam: "Deelnemer D", geboortedatum: "1960-08-01", startkapitaal: 490000, brutoSalaris: 125000 }
+  ],
+  standaardDeelnemer: 0,   // index in deelnemers die bij het laden is geselecteerd
+  deelnemer: null,         // wordt in de planner gezet op de gekozen deelnemer (kopie van deelnemers[i])
 
   pensioenreglement: {
     premiepercentage: 0.20,           // 20% van het pensioengevend salaris
