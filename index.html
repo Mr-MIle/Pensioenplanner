@@ -15,6 +15,7 @@
     --warm: #b3622f;
     --warn-bg: #fbeedd;
     --warn-fg: #7a3e10;
+    --neg: #b3261e;
     --panel: #1f5c5a;
     --panel-fg: #f4f8f7;
     --panel-sub: #bcd6d3;
@@ -23,14 +24,14 @@
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --bg: #131917; --surface: #1b2321; --fg: #eef1ee; --muted: #a3ada8; --line: #33403c;
-      --accent: #7fc3bf; --accent-soft: #213330; --warm: #e8a077; --warn-bg: #3a2a1c; --warn-fg: #f3cfb0;
+      --accent: #7fc3bf; --accent-soft: #213330; --warm: #e8a077; --warn-bg: #3a2a1c; --warn-fg: #f3cfb0; --neg: #ff8a80;
       --panel: #24504e; --panel-fg: #eef6f5; --panel-sub: #a9cbc7; --panel-inner: #2e6360;
       color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
     --bg: #131917; --surface: #1b2321; --fg: #eef1ee; --muted: #a3ada8; --line: #33403c;
-    --accent: #7fc3bf; --accent-soft: #213330; --warm: #e8a077; --warn-bg: #3a2a1c; --warn-fg: #f3cfb0;
+    --accent: #7fc3bf; --accent-soft: #213330; --warm: #e8a077; --warn-bg: #3a2a1c; --warn-fg: #f3cfb0; --neg: #ff8a80;
     --panel: #24504e; --panel-fg: #eef6f5; --panel-sub: #a9cbc7; --panel-inner: #2e6360;
     color-scheme: dark;
   }
@@ -352,6 +353,7 @@
       <span style="--c: var(--muted)">Startkapitaal (na onttrekking)</span>
       <span style="--c: var(--accent)">Premie-inleg</span>
       <span style="--c: var(--warm)">Overrendement</span>
+      <span style="--c: var(--neg)">Negatief overrendement (verlies)</span>
       <span class="stippel" style="--c: var(--fg)">Reëel totaal</span>
     </div>
   </section>
@@ -781,53 +783,103 @@
     return t;
   }
 
+  // Kies een mooie stapgrootte (1, 2 of 5 x een macht van 10) voor de Y-as.
+  function nieuweStap(v) {
+    var m = Math.pow(10, Math.floor(Math.log(v) / Math.LN10));
+    var f = v / m;
+    return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * m;
+  }
+
+  // Kapitaalgrafiek: gestapelde banden (startkapitaal, premie-inleg, overrendement) plus de reële lijn.
+  // De Y-as loopt altijd van het laagste tot het hoogste punt van alle reeksen, ook als het overrendement negatief is.
   function tekenKapitaal(rows, startK) {
-    var W = 720, H = 280, pl = 76, pr = 16, pt = 16, pb = 34;
+    var W = 720, H = 280, pl = 84, pr = 24, pt = 16, pb = 34;
     var n = rows.length;
     var cumI = 0, cumO = 0, cumU = 0;
     var pts = rows.map(function (r) {
       cumI += r.inleg; cumO += r.over; cumU += r.onttrokken;
       var base = startK - cumU;
-      return { base: base, top1: base + cumI, top2: base + cumI + cumO, reeel: r.reeel, eind: r.eind };
+      return { base: base, top1: base + cumI, top2: base + cumI + cumO, reeel: r.reeel };
     });
-    var maxV = 0;
-    pts.forEach(function (p) { maxV = Math.max(maxV, p.top2, p.reeel); });
-    var top = Math.ceil(maxV / 100000) * 100000 || 100000;
+
+    var waarden = [0];
+    pts.forEach(function (p) { waarden.push(p.base, p.top1, p.top2, p.reeel); });
+    var lo = Math.min.apply(null, waarden);
+    var hi = Math.max.apply(null, waarden);
+    var stap = nieuweStap(Math.max(hi - lo, 1) / 4);
+    lo = Math.min(0, Math.floor(lo / stap) * stap);
+    hi = Math.ceil(hi / stap) * stap;
+    if (hi === lo) hi = lo + stap;
+
     function x(i) { return pl + (W - pl - pr) * i / Math.max(1, n - 1); }
-    function y(v) { return H - pb - (H - pt - pb) * v / top; }
-    function band(lo, hi) {
+    function y(v) { return H - pb - (H - pt - pb) * (v - lo) / (hi - lo); }
+
+    var grid = '';
+    for (var t = lo; t <= hi + stap / 2; t += stap) {
+      var yy = y(t).toFixed(1);
+      grid += '<line class="raster" x1="' + pl + '" x2="' + (W - pr) + '" y1="' + yy + '" y2="' + yy + '"/>';
+      grid += '<text class="as" x="' + (pl - 8) + '" y="' + (+yy + 4) + '" text-anchor="end">' + eur0.format(t) + '</text>';
+    }
+
+    function band(lowKey, highKey) {
       var d = '';
-      pts.forEach(function (p, i) { d += (i ? 'L' : 'M') + x(i).toFixed(1) + ',' + y(p[hi]).toFixed(1); });
-      for (var i = n - 1; i >= 0; i--) d += 'L' + x(i).toFixed(1) + ',' + y(pts[i][lo]).toFixed(1);
+      pts.forEach(function (p, i) { d += (i ? 'L' : 'M') + x(i).toFixed(1) + ',' + y(p[highKey]).toFixed(1); });
+      for (var i = n - 1; i >= 0; i--) d += 'L' + x(i).toFixed(1) + ',' + y(pts[i][lowKey]).toFixed(1);
       return d + 'Z';
     }
-    function bandVanaf0(hi) {
+    function vanaf0(highKey) {
       var d = '';
-      pts.forEach(function (p, i) { d += (i ? 'L' : 'M') + x(i).toFixed(1) + ',' + y(p[hi]).toFixed(1); });
+      pts.forEach(function (p, i) { d += (i ? 'L' : 'M') + x(i).toFixed(1) + ',' + y(p[highKey]).toFixed(1); });
       return d + 'L' + x(n - 1).toFixed(1) + ',' + y(0).toFixed(1) + 'L' + x(0).toFixed(1) + ',' + y(0).toFixed(1) + 'Z';
     }
-    var grid = '';
-    for (var t = 0; t <= 4; t++) {
-      var v = top * t / 4;
-      grid += '<line class="raster" x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y(v) + '" y2="' + y(v) + '"/>';
-      grid += '<text class="as" x="' + (pl - 8) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + eur0.format(v) + '</text>';
-    }
-    var labels = '', last = -100;
+
+    // Jaartallen op de X-as: elk jaar, met ruimte aan de randen zodat niets wordt afgesneden.
+    var labels = '', vorige = -100;
     rows.forEach(function (r, i) {
-      if ((r.maand.indexOf('jan') === 0 || i === 0) && x(i) - last > 60) {
-        labels += '<text class="as" x="' + x(i) + '" y="' + (H - 10) + '">' + r.maand.split(' ')[1] + '</text>';
-        last = x(i);
+      if ((r.maand.indexOf('jan') === 0 || i === 0) && x(i) - vorige > 60 && x(i) < W - pr - 20) {
+        labels += '<text class="as" x="' + x(i).toFixed(1) + '" y="' + (H - 10) + '" text-anchor="middle">' + r.maand.split(' ')[1] + '</text>';
+        vorige = x(i);
       }
     });
+
     var pR = '';
     pts.forEach(function (p, i) { pR += (i ? 'L' : 'M') + x(i).toFixed(1) + ',' + y(p.reeel).toFixed(1); });
+
+    // Overrendementsband per maand: oranje als het cumulatieve overrendement positief is, rood als het negatief is.
+    function overrendementBanden() {
+      var s = '';
+      for (var i = 0; i < n - 1; i++) {
+        var a = pts[i], b = pts[i + 1];
+        var kleur = (a.top2 - a.top1 + b.top2 - b.top1) >= 0 ? 'var(--warm)' : 'var(--neg)';
+        var d = 'M' + x(i).toFixed(1) + ',' + y(a.top1).toFixed(1) +
+          'L' + x(i + 1).toFixed(1) + ',' + y(b.top1).toFixed(1) +
+          'L' + x(i + 1).toFixed(1) + ',' + y(b.top2).toFixed(1) +
+          'L' + x(i).toFixed(1) + ',' + y(a.top2).toFixed(1) + 'Z';
+        s += '<path d="' + d + '" fill="' + kleur + '" fill-opacity="0.65"/>';
+      }
+      return s;
+    }
+
     return '<svg class="grafiek" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Ontwikkeling van het pensioenvermogen: startkapitaal, premie-inleg en overrendement">' +
       grid + labels +
-      '<path d="' + bandVanaf0('base') + '" fill="var(--muted)" fill-opacity="0.28"/>' +
+      '<path d="' + vanaf0('base') + '" fill="var(--muted)" fill-opacity="0.28"/>' +
       '<path d="' + band('base', 'top1') + '" fill="var(--accent)" fill-opacity="0.55"/>' +
-      '<path d="' + band('top1', 'top2') + '" fill="var(--warm)" fill-opacity="0.65"/>' +
+      overrendementBanden() +
       '<path d="' + pR + '" fill="none" stroke="var(--fg)" stroke-width="1.75" stroke-dasharray="5 4"/>' +
       '</svg>';
+  }
+
+  // Y-as van het uitkeringspatroon: 15% ruimte boven de hoogste staaf, op een nette stap met hooguit 5 stappen.
+  function uitkeringsAs(max) {
+    var doel = max * 1.15;
+    var m = Math.pow(10, Math.floor(Math.log(doel) / Math.LN10));
+    var fracties = [0.2, 0.25, 0.5, 1, 2, 2.5, 5, 10];
+    for (var k = 0; k < fracties.length; k++) {
+      var stap = fracties[k] * m;
+      var top = Math.ceil(doel / stap) * stap;
+      if (top / stap <= 5) return { top: top, stap: stap };
+    }
+    return { top: Math.ceil(doel / m) * m, stap: m };
   }
 
   // Staafdiagram: per leeftijdsjaar het gemiddelde bedrag per maand (nominaal, en reëel als die schuif aanstaat).
@@ -853,7 +905,9 @@
       top = Math.max(top, r.nom);
       if (toonReeel && r.reel !== null) top = Math.max(top, r.reel);
     });
-    top = Math.ceil(top / 250) * 250 || 250;
+    var as = uitkeringsAs(top || 1);
+    top = as.top;
+    var stapY = as.stap;
 
     var slot = (W - pl - pr) / rows.length;
     var bw = Math.max(2, slot * 0.72 / (toonReeel ? 2 : 1));
@@ -862,8 +916,7 @@
     function y(v) { return H - pb - (H - pt - pb) * v / top; }
 
     var grid = '';
-    for (var t2 = 0; t2 <= 4; t2++) {
-      var v = top * t2 / 4;
+    for (var v = 0; v <= top + stapY / 2; v += stapY) {
       grid += '<line class="raster" x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y(v) + '" y2="' + y(v) + '"/>';
       grid += '<text class="as" x="' + (pl - 8) + '" y="' + (y(v) + 4) + '" text-anchor="end">' + eur0.format(v) + '</text>';
     }
