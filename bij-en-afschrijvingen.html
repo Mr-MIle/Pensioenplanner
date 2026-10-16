@@ -212,7 +212,7 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
   function tekenGrafiek(rijen) {
     var svg = document.getElementById('grafiek');
     var data = rijen.slice(-24);
-    var W = 960, H = 380, L = 96, R = 96, T = 16, B = 44;
+    var W = 960, H = 380, L = 96, R = 96, T = 48, B = 44;
     var pw = W - L - R, ph = H - T - B;
     var n = data.length;
     var k = assen(data.map(function (r) { return r.kapitaal; }), 4);
@@ -231,8 +231,8 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
       var y2 = yP(u).toFixed(1);
       g += '<text class="as-tekst" x="' + (W - R + 8) + '" y="' + (+y2 + 4) + '" text-anchor="start">' + Math.round(u).toLocaleString('nl-NL') + '</text>';
     }
-    g += '<text class="as-titel" x="' + (L - 8) + '" y="' + (T - 4) + '" text-anchor="end">Kapitaal (€)</text>';
-    g += '<text class="as-titel" x="' + (W - R + 8) + '" y="' + (T - 4) + '" text-anchor="start">Pensioen per maand (€)</text>';
+    g += '<text class="as-titel" x="0" y="22" text-anchor="start">Kapitaal (€)</text>';
+    g += '<text class="as-titel" x="' + W + '" y="22" text-anchor="end">Verwacht pensioen per maand (€)</text>';
 
     data.forEach(function (r, i) {
       if (i % 3 === 2) {
