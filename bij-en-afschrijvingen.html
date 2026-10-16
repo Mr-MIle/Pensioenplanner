@@ -52,10 +52,7 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
 .uitlezing span{color:var(--muted)}
 .uitlezing strong{color:var(--text)}
 .hint{color:var(--muted);font-size:.85rem;margin:8px 0 0}
-.sw-s{border-color:var(--serie2)} .sw-b{border-color:var(--accent)}
-#stab{width:100%;height:auto;display:block;margin-top:6px}
-#stab .as-tekst{fill:var(--muted);font-size:12px;font-family:inherit}
-#stab .as-titel{fill:var(--muted);font-size:12px;font-weight:600}
+
 </style>
 </head>
 <body>
@@ -76,11 +73,9 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
     <div class="legenda">
       <div class="leg-item"><i class="sw-k"></i><div><strong class="kleur-k">Blauwe lijn: kapitaal</strong> (linker as, in euro). Het totale opgebouwde pensioenvermogen aan het eind van de maand.</div></div>
       <div class="leg-item"><i class="sw-p"></i><div><strong class="kleur-p">Gestippelde oranje lijn: verwacht pensioen per maand</strong> (rechter as, in euro). Het ouderdomspensioen per maand dat bij het kapitaal van diezelfde maand hoort.</div></div>
-      <div class="leg-item"><i class="sw-s"></i><div>Balken onder de grafiek: stabiliteitsrendement per maand (in euro).</div></div>
     </div>
     <div class="uitlezing" id="uitlezing" aria-live="polite"></div>
     <svg id="grafiek" viewBox="0 0 960 340" role="img" aria-label="Lijngrafiek van het kapitaal en het verwachte pensioen per maand over de laatste 24 maanden"></svg>
-    <svg id="stab" viewBox="0 0 960 180" role="img" aria-label="Staafdiagram van het stabiliteitsrendement per maand"></svg>
     <p class="hint">Houd de muis boven de grafiek (of tik op een maand op een telefoon) om de cijfers van die maand te zien.</p>
   </div>
 
@@ -129,7 +124,6 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
   var MAANDEN = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
   var eur = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
   var MAIN = { W: 960, H: 340, L: 96, R: 96, T: 48, B: 12 };
-  var STAB = { W: 960, H: 180, L: 96, R: 96, T: 30, B: 34 };
 
   var geo = null;      // gegevens en geometrie van de grafieken, nodig voor de muisaanwijzing
   var huidig = null;   // gekozen deelnemer met reeks, deler en pensioenleeftijd
@@ -288,14 +282,11 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
     var x = geo.x(i).toFixed(1);
     $('hl').setAttribute('x1', x);
     $('hl').setAttribute('x2', x);
-    $('hl2').setAttribute('x1', x);
-    $('hl2').setAttribute('x2', x);
     $('hk').setAttribute('cx', x);
     $('hk').setAttribute('cy', geo.yK(r.kapitaal).toFixed(1));
     $('hp').setAttribute('cx', x);
     $('hp').setAttribute('cy', geo.yP(r.pensioen).toFixed(1));
     $('hover').setAttribute('visibility', 'visible');
-    $('hover2').setAttribute('visibility', 'visible');
   }
 
   function naarIndex(e) {
@@ -365,37 +356,6 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
       '</g>';
     $('grafiek').innerHTML = g;
 
-    // Stabiliteitsgrafiek: staven per maand, symmetrisch rond nul, zelfde horizontale schaal.
-    var S = STAB, pwS = S.W - S.L - S.R, phS = S.H - S.T - S.B;
-    var maxAbs = Math.max.apply(null, data.map(function (r) { return Math.abs(r.stab); }));
-    var lim = kies(Math.max(maxAbs, 1));
-    var y0 = S.T + phS / 2;
-    function yS(v) { return y0 - (phS / 2) * v / lim; }
-    var bw = Math.max(2, pwS / n * 0.7);
-
-    var s = '<rect x="' + S.L + '" y="' + S.T + '" width="' + pwS + '" height="' + phS + '" fill="transparent"/>';
-    s += '<line class="raster" x1="' + S.L + '" x2="' + (S.W - S.R) + '" y1="' + S.T + '" y2="' + S.T + '"/>';
-    s += '<line class="raster" x1="' + S.L + '" x2="' + (S.W - S.R) + '" y1="' + (S.T + phS) + '" y2="' + (S.T + phS) + '"/>';
-    s += '<line x1="' + S.L + '" x2="' + (S.W - S.R) + '" y1="' + y0 + '" y2="' + y0 + '" stroke="var(--muted)"/>';
-    s += '<text class="as-tekst" x="' + (S.L - 8) + '" y="' + (S.T + 4) + '" text-anchor="end">' + geld(lim) + '</text>';
-    s += '<text class="as-tekst" x="' + (S.L - 8) + '" y="' + (y0 + 4) + '" text-anchor="end">€ 0</text>';
-    s += '<text class="as-tekst" x="' + (S.L - 8) + '" y="' + (S.T + phS + 4) + '" text-anchor="end">' + geld(-lim) + '</text>';
-    s += '<text class="as-titel" x="0" y="12" text-anchor="start">Stabiliteitsrendement per maand (€)</text>';
-    data.forEach(function (r, i) {
-      var cx = x(i);
-      var top = r.stab >= 0 ? yS(r.stab) : y0;
-      var h = Math.abs(yS(r.stab) - y0);
-      var kleur = r.stab < 0 ? 'var(--serie2)' : 'var(--accent)';
-      s += '<rect x="' + (cx - bw / 2).toFixed(1) + '" y="' + top.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + h.toFixed(1) + '" fill="' + kleur + '"><title>' +
-        r.label + ': ' + geld(r.stab) + '</title></rect>';
-      if (i % 3 === 2) {
-        s += '<text class="as-tekst" x="' + cx.toFixed(1) + '" y="' + (S.H - 10) + '" text-anchor="middle">' + r.label + '</text>';
-      }
-    });
-    s += '<g id="hover2" pointer-events="none" visibility="hidden">' +
-      '<line id="hl2" y1="' + S.T + '" y2="' + (S.T + phS) + '" stroke="var(--muted)" stroke-width="1.5"/>' +
-      '</g>';
-    $('stab').innerHTML = s;
   }
 
   function init() {
@@ -407,7 +367,7 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
 
     function aanwijzen(e) { if (geo) toon(naarIndex(e)); }
     function verlaten() { if (geo) toon(geo.data.length - 1); }
-    ['grafiek', 'stab'].forEach(function (id) {
+    ['grafiek'].forEach(function (id) {
       var el = $(id);
       el.addEventListener('pointermove', aanwijzen);
       el.addEventListener('pointerdown', aanwijzen);
