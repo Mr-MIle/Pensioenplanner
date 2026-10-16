@@ -29,7 +29,14 @@ window.PLANNER_CONFIG = {
     maxSchokOud: 0.05,
     leeftijdJong: 40,
     leeftijdOud: 65,
-    ondergrensFractie: 0.2
+    ondergrensFractie: 0.2,
+    // Waar de schok terechtkomt, afhankelijk van de leeftijd (lineair tussen jong en oud):
+    // jong: renterisico niet afgedekt, de schok raakt vooral het verwachte pensioen;
+    // oud: renteafdekking hoog, de schok raakt vooral het kapitaal.
+    kapitaalAandeelJong: 0.2,  // fractie van de schok die in het kapitaal terechtkomt (jong)
+    kapitaalAandeelOud: 1.0,   // fractie van de schok die in het kapitaal terechtkomt (oud)
+    pensioenAandeelJong: 1.0,  // fractie van de schok die in het verwachte pensioen terechtkomt (jong)
+    pensioenAandeelOud: 0.0    // fractie van de schok die in het verwachte pensioen terechtkomt (oud)
   },
 
   pensioenreglement: {

@@ -52,7 +52,6 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
 .uitlezing span{color:var(--muted)}
 .uitlezing strong{color:var(--text)}
 .hint{color:var(--muted);font-size:.85rem;margin:8px 0 0}
-.stab-uitleg{background:var(--head);border-radius:8px;padding:10px 12px;margin:10px 0 0;font-size:.92rem;min-height:44px}
 .sw-s{border-color:var(--serie2)} .sw-b{border-color:var(--accent)}
 #stab{width:100%;height:auto;display:block;margin-top:6px}
 #stab .as-tekst{fill:var(--muted);font-size:12px;font-family:inherit}
@@ -75,15 +74,13 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
   <h2>Ontwikkeling laatste 24 maanden</h2>
   <div class="grafiek-kaart">
     <div class="legenda">
-      <div class="leg-item"><i class="sw-k"></i><div><strong class="kleur-k">Blauwe lijn: kapitaal</strong>, geïndexeerd op 100 in de eerste maand. Het opgebouwde pensioenvermogen aan het eind van de maand.</div></div>
-      <div class="leg-item"><i class="sw-p"></i><div><strong class="kleur-p">Gestippelde oranje lijn: verwacht pensioen per maand</strong>, op dezelfde manier geïndexeerd. Die twee lijnen gaan vaak een andere kant op, en dat komt door het stabiliteitsrendement.</div></div>
-      <div class="leg-item"><i class="sw-s"></i><div><strong style="color: var(--serie2)">Oranje balk: rente gestegen.</strong> Het kapitaal daalt, want de rentehedge verliest. Het pensioen stijgt, want een hogere rente maakt pensioen goedkoper.</div></div>
-      <div class="leg-item"><i class="sw-b"></i><div><strong style="color: var(--accent)">Blauwe balk: rente gedaald.</strong> Het kapitaal stijgt, want de rentehedge wint. Het pensioen daalt, want pensioen wordt duurder.</div></div>
+      <div class="leg-item"><i class="sw-k"></i><div><strong class="kleur-k">Blauwe lijn: kapitaal</strong> (linker as, in euro). Het totale opgebouwde pensioenvermogen aan het eind van de maand.</div></div>
+      <div class="leg-item"><i class="sw-p"></i><div><strong class="kleur-p">Gestippelde oranje lijn: verwacht pensioen per maand</strong> (rechter as, in euro). Het ouderdomspensioen per maand dat bij het kapitaal van diezelfde maand hoort.</div></div>
+      <div class="leg-item"><i class="sw-s"></i><div>Balken onder de grafiek: stabiliteitsrendement per maand (in euro).</div></div>
     </div>
     <div class="uitlezing" id="uitlezing" aria-live="polite"></div>
-    <svg id="grafiek" viewBox="0 0 960 340" role="img" aria-label="Lijngrafiek van het geïndexeerde kapitaal en het geïndexeerde verwachte pensioen over de laatste 24 maanden"></svg>
+    <svg id="grafiek" viewBox="0 0 960 340" role="img" aria-label="Lijngrafiek van het kapitaal en het verwachte pensioen per maand over de laatste 24 maanden"></svg>
     <svg id="stab" viewBox="0 0 960 180" role="img" aria-label="Staafdiagram van het stabiliteitsrendement per maand"></svg>
-    <div class="stab-uitleg" id="stabUitleg" aria-live="polite"></div>
     <p class="hint">Houd de muis boven de grafiek (of tik op een maand op een telefoon) om de cijfers van die maand te zien.</p>
   </div>
 
@@ -131,8 +128,8 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
 
   var MAANDEN = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
   var eur = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
-  var MAIN = { W: 960, H: 340, L: 64, R: 24, T: 36, B: 12 };
-  var STAB = { W: 960, H: 180, L: 64, R: 24, T: 30, B: 34 };
+  var MAIN = { W: 960, H: 340, L: 96, R: 96, T: 48, B: 12 };
+  var STAB = { W: 960, H: 180, L: 96, R: 96, T: 30, B: 34 };
 
   var geo = null;      // gegevens en geometrie van de grafieken, nodig voor de muisaanwijzing
   var huidig = null;   // gekozen deelnemer met reeks, deler en pensioenleeftijd
@@ -178,22 +175,30 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
     return leeftijd(d) < reg.standaardPensioenleeftijd ? reg.standaardPensioenleeftijd : Math.round(reg.aowLeeftijdMaanden / 12);
   }
 
-  // Grootste maandelijkse schok van het stabiliteitsrendement, afhankelijk van de leeftijd.
-  function maxSchok(d) {
+  // Waarde tussen een jong- en een oud-waarde, lineair op basis van de leeftijd van de deelnemer.
+  function naarLeeftijd(d, jong, oud) {
     var s = cfg.stabiliteit;
     var f = (leeftijd(d) - s.leeftijdJong) / (s.leeftijdOud - s.leeftijdJong);
     f = Math.max(0, Math.min(1, f));
-    return s.maxSchokJong + (s.maxSchokOud - s.maxSchokJong) * f;
+    return jong + (oud - jong) * f;
+  }
+
+  // Grootste maandelijkse schok van het stabiliteitsrendement, afhankelijk van de leeftijd.
+  function maxSchok(d) {
+    var s = cfg.stabiliteit;
+    return naarLeeftijd(d, s.maxSchokJong, s.maxSchokOud);
   }
 
   // Bouwt per maand: inleg, overrendement, stabiliteitsrendement, kapitaal en verwacht pensioen.
-  // Het stabiliteitsrendement gaat het kapitaal in met het teken dat het heeft, en het verwachte pensioen met het
-  // tegengestelde teken: een negatief stabiliteitsrendement (rente gestegen) laat het kapitaal dalen en het pensioen stijgen.
+  // De schok van het stabiliteitsrendement raakt het kapitaal en het verwachte pensioen elk met een leeftijdsafhankelijk
+  // aandeel. Bij een negatief stabiliteitsrendement (rente gestegen) daalt het kapitaal en stijgt het pensioen.
   function bouwReeks(d) {
     var pl = pensioenLeeftijd(d);
     var deler = cfg.annuiteitsdelers[pl];
     var premieBasis = (Math.min(d.brutoSalaris, reg.maxPensioengevendSalaris) - reg.franchise) * reg.premiepercentage / 12;
     var schokMax = maxSchok(d);
+    var aandeelK = naarLeeftijd(d, cfg.stabiliteit.kapitaalAandeelJong, cfg.stabiliteit.kapitaalAandeelOud);
+    var aandeelP = naarLeeftijd(d, cfg.stabiliteit.pensioenAandeelJong, cfg.stabiliteit.pensioenAandeelOud);
     var ondergrens = cfg.stabiliteit.ondergrensFractie;
     var rnd = mulberry32(SEED);
     var kap = d.startkapitaal;
@@ -206,9 +211,11 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
       var over = Math.round(kap * (OVER_MIN + rnd() * OVER_BEREIK));
       var teken = rnd() < 0.5 ? -1 : 1;
       var grootte = schokMax * (ondergrens + (1 - ondergrens) * rnd());
-      var stab = Math.round(kap * teken * grootte);
+      var ruwe = kap * teken * grootte;          // de schok zoals die op de rentehedge valt
+      var stab = Math.round(ruwe * aandeelK);     // deel dat in het kapitaal terechtkomt
+      var stabP = ruwe * aandeelP;                // deel dat in het verwachte pensioen terechtkomt (omgekeerd)
       kap += inleg + over + stab;
-      kp += inleg + over - stab;
+      kp += inleg + over - stabP;
       var pensioen = kp / deler / 12;
       rijen.push({
         label: MAANDEN[mnd.maand - 1] + ' ' + mnd.jaar,
@@ -231,8 +238,7 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
     var rijen = huidig.rijen;
     $('deelnemer').value = i;
     $('notice').textContent = 'Alle bedragen en rendementen op deze pagina zijn fictief. Testdata voor ' + d.naam +
-      ' (geboren ' + datumNl(d.geboortedatum) + ', startkapitaal ' + geld(d.startkapitaal) + ', salaris ' + geld(d.brutoSalaris) +
-      '). Het stabiliteitsrendement is voor deze leeftijd maximaal ' + (huidig.schokMax * 100).toFixed(1).replace('.', ',') + '% per maand.';
+      ' (geboren ' + datumNl(d.geboortedatum) + ', startkapitaal ' + geld(d.startkapitaal) + ').';
 
     tekenGrafieken(rijen);
     toon(geo.data.length - 1);
@@ -269,47 +275,31 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
     $('deler').textContent = huidig.deler.toFixed(1).replace('.', ',');
   }
 
-  // Toont de cijfers van één maand, markeert die maand in beide grafieken en legt het stabiliteitseffect uit.
+  // Toont de cijfers van één maand en markeert die maand in beide grafieken.
   function toon(i) {
     if (!geo) return;
     var r = geo.data[i];
-    var deler = huidig.deler;
-    var pensEffect = -r.stab / deler / 12;   // effect van het stabiliteitsrendement op het verwachte pensioen per maand
-
     $('uitlezing').innerHTML =
       '<span>Maand <strong>' + r.label + '</strong></span>' +
       '<span>Kapitaal <strong style="color: var(--accent)">' + geld(r.kapitaal) + '</strong></span>' +
       '<span>Verwacht pensioen per maand <strong style="color: var(--serie2)">' + geld(r.pensioen) + '</strong></span>' +
-      '<span>Stabiliteitsrendement <strong class="' + klasse(r.stab) + '">' + geld(r.stab) + '</strong></span>' +
       '<span>Verandering pensioen t.o.v. vorige maand <strong class="' + klasse(r.wijziging) + '">' + geld(r.wijziging) + '</strong></span>';
 
-    var uitleg;
-    if (r.stab < 0) {
-      uitleg = '<strong>Rente gestegen.</strong> De rentehedge verliest ' + geld(-r.stab) + ', dus het kapitaal daalt. ' +
-        'Tegelijk wordt pensioen goedkoper: het verwachte pensioen stijgt door dit effect met ' + geld(pensEffect) + ' per maand.';
-    } else if (r.stab > 0) {
-      uitleg = '<strong>Rente gedaald.</strong> De rentehedge wint ' + geld(r.stab) + ', dus het kapitaal stijgt. ' +
-        'Pensioen wordt duurder: het verwachte pensioen daalt door dit effect met ' + geld(-pensEffect) + ' per maand.';
-    } else {
-      uitleg = 'Deze maand is er geen stabiliteitseffect.';
-    }
-    $('stabUitleg').innerHTML = uitleg;
-
     var x = geo.x(i).toFixed(1);
-    ['hl', 'hl2'].forEach(function (id) {
-      $(id).setAttribute('x1', x); $(id).setAttribute('x2', x);
-    });
+    $('hl').setAttribute('x1', x);
+    $('hl').setAttribute('x2', x);
+    $('hl2').setAttribute('x1', x);
+    $('hl2').setAttribute('x2', x);
     $('hk').setAttribute('cx', x);
-    $('hk').setAttribute('cy', geo.yI(r.ik).toFixed(1));
+    $('hk').setAttribute('cy', geo.yK(r.kapitaal).toFixed(1));
     $('hp').setAttribute('cx', x);
-    $('hp').setAttribute('cy', geo.yI(r.ip).toFixed(1));
+    $('hp').setAttribute('cy', geo.yP(r.pensioen).toFixed(1));
     $('hover').setAttribute('visibility', 'visible');
     $('hover2').setAttribute('visibility', 'visible');
   }
 
   function naarIndex(e) {
-    var svg = $('grafiek');
-    var rect = svg.getBoundingClientRect();
+    var rect = $('grafiek').getBoundingClientRect();
     var sx = (e.clientX - rect.left) * MAIN.W / rect.width;
     var n = geo.data.length;
     var i = Math.round((sx - MAIN.L) / (MAIN.W - MAIN.L - MAIN.R) * (n - 1));
@@ -332,40 +322,41 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
 
   function tekenGrafieken(rijen) {
     var data = rijen.slice(-24);
-    var basis = data[0];
-    data.forEach(function (r) {
-      r.ik = r.kapitaal / basis.kapitaal * 100;
-      r.ip = r.pensioen / basis.pensioen * 100;
-    });
+    var n = data.length;
 
-    // Hoofdgrafiek: geïndexeerd kapitaal en geïndexeerd verwacht pensioen op één as.
-    var M = MAIN, n = data.length;
-    var pwM = M.W - M.L - M.R, phM = M.H - M.T - M.B;
-    var sc = assen(data.map(function (r) { return r.ik; }).concat(data.map(function (r) { return r.ip; })), 4);
-    function x(i) { return M.L + i * pwM / (n - 1); }
-    function yI(v) { return M.T + phM * (1 - (v - sc.lo) / (sc.hi - sc.lo)); }
-    geo = { data: data, x: x, yI: yI, n: n };
+    // Hoofdgrafiek: kapitaal (linker as) en verwacht pensioen per maand (rechter as), elk in euro.
+    var M = MAIN;
+    var pw = M.W - M.L - M.R, ph = M.H - M.T - M.B;
+    var k = assen(data.map(function (r) { return r.kapitaal; }), 4);
+    var p = assen(data.map(function (r) { return r.pensioen; }), 4);
+    function x(i) { return M.L + i * pw / (n - 1); }
+    function yK(v) { return M.T + ph * (1 - (v - k.lo) / (k.hi - k.lo)); }
+    function yP(v) { return M.T + ph * (1 - (v - p.lo) / (p.hi - p.lo)); }
+    geo = { data: data, x: x, yK: yK, yP: yP, n: n };
 
-    var g = '<rect x="' + M.L + '" y="' + M.T + '" width="' + pwM + '" height="' + phM + '" fill="transparent"/>';
-    for (var t = sc.lo; t <= sc.hi + sc.stap / 2; t += sc.stap) {
-      var yy = yI(t).toFixed(1);
+    var g = '<rect x="' + M.L + '" y="' + M.T + '" width="' + pw + '" height="' + ph + '" fill="transparent"/>';
+    for (var t = k.lo; t <= k.hi + k.stap / 2; t += k.stap) {
+      var yy = yK(t).toFixed(1);
       g += '<line class="raster" x1="' + M.L + '" x2="' + (M.W - M.R) + '" y1="' + yy + '" y2="' + yy + '"/>';
-      g += '<text class="as-tekst" x="' + (M.L - 8) + '" y="' + (+yy + 4) + '" text-anchor="end">' + Math.round(t) + '</text>';
+      g += '<text class="as-tekst" x="' + (M.L - 8) + '" y="' + (+yy + 4) + '" text-anchor="end">' + Math.round(t).toLocaleString('nl-NL') + '</text>';
     }
-    var y100 = yI(100).toFixed(1);
-    g += '<line x1="' + M.L + '" x2="' + (M.W - M.R) + '" y1="' + y100 + '" y2="' + y100 + '" stroke="var(--muted)" stroke-dasharray="2 3"/>';
-    g += '<text class="as-titel" x="0" y="14" text-anchor="start">Index (100 = eerste maand)</text>';
+    for (var u = p.lo; u <= p.hi + p.stap / 2; u += p.stap) {
+      var y2 = yP(u).toFixed(1);
+      g += '<text class="as-tekst" x="' + (M.W - M.R + 8) + '" y="' + (+y2 + 4) + '" text-anchor="start">' + Math.round(u).toLocaleString('nl-NL') + '</text>';
+    }
+    g += '<text class="as-titel as-titel-k" x="0" y="22" text-anchor="start">Kapitaal (€)</text>';
+    g += '<text class="as-titel as-titel-p" x="' + M.W + '" y="22" text-anchor="end">Verwacht pensioen per maand (€)</text>';
 
     var pk = [], pp = [];
     data.forEach(function (r, i) {
-      pk.push(x(i).toFixed(1) + ',' + yI(r.ik).toFixed(1));
-      pp.push(x(i).toFixed(1) + ',' + yI(r.ip).toFixed(1));
+      pk.push(x(i).toFixed(1) + ',' + yK(r.kapitaal).toFixed(1));
+      pp.push(x(i).toFixed(1) + ',' + yP(r.pensioen).toFixed(1));
     });
     g += '<path class="lijn-k" d="M' + pk.join('L') + '"/>';
     g += '<path class="lijn-p" d="M' + pp.join('L') + '"/>';
     data.forEach(function (r, i) {
-      g += '<circle class="punt-k" cx="' + x(i).toFixed(1) + '" cy="' + yI(r.ik).toFixed(1) + '" r="2.5"/>';
-      g += '<circle class="punt-p" cx="' + x(i).toFixed(1) + '" cy="' + yI(r.ip).toFixed(1) + '" r="2.5"/>';
+      g += '<circle class="punt-k" cx="' + x(i).toFixed(1) + '" cy="' + yK(r.kapitaal).toFixed(1) + '" r="2.5"/>';
+      g += '<circle class="punt-p" cx="' + x(i).toFixed(1) + '" cy="' + yP(r.pensioen).toFixed(1) + '" r="2.5"/>';
     });
     g += '<g id="hover" pointer-events="none" visibility="hidden">' +
       '<line id="hl" y1="' + M.T + '" y2="' + (M.H - M.B) + '" stroke="var(--muted)" stroke-width="1.5"/>' +
@@ -415,14 +406,13 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
     sel.addEventListener('change', function () { render(Number(sel.value)); });
 
     function aanwijzen(e) { if (geo) toon(naarIndex(e)); }
-    var svg = $('grafiek');
-    svg.addEventListener('pointermove', aanwijzen);
-    svg.addEventListener('pointerdown', aanwijzen);
-    svg.addEventListener('pointerleave', function () { if (geo) toon(geo.data.length - 1); });
-    var svg2 = $('stab');
-    svg2.addEventListener('pointermove', aanwijzen);
-    svg2.addEventListener('pointerdown', aanwijzen);
-    svg2.addEventListener('pointerleave', function () { if (geo) toon(geo.data.length - 1); });
+    function verlaten() { if (geo) toon(geo.data.length - 1); }
+    ['grafiek', 'stab'].forEach(function (id) {
+      var el = $(id);
+      el.addEventListener('pointermove', aanwijzen);
+      el.addEventListener('pointerdown', aanwijzen);
+      el.addEventListener('pointerleave', verlaten);
+    });
 
     render(cfg.standaardDeelnemer);
   }
