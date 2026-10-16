@@ -31,13 +31,17 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
 .pos{color:var(--pos)} .neg{color:var(--neg)}
 .hoofd{font-size:.8rem;color:var(--muted)}
 .grafiek-kaart{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:12px 14px 8px;margin-top:8px}
-.legenda{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:.88rem;color:var(--muted);margin-bottom:6px}
-.legenda i{display:inline-block;width:22px;height:0;border-top:3px solid;vertical-align:middle;margin-right:6px}
+.legenda{display:grid;gap:8px;font-size:.9rem;color:var(--muted);margin-bottom:10px}
+.leg-item{display:flex;align-items:flex-start;gap:10px}
+.leg-item strong{color:var(--text)}
+.legenda i{display:inline-block;width:34px;min-width:34px;height:0;border-top:3px solid;margin-top:.7em}
+.kleur-k{color:var(--accent)!important} .kleur-p{color:var(--serie2)!important}
 .sw-k{border-color:var(--accent)} .sw-p{border-color:var(--serie2);border-top-style:dashed}
 #grafiek{width:100%;height:auto;display:block}
 #grafiek .raster{stroke:var(--line);stroke-width:1}
 #grafiek .as-tekst{fill:var(--muted);font-size:12px;font-family:inherit}
 #grafiek .as-titel{fill:var(--muted);font-size:12px;font-weight:600}
+#grafiek .as-titel-k{fill:var(--accent)} #grafiek .as-titel-p{fill:var(--serie2)}
 #grafiek .lijn-k{fill:none;stroke:var(--accent);stroke-width:2.5;stroke-linejoin:round}
 #grafiek .lijn-p{fill:none;stroke:var(--serie2);stroke-width:2.5;stroke-dasharray:7 5;stroke-linejoin:round}
 #grafiek .punt-k{fill:var(--accent)} #grafiek .punt-p{fill:var(--serie2)}
@@ -55,8 +59,8 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
   <h2>Ontwikkeling laatste 24 maanden</h2>
   <div class="grafiek-kaart">
     <div class="legenda">
-      <span><i class="sw-k"></i>Kapitaal (linker as)</span>
-      <span><i class="sw-p"></i>Verwacht pensioen per maand (rechter as)</span>
+      <div class="leg-item"><i class="sw-k"></i><div><strong class="kleur-k">Blauwe lijn: kapitaal</strong> (linker as, in euro). Het totale opgebouwde pensioenvermogen aan het eind van de maand.</div></div>
+      <div class="leg-item"><i class="sw-p"></i><div><strong class="kleur-p">Gestippelde oranje lijn: verwacht pensioen per maand</strong> (rechter as, in euro). Het ouderdomspensioen per maand dat bij het kapitaal van diezelfde maand hoort.</div></div>
     </div>
     <svg id="grafiek" viewBox="0 0 960 380" role="img" aria-label="Lijngrafiek van het kapitaal en het verwachte pensioen per maand over de laatste 24 maanden"></svg>
   </div>
@@ -83,7 +87,7 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
   <h2>Hoe de bedragen samenhangen</h2>
   <div class="uitleg">
     <p><strong>Kapitaal:</strong> het kapitaal van de vorige maand, plus de premie-inleg, plus het overrendement, plus het stabiliteitsrendement.</p>
-    <p><strong>Stabiliteitsrendement:</strong> een fictief beschermingsrendement. Een positief stabiliteitsrendement verhoogt het kapitaal en verlaagt het verwachte pensioen. Een negatief stabiliteitsrendement doet het omgekeerde.</p>
+    <p><strong>Stabiliteitsrendement:</strong> Dit rendement is bedoeld om het renterisico te verminderen. Zo zorgen we ervoor dat wijzigingen in de rente niet te groot effect hebben op het in te kopen pensioen. Naarmate u ouder wordt, ziet u een groter effect van het stabiliteitsrendement.</p>
     <p><strong>Verwacht pensioen:</strong> het verwachte ouderdomspensioen per jaar, gedeeld door 12. De ontwikkeling volgt het kapitaal, behalve het stabiliteitsrendement, dat in omgekeerde richting meetelt. De annuïteitsdeler is die van de pensioenleeftijd van <span id="pensLeeftijd"></span> jaar: <span id="deler"></span>.</p>
   </div>
 </main>
@@ -231,8 +235,8 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
       var y2 = yP(u).toFixed(1);
       g += '<text class="as-tekst" x="' + (W - R + 8) + '" y="' + (+y2 + 4) + '" text-anchor="start">' + Math.round(u).toLocaleString('nl-NL') + '</text>';
     }
-    g += '<text class="as-titel" x="0" y="22" text-anchor="start">Kapitaal (€)</text>';
-    g += '<text class="as-titel" x="' + W + '" y="22" text-anchor="end">Verwacht pensioen per maand (€)</text>';
+    g += '<text class="as-titel as-titel-k" x="0" y="22" text-anchor="start">Kapitaal (€)</text>';
+    g += '<text class="as-titel as-titel-p" x="' + W + '" y="22" text-anchor="end">Verwacht pensioen per maand (€)</text>';
 
     data.forEach(function (r, i) {
       if (i % 3 === 2) {
