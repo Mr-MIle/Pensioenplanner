@@ -44,7 +44,7 @@ window.PLANNER_CONFIG = {
     franchise: 17500,                 // voltijd franchise per jaar (€), geïndexeerd met prijsinflatie
     maxPensioengevendSalaris: 137000, // voltijd maximum per jaar (€), geïndexeerd met loon-inflatie
     aowLeeftijdMaanden: 804,          // AOW-leeftijd in maanden (804 = 67 jaar)
-    eindLeeftijd: 100,                // rekenkundige horizon voor de AOW-verschuiving (hoog/laag), jaren
+    eindLeeftijd: 100,                // rekenkundige horizon van de uitkeringsreeks, jaren
     grafiekEindLeeftijd: 77,          // laatste leeftijd op de X-as van de uitkeringsgrafiek (jaren)
     standaardPensioenleeftijd: 65,    // startwaarde in de planner (jaren)
   },
@@ -93,16 +93,23 @@ window.PLANNER_CONFIG = {
     heffingskorting: 2900
   },
 
-  // Pensioenopties.
-  // aowOverbrugging: hoog/laag verhoogt het pensioen vóór de AOW-leeftijd met deze fractie
-  // en verlaagt het daarna (laag/hoog is het omgekeerde). Vereenvoudigd kostenneutraal.
-  // aowOverbrugging: hoog/laag verhoogt het pensioen vóór de AOW-leeftijd met deze fractie
-  // en verlaagt het daarna (laag/hoog is het omgekeerde). Vereenvoudigd kostenneutraal.
-  opties: {
-    aowOverbrugging: 0.25
+  // TOPAOW: extra pensioen vóór de AOW-leeftijd, gefinancierd uit eigen kapitaal. Maximum per jaar (€), niet geïndexeerd.
+  // Bij deeltijd naar rato van de werkfractie. Het OP mag na uitruil niet onder de ondergrens (€ per jaar) komen.
+  // inkoopfactor: kapitaal per euro per jaar (vast, ongeacht de looptijd tot de AOW).
+  topaow: {
+    maxPerJaar: 20000,
+    ondergrensOP: 500,
+    inkoopfactor: 5
   },
 
-  // Partnerpensioen (NP): het percentage van het ouderdomspensioen (OP) dat op de pensioendatum wordt ingekocht.
+  // TOPHL: alleen mogelijk als TOPAOW op het maximum staat. Maximum als deel van het OP na uitruil (33%).
+  // Het OP na de AOW-leeftijd daalt kapitaalneutraal met inkoopfactor x TOPHL / annuïteitsfactor.
+  tophl: {
+    maxPctOP: 0.33,
+    inkoopfactor: 5
+  },
+
+  // Partnerpensioen (NP): het percentage van het ouderdomspensioen (OP) vóór TOPAOW/TOPHL dat op de pensioendatum wordt ingekocht.
   // inkoopfactorNP: kapitaal per euro NP per jaar. Kapitaal = OP x annuïteitsfactor OP + NP x inkoopfactorNP.
   partnerpensioen: {
     minPct: 0,

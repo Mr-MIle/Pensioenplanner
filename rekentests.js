@@ -28,34 +28,90 @@ const simD = E.simuleer(C, { pensioenLeeftijdMaanden: aowM, rente, deeltijd: { i
 check('1b saldo maandtabel met deeltijd', saldoOk(simD) < 0.01, saldoOk(simD).toFixed(6));
 
 // 2. Pensioen precies op AOW-datum: pre == post, geen verdeling
-const uA = E.uitkeringen(C, simA, { uitruilPct: 0, splitten: 'hoog', fractie: 0.25 }, aowM / 12);
-check('2 AOW-datum: hoog/laag heeft geen effect', near(uA.pre, uA.post) && near(uA.pre, uA.standaard), uA.pre.toFixed(2) + ' vs ' + uA.post.toFixed(2));
+const uA = E.uitkeringen(C, simA, { partnerPct: 0 }, aowM / 12);
+check('2 AOW-datum: geen effect', near(uA.pre, uA.post) && near(uA.pre, uA.standaard), uA.pre.toFixed(2) + ' vs ' + uA.post.toFixed(2));
 
-// 3. Hoog-laag is kostenneutraal over het leven: pre*nPre + post*nPost == base*(nPre+nPost)
+// 3. TOPAOW: cap, ondergrens en vaste bedragen
 const pensJ = 62;
 const simH = E.simuleer(C, { pensioenLeeftijdMaanden: pensJ * 12, rente, deeltijd: null, parttimepercentages: std, startkapitaal: 80000 });
-['hoog', 'laag'].forEach(sp => {
-  const u = E.uitkeringen(C, simH, { uitruilPct: 0, splitten: sp, fractie: 0.25 }, pensJ);
-  const nPre = u.nPre, nPost = reg.eindLeeftijd * 12 - aowM;
-  const lhs = u.pre * nPre + u.post * nPost, rhs = u.standaard * (nPre + nPost);
-  check('3 hoog-laag neutraal (' + sp + ')', near(lhs, rhs, 1e-6 * rhs), (lhs - rhs).toFixed(4));
-  check('3b hoog-laag richting (' + sp + ')', sp === 'hoog' ? u.pre > u.standaard && u.post < u.standaard : u.pre < u.standaard && u.post > u.standaard);
-});
+const K3 = simH.kapitaal; const aOP62 = C.annuiteitsdelers[62];
+const op0 = E.uitkeringen(C, simH, { partnerPct: 70, topaow: 0 }, pensJ);
+const maxT1 = op0.maxT1;
+check('3a TOPAOW max = 20.000 bij voldoende kapitaal', near(maxT1, 20000) || maxT1 < 20000, maxT1.toFixed(2));
+const capMax = (K3 * E.delerVoor(pensJ, C.annuiteitsdelers) / (E.delerVoor(pensJ, C.annuiteitsdelers) + 0.7 * 4)) ;
+const expectMax = Math.min(20000, ((capMax * aOP62) - 500 * aOP62) / 5);
+check('3b max = min(20.000, (K_OP - 500 x aOP) / 5)', near(maxT1, Math.max(0, expectMax), 1e-6 * Math.max(1, expectMax)), maxT1.toFixed(2) + ' vs ' + expectMax.toFixed(2));
+const opBoven = E.uitkeringen(C, simH, { partnerPct: 70, topaow: 1e9 }, pensJ);
+check('3c boven maximum wordt begrensd', near(opBoven.t1, maxT1, 1e-6));
+check('3d OP na TOPAOW op maximum blijft >= 500', opBoven.opNa >= 500 - 1e-6, opBoven.opNa.toFixed(2));
+const kapOP = op0.standaard * aOP62 ;
+check('3e kapitaalidentiteit: OP_na x aOP + 5 x T1 = K_OP', near(opBoven.opNa * aOP62 + 5 * opBoven.t1, kapOP, 1e-6 * kapOP));
 
-// 4. Partner: verlagen van partnerpensioen levert ouderdomspensioen op; 0% == standaard
-const u0 = E.uitkeringen(C, simA, { uitruilPct: 0, splitten: 'nee' }, aowM / 12);
-const u20 = E.uitkeringen(C, simA, { uitruilPct: 20, splitten: 'nee' }, aowM / 12);
-check('4a partner 0% == standaard ouderdom', near(u0.pre, u0.standaard));
-check('4b partner verlagen geeft meer ouderdom en minder partner', u20.pre > u0.pre && u20.partner < u0.partner, (u20.pre - u0.pre).toFixed(2) + ' / ' + (u20.partner - u0.partner).toFixed(2));
-// Zonder standaard partnerpensioen: inruilen geeft partner, minder ouderdom
-const C2 = Object.assign({}, C, { pensioenreglement: Object.assign({}, reg, { partnerpensioenStandaard: false }) });
-const v0 = E.uitkeringen(C2, simA, { uitruilPct: 0, splitten: 'nee' }, aowM / 12);
-const v10 = E.uitkeringen(C2, simA, { uitruilPct: 10, splitten: 'nee' }, aowM / 12);
-check('4c inruilen geeft minder ouderdom en meer partner', v10.pre < v0.pre && v10.partner > v0.partner);
+// 3f. Vaste bedragen: maximum verandert niet met de looptijd (geen indexatie)
+const uSmall = E.uitkeringen(C, simH, { partnerPct: 0, topaow: 1000 }, pensJ);
+check('3f TOPAOW 1.000 geeft pre = OP_na + 1.000', near(uSmall.pre, uSmall.opNa + 1000, 1e-6));
+
+// 3g. Deeltijd: maximum naar rato van werkfractie
+const uDeel = E.uitkeringen(C, simH, { partnerPct: 70, topaow: 1e9, werkfractie: 0.6 }, pensJ);
+check('3g deeltijd 60% geeft maximum 12.000', near(uDeel.maxT1, 12000, 1e-6), uDeel.maxT1.toFixed(2));
+
+// 3h. Ondergrens: als OP na TOPAOW onder 500 zou komen, wordt het begrensd
+const uKlein = E.uitkeringen(C, E.simuleer(C, { pensioenLeeftijdMaanden: 62*12, rente, deeltijd: null, parttimepercentages: std, startkapitaal: 30000 }), { partnerPct: 0, topaow: 1e9 }, pensJ);
+check('3h kleine pot: OP na TOPAOW >= 500 (of T1 = 0)', uKlein.opNa >= 500 - 1e-6 || uKlein.t1 === 0, uKlein.opNa.toFixed(2) + ' T1 ' + uKlein.t1.toFixed(2));
+
+// 3i. TOPHL alleen bij TOPAOW op maximum
+const uNietMax = E.uitkeringen(C, simH, { partnerPct: 70, topaow: 0, tophlPct: 0.33 }, pensJ);
+check('3i TOPHL geblokkeerd zonder TOPAOW-maximum', uNietMax.t2 === 0 && uNietMax.tophlMogelijk === false);
+const uMaxHL = E.uitkeringen(C, simH, { partnerPct: 70, topaow: 1e9, tophlPct: 0.33 }, pensJ);
+check('3j TOPHL op max is 33% van OP na uitruil', near(uMaxHL.maxT2, Math.min(0.33 * uMaxHL.opNa, (kapOP - 5 * uMaxHL.t1) / 5), 1e-6 * Math.max(1, uMaxHL.maxT2)), uMaxHL.maxT2.toFixed(2));
+check('3k TOPHL restkapitaal: 5 x T2 <= K_OP - 5 x T1', 5 * uMaxHL.t2 <= kapOP - 5 * uMaxHL.t1 + 1e-6);
+check('3l kapitaalneutraal na AOW: post x aOP + 5 x (T1+T2) = K_OP', near(uMaxHL.post * aOP62 + 5 * (uMaxHL.t1 + uMaxHL.t2), kapOP, 1e-4 * kapOP), (uMaxHL.post * aOP62 + 5 * (uMaxHL.t1 + uMaxHL.t2) - kapOP).toFixed(4));
+check('3m pre = OP_na + T1 + T2', near(uMaxHL.pre, uMaxHL.opNa + uMaxHL.t1 + uMaxHL.t2, 1e-6));
+
+// 3n. Pensioen op of na AOW: geen TOPAOW of TOPHL
+const uAOW = E.uitkeringen(C, simA, { partnerPct: 70, topaow: 1e9, tophlPct: 0.33 }, aowM / 12);
+check('3n vanaf AOW geen TOPAOW/TOPHL', uAOW.t1 === 0 && uAOW.t2 === 0 && uAOW.pre === uAOW.post);
+check('3o pre = post = standaard op AOW', near(uAOW.pre, uAOW.standaard, 1e-6));
+
+// 3q. TOPHL percentage: 0 geeft geen TOPHL, 10% geeft 10% van OP na uitruil, boven 33% wordt begrensd
+const uP0 = E.uitkeringen(C, simH, { partnerPct: 70, topaow: 1e9, tophlPct: 0 }, pensJ);
+check('3q TOPHL 0% geeft T2 = 0', uP0.t2 === 0 && uP0.pre === uP0.opNa + uP0.t1);
+const uP10 = E.uitkeringen(C, simH, { partnerPct: 70, topaow: 1e9, tophlPct: 0.10 }, pensJ);
+check('3r TOPHL 10% = 10% van OP na uitruil', near(uP10.t2, 0.10 * uP10.opNa, 1e-6), uP10.t2.toFixed(2));
+const uP50 = E.uitkeringen(C, simH, { partnerPct: 70, topaow: 1e9, tophlPct: 0.5 }, pensJ);
+check('3s TOPHL boven 33% begrensd', near(uP50.t2, 0.33 * uP50.opNa, 1e-6));
+check('3t TOPHL 33% op maximum TOPAOW: post = OP_na - 5 x T2 / aOP', near(uP50.post, uP50.opNa - 5 * uP50.t2 / aOP62, 1e-6));
+const uP10geen = E.uitkeringen(C, simH, { partnerPct: 70, topaow: 5000, tophlPct: 0.10 }, pensJ);
+check('3u TOPHL geblokkeerd als TOPAOW niet op maximum', uP10geen.t2 === 0);
+
+// 3p. 33%-grens is jaarbedrag: T2 mag niet 33% van OP_voor zijn als dat groter is dan 33% van OP_na
+check('3p 33%-grens vergelijkt met OP na uitruil', uMaxHL.maxT2 <= 0.33 * uMaxHL.opNa + 1e-6);
+
+// 4. Partnerpensioen: OP x annuiteit + NP x inkoopfactor = kapitaal; NP = percentage x OP
+const aOP67 = C.annuiteitsdelers[67];
+const inkoop = C.partnerpensioen.inkoopfactorNP;
+[0, 30, 50, 70].forEach(pct => {
+  const u = E.uitkeringen(C, simA, { partnerPct: pct }, aowM / 12);
+  const kap = u.standaard * aOP67 + u.partner * inkoop;
+  check('4a identiteit kapitaal (' + pct + '%)', near(kap, simA.kapitaal, 1e-6 * simA.kapitaal), (kap - simA.kapitaal).toFixed(6));
+  check('4b NP = ' + pct + '% van OP', near(u.partner, pct / 100 * u.standaard, 1e-6 * u.standaard + 1e-9));
+});
+const u0 = E.uitkeringen(C, simA, { partnerPct: 0 }, aowM / 12);
+const u50 = E.uitkeringen(C, simA, { partnerPct: 50 }, aowM / 12);
+const u70 = E.uitkeringen(C, simA, { partnerPct: 70 }, aowM / 12);
+check('4c 0% partner: NP 0 en OP = kapitaal / annuiteit', u0.partner === 0 && near(u0.standaard, simA.kapitaal / aOP67));
+check('4d meer partnerpensioen geeft minder ouderdomspensioen', u70.standaard < u50.standaard && u50.standaard < u0.standaard);
+const uHi = E.uitkeringen(C, simA, { partnerPct: 100 }, aowM / 12);
+check('4e boven 70% wordt begrensd op 70%', near(uHi.partner, 0.7 * uHi.standaard, 1e-6 * uHi.standaard));
+check('4f standaard is 70%', near(E.uitkeringen(C, simA, {}, aowM / 12).partner, 0.7 * u70.standaard, 1e-6 * u70.standaard));
+// Voorbeeld van de gebruiker, rechtstreeks uit de formule
+const K = 100000, aOPex = 18, vex = 0.5;
+check('4g voorbeeld: 100.000 / (18 + 50% x 4) = 5.000 OP en 2.500 NP', near(K / (aOPex + vex * 4), 5000) && near(vex * K / (aOPex + vex * 4), 2500));
+check('4h voorbeeld met factor 3,5 geeft 5.063,29 OP', near(K / (aOPex + vex * 3.5), 5063.29, 0.01), (K / (aOPex + vex * 3.5)).toFixed(2));
 
 // 5. Eerder stoppen: minder kapitaal, maar hogere deler mag niet leiden tot negatief
 const sim60 = E.simuleer(C, { pensioenLeeftijdMaanden: 60 * 12, rente, deeltijd: null, parttimepercentages: std, startkapitaal: 80000 });
-const u60 = E.uitkeringen(C, sim60, { uitruilPct: 0, splitten: 'nee' }, 60);
+const u60 = E.uitkeringen(C, sim60, { partnerPct: 0 }, 60);
 check('5 eerder stoppen: kapitaal en uitkering > 0 en kleiner dan op AOW', u60.pre > 0 && sim60.kapitaal < simA.kapitaal && u60.pre < uA.pre, u60.pre.toFixed(0) + ' < ' + uA.pre.toFixed(0));
 
 // 6. Parttime wijziging op eerste dag van de maand: premie wijzigt precies in die maand
@@ -78,7 +134,7 @@ const dRow = rowsD.find(r => r.onttrokken > 0);
 check('7a onttrekking op deeltijd-maand', dRow && near(dRow.onttrokken, dRow.begin * pct, 1e-6 * dRow.begin), dRow && dRow.onttrokken.toFixed(2));
 check('7b deeltijd verlaagt werk met (1-pct)', dRow && near(dRow.werk, 1 * (1 - pct)) , dRow && dRow.werk);
 check('7c deeltijd: deelJaar > 0', simD.deelJaar > 0, simD.deelJaar.toFixed(2));
-const uD = E.uitkeringen(C, simD, { uitruilPct: 0, splitten: 'nee' }, aowM / 12);
+const uD = E.uitkeringen(C, simD, { partnerPct: 0 }, aowM / 12);
 check('7d kapitaal na deeltijd lager dan zonder deeltijd (uitkering blijft wel opgebouwd)', simD.kapitaal < simA.kapitaal);
 
 // 8. Reële bedragen: reeel = eind / (1+pi)^(t)

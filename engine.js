@@ -4,8 +4,8 @@
   Het overrendement is het vaste rendement NA RTS-correctie. Er is geen beschermingsrendement.
   Premie = (min(salaris, maximum) x loonindex - franchise x prijsindex) x parttimepercentage x premiepercentage / 12,
   bijgeschreven aan het eind van de maand. Die premie levert pas vanaf de volgende maand rendement op.
-  Uitkering: ouderdomspensioen per jaar = kapitaal / annuiteitsdeler. Bij hoog/laag en laag/hoog wordt
-  dat bedrag vóór de AOW-leeftijd verhoogd of verlaagd, en na de AOW-leeftijd omgekeerd verschoven.
+  Uitkering: ouderdomspensioen per jaar = kapitaal / annuiteitsdeler. Met TOPAOW en TOPHL wordt het
+  bedrag vóór de AOW-leeftijd verhoogd; na de AOW-leeftijd daalt het OP bij TOPHL kapitaalneutraal.
 */
 (function (global) {
   'use strict';
@@ -130,41 +130,63 @@
     };
   }
 
-  // Jaarlijkse uitkeringen. opt = { partnerPct, splitten: 'nee' | 'hoog' | 'laag', fractie }.
-  // Partnerpensioen (NP) wordt op de pensioendatum ingekocht als percentage v (0-70%) van het ouderdomspensioen (OP).
-  // Kapitaal = OP x annuïteitsfactor OP + NP x inkoopfactor NP, met NP = v x OP.
-  // Dus OP = kapitaal / (annuïteitsfactor OP + v x inkoopfactor NP).
-  // Hoog/laag verschuift alleen het OP; het NP blijft gelijk.
+  // Jaarlijkse uitkeringen met TOPAOW en TOPHL.
+  // Partnerpensioen (NP): percentage v van het ouderdomspensioen (OP) vóór uitruil. OP_voor = K / (aOP + v x inkoopfactorNP).
+  // K_OP = OP_voor x aOP is het kapitaal dat voor het ouderdomspensioen overblijft.
+  // TOPAOW (T1, €/jaar, alleen tot de AOW-leeftijd): kost topaow.inkoopfactor x T1 kapitaal. OP_na = (K_OP - 5 x T1) / aOP.
+  //   Maximum: min(topaow.maxPerJaar x werkfractie, (K_OP - ondergrensOP x aOP) / 5). De ondergrens geldt voor OP_na.
+  // TOPHL (T2, €/jaar, alleen tot de AOW-leeftijd): alleen als T1 op het maximum staat.
+  //   T2 = tophlPct x OP_na, begrensd op min(tophl.maxPctOP x OP_na, (K_OP - 5 x T1) / 5). Kost 5 x T2 kapitaal.
+  //   Kapitaalneutraal: het OP na de AOW-leeftijd daalt met 5 x T2 / aOP.
+  // Uitkering vóór de AOW-leeftijd: pre = OP_na + T1 + T2. Vanaf de AOW-leeftijd: post = OP_na - 5 x T2 / aOP.
+  // opt = { partnerPct, topaow (€/jaar), tophlPct (0-0,33 van OP na uitruil), werkfractie (0-1, standaard 1) }.
   function uitkeringen(cfg, sim, opt, pensioenLeeftijdJaar) {
     const reg = cfg.pensioenreglement;
     const pp = cfg.partnerpensioen;
+    const ta = cfg.topaow;
+    const th = cfg.tophl;
     const aOP = delerVoor(pensioenLeeftijdJaar, cfg.annuiteitsdelers);
     const pct = opt.partnerPct !== undefined ? opt.partnerPct : pp.standaardPct;
     const v = Math.min(pp.maxPct, Math.max(pp.minPct, pct)) / 100;
-    const std = sim.kapitaal / (aOP + v * pp.inkoopfactorNP);
-    const partner = v * std;
-    const base = std;
 
+    // Stap 1: OP vóór uitruil, en het NP daarover.
+    const opVoor = sim.kapitaal / (aOP + v * pp.inkoopfactorNP);
+    const partner = v * opVoor;
+    const kOP = opVoor * aOP;
+
+    // Stap 2: TOPAOW. Alleen als de pensioendatum vóór de AOW-leeftijd ligt.
     const nPre = Math.max(0, reg.aowLeeftijdMaanden - pensioenLeeftijdJaar * 12);
-    const nPost = Math.max(1, reg.eindLeeftijd * 12 - reg.aowLeeftijdMaanden);
-    const ratio = nPre / nPost;
-    const x = opt.fractie !== undefined ? opt.fractie : cfg.opties.aowOverbrugging;
+    const voorAOW = nPre > 0;
+    const werkfractie = opt.werkfractie !== undefined ? opt.werkfractie : 1;
+    const maxT1 = voorAOW
+      ? Math.max(0, Math.min(ta.maxPerJaar * werkfractie, (kOP - ta.ondergrensOP * aOP) / ta.inkoopfactor))
+      : 0;
+    const t1 = Math.min(maxT1, Math.max(0, opt.topaow || 0));
+    const opNa = (kOP - ta.inkoopfactor * t1) / aOP;
 
-    let pre = base;
-    let post = base;
-    if (nPre > 0 && opt.splitten === 'hoog') {
-      pre = base * (1 + x);
-      post = base * (1 - x * ratio);
-    } else if (nPre > 0 && opt.splitten === 'laag') {
-      pre = base * (1 - x);
-      post = base * (1 + x * ratio);
-    }
+    // Stap 3: TOPHL. Alleen als TOPAOW op het maximum staat.
+    const tophlMogelijk = voorAOW && maxT1 > 0 && t1 >= maxT1 - 1e-9;
+    const maxT2 = tophlMogelijk
+      ? Math.max(0, Math.min(th.maxPctOP * opNa, (kOP - th.inkoopfactor * t1) / th.inkoopfactor))
+      : 0;
+    const pctHL = Math.min(th.maxPctOP, Math.max(0, opt.tophlPct || 0));
+    const t2 = tophlMogelijk ? Math.min(maxT2, pctHL * opNa) : 0;
+    const opPost = opNa - th.inkoopfactor * t2 / aOP;
+
+    const pre = opNa + t1 + t2;
+    const post = opPost;
 
     return {
-      standaard: std,
+      standaard: opVoor,
+      opNa: opNa,
       pre: pre,
       post: post,
       partner: partner,
+      t1: t1,
+      t2: t2,
+      maxT1: maxT1,
+      maxT2: maxT2,
+      tophlMogelijk: tophlMogelijk,
       preReeel: pre / sim.inflIdx,
       postReeel: post / sim.inflIdx,
       partnerReeel: partner / sim.inflIdx,
