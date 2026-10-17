@@ -52,6 +52,7 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
 .uitlezing span{color:var(--muted)}
 .uitlezing strong{color:var(--text)}
 .hint{color:var(--muted);font-size:.85rem;margin:8px 0 0}
+tr.doel td{background:var(--head);font-weight:600}
 
 </style>
 </head>
@@ -115,11 +116,13 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
   // Testdata: de reeks loopt van START_MAAND t/m EIND_MAAND. Startkapitaal, salaris en geboortedatum komen uit de
   // gekozen deelnemer. Het stabiliteitsrendement hangt af van de leeftijd (zie config.js).
   var START_MAAND = { jaar: 2024, maand: 1 };
-  var EIND_MAAND = { jaar: 2026, maand: 10 };
+  var EIND_MAAND = { jaar: Number(cfg.calculatiedatum.split('-')[0]), maand: Number(cfg.calculatiedatum.split('-')[1]) };  // gelijk aan de calculatiedatum van de planner
   var PREMIE_INDEXATIE = 0.025;      // jaarlijkse stijging van de premie
   var OVER_MIN = -0.012;             // overrendement per maand: ondergrens (fractie van het kapitaal)
   var OVER_BEREIK = 0.027;           // overrendement per maand: bandbreedte
   var SEED = 20260401;               // vaste seed: dezelfde testdata bij elke keer laden
+  var doelIdx = null;                // maand uit de link van de pensioenplanner (0 = januari van jaar 0)
+  var BASIS_EIND_IDX = null;         // laatste echte maand van de testdata, voor de projectie-melding
 
   var MAANDEN = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
   var eur = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
@@ -213,6 +216,7 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
       var pensioen = kp / deler / 12;
       rijen.push({
         label: MAANDEN[mnd.maand - 1] + ' ' + mnd.jaar,
+        idx: mnd.jaar * 12 + (mnd.maand - 1),
         inleg: inleg, over: over, stab: stab,
         kapitaal: kap, pensioen: pensioen,
         wijziging: pensioen - vorigPensioen
@@ -231,21 +235,27 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
     huidig = bouwReeks(d);
     var rijen = huidig.rijen;
     $('deelnemer').value = i;
+    var origRij = rijen.filter(function (r) { return r.idx === BASIS_EIND_IDX; })[0];
+    var projectie = origRij && rijen[rijen.length - 1].idx > BASIS_EIND_IDX
+      ? ' Bedragen na ' + origRij.label + ' zijn een projectie.' : '';
     $('notice').textContent = 'Alle bedragen en rendementen op deze pagina zijn fictief. Testdata voor ' + d.naam +
-      ' (geboren ' + datumNl(d.geboortedatum) + ', startkapitaal ' + geld(d.startkapitaal) + ').';
+      ' (geboren ' + datumNl(d.geboortedatum) + ', startkapitaal ' + geld(d.startkapitaal) + ').' + projectie;
 
     tekenGrafieken(rijen);
-    toon(geo.data.length - 1);
+    var doelPos = doelIdx === null ? -1 : rijen.map(function (r) { return r.idx; }).indexOf(doelIdx);
+    var verschuiving = rijen.length - geo.data.length;
+    toon(doelPos >= verschuiving ? doelPos - verschuiving : geo.data.length - 1);
 
     var som = { inleg: 0, over: 0, stab: 0 };
     var html = '';
     rijen.forEach(function (r) {
       som.inleg += r.inleg; som.over += r.over; som.stab += r.stab;
-      html += '<tr><td>' + r.label + '</td>' +
+      html += '<tr' + (r.idx === doelIdx ? ' class="doel" id="doel"' : '') + '><td>' + r.label + '</td>' +
         cel(r.inleg) + cel(r.over, klasse(r.over)) + cel(r.stab, klasse(r.stab)) +
         cel(r.kapitaal) + cel(r.pensioen) + cel(r.wijziging, klasse(r.wijziging)) + '</tr>';
     });
     $('rijen').innerHTML = html;
+    if (doelIdx !== null && $('doel')) $('doel').scrollIntoView({ block: 'center' });
 
     var laatste = rijen[rijen.length - 1];
     $('totaal').innerHTML =
@@ -258,7 +268,7 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
       ['Totale inleg', som.inleg],
       ['Overrendement', som.over],
       ['Stabiliteitsrendement', som.stab],
-      ['Kapitaal nu', laatste.kapitaal],
+      ['Kapitaal ' + laatste.label, laatste.kapitaal],
       ['Verwacht pensioen per maand', laatste.pensioen]
     ];
     $('kaarten').innerHTML = kaarten.map(function (k) {
@@ -374,7 +384,20 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
       el.addEventListener('pointerleave', verlaten);
     });
 
-    render(cfg.standaardDeelnemer);
+    // Links uit de pensioenplanner: ?d=<deelnemer>&maand=jjjj-mm. Een maand na de testdata verlengt de reeks.
+    var params = new URLSearchParams(window.location.search);
+    var dParam = Number(params.get('d'));
+    var deelIdx = params.get('d') !== null && cfg.deelnemers[dParam] ? dParam : cfg.standaardDeelnemer;
+    var maandParam = params.get('maand');
+    if (maandParam && /^\d{4}-\d{2}$/.test(maandParam)) {
+      var mp = maandParam.split('-').map(Number);
+      if (mp[1] >= 1 && mp[1] <= 12) {
+        doelIdx = mp[0] * 12 + (mp[1] - 1);
+        BASIS_EIND_IDX = EIND_MAAND.jaar * 12 + (EIND_MAAND.maand - 1);
+        if (doelIdx > BASIS_EIND_IDX) EIND_MAAND = { jaar: mp[0], maand: mp[1] };
+      }
+    }
+    render(deelIdx);
   }
 
   init();

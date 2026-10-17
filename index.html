@@ -153,6 +153,27 @@
   .seg:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
 
   @media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+  label.optie svg.mini { flex: none; width: 56px; height: 28px; margin-top: 2px; color: var(--accent); }
+  .legenda .punt::before { background: repeating-linear-gradient(90deg, var(--c) 0 2px, transparent 2px 5px); }
+  .resultaat .seg-groep { border-color: var(--panel-sub); }
+  .resultaat .seg { background: var(--panel-inner); color: var(--panel-fg); }
+  .resultaat .seg + .seg { border-left-color: var(--panel-sub); }
+  .resultaat .seg.actief { background: var(--panel-fg); color: var(--panel); }
+  .resultaat .netto-toelichting { font-size: 12px; color: var(--panel-sub); margin: 6px 0 0; }
+  .resultaat .delta { font-size: 14px; background: var(--panel-inner); border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; font-variant-numeric: tabular-nums; }
+  .resultaat .delta-kop { font-size: 12px; color: var(--panel-sub); }
+  .resultaat .delta[hidden] { display: none; }
+  .grafiek .as-link { fill: var(--accent); text-decoration: underline; font-weight: 600; }
+  .grafiek-link { margin: 10px 0 0; font-size: 14px; }
+  #vergelijk .link-knop { margin-top: 8px; justify-self: start; }
+  @media (max-width: 600px) {
+    #deelnemerKeuze { min-width: 0 !important; width: 100%; }
+    #startkapitaal { width: 100% !important; }
+    .resultaat .bedrag { font-size: 30px; }
+  }
+  details.uitleg { margin-top: 12px; }
+  details.uitleg summary { cursor: pointer; font-weight: 600; color: var(--accent); }
+  details.uitleg p { margin: 10px 0 0; }
 </style>
 
 <main class="wrap">
@@ -161,7 +182,7 @@
     <p class="eyebrow">Proof of concept · fictieve data</p>
     <h1>Pensioenplanner</h1>
     <p class="lead">Kies stap voor stap hoe u met pensioen gaat. Rechts ziet u direct wat dat oplevert. De rekensystematiek volgt de X%-projectie. De cijfers zijn voorbeeldcijfers, geen pensioenadvies.</p>
-    <p class="lead"><a href="bij-en-afschrijvingen.html" style="color: var(--accent); font-weight: 600">Bekijk uw pensioenpot: bij- en afschrijvingen per maand &rarr;</a></p>
+    <p class="lead"><a id="potLink" href="bij-en-afschrijvingen.html" style="color: var(--accent); font-weight: 600">Bekijk uw pensioenpot: bij- en afschrijvingen per maand &rarr;</a></p>
   </header>
 
   <div class="paneel" style="padding: 16px 20px; display: grid; gap: 12px">
@@ -278,11 +299,11 @@
           <p class="muted" style="margin: 0">U kunt uw pensioen tot de AOW-leeftijd anders verdelen. Na de AOW-leeftijd wordt het verschil weer omgekeerd, zodat het totaal over uw leven ongeveer gelijk blijft.</p>
           <div class="keuze" role="radiogroup" aria-label="Tijdelijk hoger of lager pensioen">
             <label class="optie"><input type="radio" name="verdeel" value="nee" checked>
-              <span>Nee, ik wil mijn pensioen niet tijdelijk anders verdelen<small>Standaardkeuze.</small></span></label>
+              <span>Nee, ik wil mijn pensioen niet tijdelijk anders verdelen<small>Standaardkeuze.</small></span><svg class="mini" viewBox="0 0 56 28" aria-hidden="true"><line x1="28" y1="2" x2="28" y2="26" stroke="currentColor" stroke-dasharray="2 2" opacity=".5"/><path d="M2 14H54" fill="none" stroke="currentColor" stroke-width="2"/></svg></label>
             <label class="optie"><input type="radio" name="verdeel" value="hoog">
-              <span>Ja, eerst een hoger pensioen en daarna een lager<small>Hoger tot de AOW-leeftijd, daarna lager.</small></span></label>
+              <span>Ja, eerst een hoger pensioen en daarna een lager<small>Hoger tot de AOW-leeftijd, daarna lager.</small></span><svg class="mini" viewBox="0 0 56 28" aria-hidden="true"><line x1="28" y1="2" x2="28" y2="26" stroke="currentColor" stroke-dasharray="2 2" opacity=".5"/><path d="M2 6H28V22H54" fill="none" stroke="currentColor" stroke-width="2"/></svg></label>
             <label class="optie"><input type="radio" name="verdeel" value="laag">
-              <span>Ja, eerst een lager pensioen en daarna een hoger<small>Lager tot de AOW-leeftijd, daarna hoger.</small></span></label>
+              <span>Ja, eerst een lager pensioen en daarna een hoger<small>Lager tot de AOW-leeftijd, daarna hoger.</small></span><svg class="mini" viewBox="0 0 56 28" aria-hidden="true"><line x1="28" y1="2" x2="28" y2="26" stroke="currentColor" stroke-dasharray="2 2" opacity=".5"/><path d="M2 22H28V6H54" fill="none" stroke="currentColor" stroke-width="2"/></svg></label>
           </div>
           <div class="sub" id="verdeelSub" hidden>
             <label for="verschil">Verschil met het standaardpensioen: <strong id="verschilWaarde">25%</strong></label>
@@ -296,7 +317,11 @@
     <aside class="resultaat" aria-live="polite" aria-label="Resultaat">
       <div class="kop">
         <strong>Met deze keuzes krijgt u</strong>
-        <select id="basis" aria-label="Netto of bruto">
+        <div class="seg-groep" role="group" aria-label="Netto of bruto">
+          <button class="seg actief" type="button" data-basis="netto" aria-pressed="true">Netto</button>
+          <button class="seg" type="button" data-basis="bruto" aria-pressed="false">Bruto</button>
+        </div>
+        <select id="basis" hidden>
           <option value="netto">netto</option>
           <option value="bruto">bruto</option>
         </select>
@@ -306,7 +331,14 @@
         <div class="label" id="rLabel">Vanaf de pensioendatum</div>
         <div class="bedrag" id="rBedrag">–</div>
         <div class="sub-tekst" id="rBedragSub">per maand</div>
+        <p class="netto-toelichting" id="nettoUitleg">Netto is een indicatie op basis van een fictieve belastingtabel. Geen officiële berekening.</p>
         <div class="sub-tekst" id="rAowSub" style="margin-top: 6px"></div>
+      </div>
+
+      <div class="delta" id="rDelta" hidden>
+        <div class="delta-kop">Ten opzichte van de standaardkeuzes (AOW-leeftijd, geen deeltijd, geen partnerverlaging, geen verdeling)</div>
+        <div id="rDeltaVoor"></div>
+        <div id="rDeltaNa"></div>
       </div>
 
       <div class="info" id="rInfo">
@@ -319,7 +351,6 @@
         <span>Loonheffingskorting toepassen</span>
         <input id="lhk" type="checkbox" checked>
       </label>
-      <p class="muted" style="margin: -6px 0 0; color: var(--panel-sub); font-size: 13px">Netto is een indicatie op basis van een fictieve belastingtabel. Geen officiële berekening.</p>
 
       <button class="knop" type="button" id="reset">Start opnieuw</button>
     </aside>
@@ -355,6 +386,8 @@
       <span style="--c: var(--warm)">Overrendement</span>
       <span style="--c: var(--neg)">Negatief overrendement (verlies)</span>
       <span class="stippel" style="--c: var(--fg)">Reëel totaal</span>
+      <span class="punt" style="--c: var(--neg)">Pessimistisch (lijn)</span>
+      <span class="punt" style="--c: var(--accent)">Optimistisch (lijn)</span>
     </div>
   </section>
 
@@ -367,10 +400,20 @@
       <input id="toonReeel" type="checkbox">
     </label>
     <div id="uitkeringGrafiek" style="margin-top: 12px"></div>
+    <p class="muted grafiek-link"><a id="aowLink" href="bij-en-afschrijvingen.html" style="color: var(--accent); font-weight: 600">Bekijk de pensioenpot op de AOW-datum &rarr;</a></p>
     <div class="legenda">
       <span class="staaf" style="--c: var(--accent)">Nominaal, gemiddeld per maand per leeftijdsjaar</span>
       <span id="legReeel" class="staaf" style="--c: var(--warm)" hidden>Reëel, gemiddeld per maand</span>
     </div>
+  </section>
+
+  <section class="paneel" aria-labelledby="h-vergelijk">
+    <h2 id="h-vergelijk">Drie plannen naast elkaar</h2>
+    <p class="muted" style="margin: 6px 0 0">Zelfde deelnemer en startkapitaal, en de netto/bruto-keuze hierboven. Het verschil is ten opzichte van plan A. Met &ldquo;Laad in de wizard&rdquo; zet u een plan in de keuzes.</p>
+    <div class="kpis" id="vergelijk" style="margin: 14px 0"></div>
+    <div id="vergelijkGrafiek"></div>
+    <div class="legenda" id="vergelijkLegenda"></div>
+    <p class="muted" style="margin: 10px 0 0">Gemiddeld maandbedrag per leeftijdsgroep van vijf jaar, bij de basis-rendementsaanname.</p>
   </section>
 
   <section class="paneel" aria-labelledby="h-maand">
@@ -408,8 +451,15 @@
 
   <section class="paneel voet" aria-labelledby="h-over">
     <h2 id="h-over" style="font-size: 18px; margin-bottom: 8px">Over deze planner</h2>
-    <p>Dit is een proof of concept met fictieve data. De rekensystematiek volgt de X%-projectie: een vast overrendement na RTS-correctie, vermenigvuldigd met de toedeelfactor per maand. Er wordt geen beschermingsrendement toegekend.</p>
-    <p>Alle variabelen staan in <code>config.js</code>, waaronder de fictieve belastingtabel en het AOW-bedrag. De rekenkern staat in <code>engine.js</code>.</p>
+    <p>Dit is een proof of concept met fictieve data. De getallen zijn dus niet bedoeld als advies of als officiële berekening.</p>
+    <details class="uitleg">
+      <summary>Hoe rekenen wij?</summary>
+      <p><strong>Kapitaal.</strong> Elke maand wordt uw premie bijgeschreven. Het kapitaal groeit met een vast overrendement van 2% per jaar, na de correctie voor de rentetermijnstructuur (RTS). Er is geen beschermingsrendement: bij tegenvallende beurzen kan het kapitaal ook dalen.</p>
+      <p><strong>Toedeelfactor.</strong> Het rendement wordt per leeftijd aangepast met een toedeelfactor. Die is 1,05 tot 50 jaar en daalt daarna lineair naar 0,45 op 67 jaar. Naarmate u ouder wordt, krijgt u dus een kleiner deel van het rendement toegerekend.</p>
+      <p><strong>Maandbedrag.</strong> Het kapitaal wordt omgerekend naar een maandelijks pensioen met een fictieve deler die afhangt van uw leeftijd. Hoe ouder u bent bij de ingang, hoe lager de deler en hoe hoger het maandbedrag.</p>
+      <p><strong>Nominaal en reëel.</strong> Nominale bedragen zijn in de euro's van dat moment. Reële bedragen zijn omgerekend naar euro's van vandaag, met 2% prijsinflatie per jaar.</p>
+      <p><strong>Netto.</strong> Het nettobedrag is een indicatie op basis van een fictieve belastingtabel, geen officiële berekening.</p>
+    </details>
   </section>
 
 </main>
@@ -438,6 +488,7 @@
   };
 
   var state = {};
+  var huidigDeel = 0;   // index van de gekozen deelnemer, voor de link naar bij-en-afschrijvingen
   var scenario = 'basis';   // basis | pess | opt: welk overrendement de kapitaalgrafiek en kapitaalcijfers gebruiken
   var parttimeRows = [];
   var MAX_WERK = 6;
@@ -495,7 +546,7 @@
     $('verschil').value = 25;
     parttimeRows = C.parttimepercentages.map(function (r) { return { vanaf: r.vanaf, pct: r.percentage }; });
     renderWerk();
-    $('basis').value = 'netto';
+    setBasis('netto');
     $('startkapitaal').value = C.deelnemer.startkapitaal;
     $('lhk').checked = true;
     render();
@@ -525,6 +576,7 @@
   function kiesDeelnemer(i) {
     C.deelnemer = Object.assign({}, C.deelnemers[i]);
     $('deelnemerKeuze').value = i;
+    huidigDeel = i;
     vulLeeftijd();
     var maanden = E.maandIndex(C.calculatiedatum) - E.maandIndex(C.deelnemer.geboortedatum);
     $('deelnemerInfo').textContent = 'Leeftijd op ' + E.maandLabel(E.maandIndex(C.calculatiedatum)) + ': ' +
@@ -583,6 +635,18 @@
       });
     });
 
+    document.querySelectorAll('[data-basis]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        setBasis(b.getAttribute('data-basis'));
+        render();
+      });
+    });
+
+    $('vergelijk').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-plan]');
+      if (b) laadPlan(Number(b.getAttribute('data-plan')));
+    });
+
     var inputs = document.querySelectorAll('input, select');
     for (var i = 0; i < inputs.length; i++) {
       inputs[i].addEventListener('input', render);
@@ -607,6 +671,15 @@
       render();
     });
     kiesDeelnemer(C.standaardDeelnemer);
+  }
+
+  function setBasis(v) {
+    $('basis').value = v;
+    document.querySelectorAll('[data-basis]').forEach(function (b) {
+      var aan = b.getAttribute('data-basis') === v;
+      b.classList.toggle('actief', aan);
+      b.setAttribute('aria-pressed', aan ? 'true' : 'false');
+    });
   }
 
   // Netto of bruto bedrag per maand, uit een jaarlijks bruto inkomen.
@@ -675,6 +748,12 @@
     $('scenarioRente').textContent = 'Overrendement per jaar na RTS: basis ' + pct2.format(rente * 100) + '%, pessimistisch ' +
       pct2.format((rente - marge) * 100) + '%, optimistisch ' + pct2.format((rente + marge) * 100) + '%.';
 
+    // Referentie: de standaardkeuzes (AOW-leeftijd, geen deeltijd, geen partnerverlaging, geen verdeling).
+    // Parttime-wijzigingen tellen in beide mee, zodat het verschil alleen de pensioenkeuzes laat zien.
+    var aowMaanden = C.pensioenreglement.aowLeeftijdMaanden;
+    var simStd = E.simuleer(C, { pensioenLeeftijdMaanden: aowMaanden, rente: rente, deeltijd: null, parttimepercentages: wl, startkapitaal: sk });
+    var uStd = E.uitkeringen(C, simStd, { uitruilPct: 0, splitten: 'nee', fractie: fractie }, AOW_JAREN);
+
     var pensLabel = E.maandLabel(pensIdx);
     var deelJaar = u.deelJaar;
     var preJaar = u.pre + deelJaar;
@@ -710,6 +789,7 @@
     $('rLabel').textContent = 'Vanaf ' + pensLabel;
     $('rBedrag').textContent = eur0.format(maand(preJaar));
     $('rBedragSub').textContent = $('basis').value + ' per maand' + (gesplitst ? ' tot de AOW-leeftijd' : '');
+    $('nettoUitleg').hidden = $('basis').value !== 'netto';
 
     if (gesplitst) {
       $('rAowSub').textContent = 'Vanaf AOW-leeftijd: ' + eur0.format(maand(postJaar)) + ' per maand';
@@ -725,12 +805,25 @@
     $('rDeel').textContent = deel ? 'Deeltijdpensioen vanaf ' + E.maandLabel(deel.idx) + ': ' + eur0.format(maand(deelJaar)) + ' per maand.' : '';
     $('rPartner').textContent = 'Partner bij uw overlijden: ' + eur0.format(u.partner / 12) + ' per maand (bruto).';
 
+    // Verschil per maand met de standaardkeuzes. Verborgen als alle pensioenkeuzes op standaard staan.
+    var isStandaard = start === 'aow' && !deelAan && !partnerAan && splitten === 'nee';
+    $('rDelta').hidden = isStandaard;
+    if (!isStandaard) {
+      var refBedrag = maand(uStd.pre);
+      $('rDeltaVoor').innerHTML = deltaRegel('Vanaf ' + pensLabel, maand(preJaar) - refBedrag);
+      $('rDeltaNa').innerHTML = gesplitst ? deltaRegel('Vanaf AOW-leeftijd', maand(postJaar) - refBedrag) : '';
+    }
+    $('potLink').href = 'bij-en-afschrijvingen.html?d=' + huidigDeel;
+
     // Kapitaal
     $('kKapitaal').textContent = eur0.format(selSim.kapitaal);
     $('kKapitaalReeel').textContent = 'Reëel: ' + eur0.format(selSim.kapitaal / selSim.inflIdx);
     $('kInleg').textContent = eur0.format(selSim.totalen.inleg);
     $('kInlegSub').textContent = 'Overrendement: ' + eur0.format(selSim.totalen.over);
-    $('grafiek').innerHTML = tekenKapitaal(selSim.rows, sk);
+    $('grafiek').innerHTML = tekenKapitaal(selSim.rows, sk, [
+      { rows: simLo.rows, naam: 'Pessimistisch', kleur: 'var(--neg)' },
+      { rows: simHi.rows, naam: 'Optimistisch', kleur: 'var(--accent)' }
+    ]);
 
     // Uitkeringspatroon
     var reeks = E.uitkeringsreeks(C, sim, u, jaar, deel);
@@ -742,7 +835,11 @@
     });
     var deelLabel = deel ? E.maandLabel(deel.idx) : null;
     var toonReeel = $('toonReeel').checked;
-    $('uitkeringGrafiek').innerHTML = tekenUitkering(punten, reeks.aowLeeftijd, reeks.deelLeeftijd, reeks.pensLeeftijd, toonReeel);
+    var aowIdx = birthIdx + aowMaanden;
+    var bijLink = 'bij-en-afschrijvingen.html?d=' + huidigDeel + '&maand=' + formatMaand(aowIdx);
+    $('aowLink').href = bijLink;
+    $('aowLink').textContent = 'Bekijk de pensioenpot op de AOW-datum (' + E.maandLabel(aowIdx) + ') \u2192';
+    $('uitkeringGrafiek').innerHTML = tekenUitkering(punten, reeks.aowLeeftijd, reeks.deelLeeftijd, reeks.pensLeeftijd, toonReeel, bijLink);
     $('legReeel').hidden = !toonReeel;
     $('scenario').textContent = 'Bandbreedte (Y-factor ' + pctFmt.format(C.rendement.yFactor) + '): ouderdomspensioen pessimistisch ' +
       eur0.format(maand(lo.standaard * 1)) + ' en optimistisch ' + eur0.format(maand(hi.standaard * 1)) + ' per maand (standaardpensioen, ' + basis + ').';
@@ -765,6 +862,141 @@
         '<td>' + eur0.format(r.reeel) + '</td>' +
         '</tr>';
     }).join('');
+    renderVergelijk();
+  }
+
+  // Drie vaste plannen voor dezelfde deelnemer. Plan B is drie jaar vóór de AOW-leeftijd, plan C werkt geleidelijk af.
+  function plannen() {
+    var birthIdx = E.maandIndex(C.deelnemer.geboortedatum);
+    var calcIdx = E.maandIndex(C.calculatiedatum);
+    var aowJaar = C.pensioenreglement.aowLeeftijdMaanden / 12;
+    function rij(leeftijd, pct) { return { vanaf: formatMaand(birthIdx + Math.round(leeftijd * 12)), percentage: pct }; }
+    var std = C.parttimepercentages.map(function (r) { return { vanaf: r.vanaf, percentage: r.percentage }; });
+    var geleidelijk = [rij(62, 80), rij(64, 50), rij(66, 25)].filter(function (r) { return E.maandIndex(r.vanaf) > calcIdx; });
+    return [
+      { naam: 'Stoppen op AOW-leeftijd', start: 'aow', leeftijd: null, parttime: std },
+      { naam: 'Drie jaar eerder stoppen', start: 'ander', leeftijd: aowJaar - 3, parttime: std },
+      { naam: 'Geleidelijk minder werken', start: 'aow', leeftijd: null, parttime: geleidelijk }
+    ];
+  }
+
+  // Uitkomsten van één plan, met dezelfde rekenkern als de wizard.
+  function planResultaat(p, rente) {
+    var sk = Math.max(0, Number($('startkapitaal').value) || 0);
+    var jaar = p.start === 'aow' ? AOW_JAREN : p.leeftijd;
+    var pensM = Math.round(jaar * 12);
+    var sim = E.simuleer(C, { pensioenLeeftijdMaanden: pensM, rente: rente, deeltijd: null, parttimepercentages: p.parttime, startkapitaal: sk });
+    var u = E.uitkeringen(C, sim, { uitruilPct: 0, splitten: 'nee', fractie: C.opties.aowOverbrugging }, jaar);
+    var reeks = E.uitkeringsreeks(C, sim, u, jaar, null).punten;
+    var birthIdx = E.maandIndex(C.deelnemer.geboortedatum);
+    return {
+      naam: p.naam,
+      pensLabel: E.maandLabel(birthIdx + pensM),
+      pl: maand(u.pre),
+      incl: maand(u.pre + C.aowBrutoMaand * 12),
+      kapitaal: sim.kapitaal,
+      inleg: sim.totalen.inleg,
+      punten: reeks.filter(function (q) { return q.leeftijd <= C.pensioenreglement.grafiekEindLeeftijd; })
+    };
+  }
+
+  // Zet een plan in de wizard. Daarna rekent de hele pagina met de keuzes van dat plan.
+  function laadPlan(i) {
+    var p = plannen()[i];
+    radioSet('start', p.start);
+    if (p.start === 'ander') $('leeftijd').value = String(p.leeftijd);
+    radioSet('deel', 'nee');
+    radioSet('partner', 'nee');
+    radioSet('verdeel', 'nee');
+    parttimeRows = p.parttime.map(function (r) { return { vanaf: r.vanaf, pct: r.percentage }; });
+    renderWerk();
+    render();
+  }
+
+  function naarBasis(m) {
+    if (m === null || m === undefined) return null;
+    return $('basis').value === 'netto' ? E.nettoJaar(C, m * 12, $('lhk').checked) / 12 : m;
+  }
+
+  function renderVergelijk() {
+    var rente = C.rendement.overrendementNaRTS;
+    var res = plannen().map(function (p) { return planResultaat(p, rente); });
+    var kleuren = ['var(--accent)', 'var(--warm)', 'var(--muted)'];
+    var letters = ['A', 'B', 'C'];
+    var basis = $('basis').value;
+    var ref = res[0].pl;
+    $('vergelijk').innerHTML = res.map(function (r, i) {
+      var verschil = r.pl - ref;
+      var teken = verschil >= 0 ? '+' : '−';
+      var verschilTxt = i === 0 ? 'Referentie' :
+        teken + eur0.format(Math.abs(verschil)) + ' (' + teken + pctFmt.format(Math.abs(verschil) / ref * 100) + '%)';
+      return '<article class="kpi">' +
+        '<div class="label"><span class="dot" style="background: ' + kleuren[i] + '"></span>Plan ' + letters[i] + ' · ' + r.naam + '</div>' +
+        '<div class="waarde">' + eur0.format(r.pl) + '</div>' +
+        '<div class="sub">' + basis + ' per maand vanaf ' + r.pensLabel + '</div>' +
+        '<div class="sub">Inclusief AOW: ' + eur0.format(r.incl) + ' per maand</div>' +
+        '<div class="sub">Kapitaal op de pensioendatum: ' + eur0.format(r.kapitaal) + '</div>' +
+        '<div class="sub">Premie-inleg tot de pensioendatum: ' + eur0.format(r.inleg) + '</div>' +
+        '<div class="sub"><strong>' + verschilTxt + '</strong>' + (i === 0 ? '' : ' t.o.v. plan A') + '</div>' +
+        '<button class="link-knop" type="button" data-plan="' + i + '">Laad in de wizard</button>' +
+        '</article>';
+    }).join('');
+    $('vergelijkGrafiek').innerHTML = tekenVergelijk(res, kleuren);
+    $('vergelijkLegenda').innerHTML = res.map(function (r, i) {
+      return '<span class="staaf" style="--c: ' + kleuren[i] + '">Plan ' + letters[i] + ': ' + r.naam + '</span>';
+    }).join('');
+  }
+
+  // Gegroepeerde staven: per leeftijdsgroep van vijf jaar, per plan het gemiddelde maandbedrag.
+  function tekenVergelijk(res, kleuren) {
+    var W = 720, H = 280, pl = 76, pr = 16, pt = 16, pb = 34;
+    var groepen = {};
+    res.forEach(function (r, pi) {
+      r.punten.forEach(function (p) {
+        var m = naarBasis(p.nominaal);
+        if (m === null) return;
+        var k = Math.floor(p.leeftijd / 5) * 5;
+        var g = groepen[k] || (groepen[k] = [{ s: 0, n: 0 }, { s: 0, n: 0 }, { s: 0, n: 0 }]);
+        g[pi].s += m;
+        g[pi].n++;
+      });
+    });
+    var keys = Object.keys(groepen).map(Number).sort(function (a, b) { return a - b; });
+    if (!keys.length) return '';
+    var gem = keys.map(function (k) { return groepen[k].map(function (c) { return c.n ? c.s / c.n : 0; }); });
+    var top = 0;
+    gem.forEach(function (rij) { rij.forEach(function (w) { top = Math.max(top, w); }); });
+    var as = uitkeringsAs(top || 1);
+    top = as.top;
+    var slot = (W - pl - pr) / keys.length;
+    var bw = slot * 0.72 / res.length;
+    function y(w) { return H - pb - (H - pt - pb) * w / top; }
+
+    var grid = '';
+    for (var t = 0; t <= top + as.stap / 2; t += as.stap) {
+      grid += '<line class="raster" x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y(t).toFixed(1) + '" y2="' + y(t).toFixed(1) + '"/>';
+      grid += '<text class="as" x="' + (pl - 8) + '" y="' + (y(t) + 4).toFixed(1) + '" text-anchor="end">' + eur0.format(t) + '</text>';
+    }
+    var bars = '', labels = '';
+    keys.forEach(function (k, ki) {
+      var x0 = pl + slot * ki + slot * 0.14;
+      res.forEach(function (r, pi) {
+        var w = gem[ki][pi];
+        if (w <= 0) return;
+        bars += '<rect x="' + (x0 + bw * pi).toFixed(1) + '" y="' + y(w).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (H - pb - y(w)).toFixed(1) +
+          '" fill="' + kleuren[pi] + '"><title>' + r.naam + ', ' + k + '–' + (k + 4) + ' jaar: ' + eur0.format(w) + ' per maand</title></rect>';
+      });
+      labels += '<text class="as" x="' + (pl + slot * ki + slot / 2).toFixed(1) + '" y="' + (H - 10) + '" text-anchor="middle">' + k + '–' + (k + 4) + '</text>';
+    });
+    return '<svg class="grafiek" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Gemiddeld maandbedrag per leeftijdsgroep voor drie plannen">' +
+      grid + labels + bars + '</svg>';
+  }
+
+  // Eén regel van het verschil met de standaardkeuzes. Neutrale kleuren: meer per maand is niet vanzelf beter.
+  function deltaRegel(label, verschil) {
+    var pijl = verschil > 0.5 ? '\u25B2' : (verschil < -0.5 ? '\u25BC' : '=');
+    var teken = verschil > 0.5 ? '+' : (verschil < -0.5 ? '\u2212' : '');
+    return '<span>' + label + ':</span> <strong>' + pijl + ' ' + teken + eur0.format(Math.abs(verschil)) + '</strong> per maand';
   }
 
   function samenvatting(u, splitten, gesplitst, pensLabel, basis, deelLabel) {
@@ -792,7 +1024,7 @@
 
   // Kapitaalgrafiek: gestapelde banden (startkapitaal, premie-inleg, overrendement) plus de reële lijn.
   // De Y-as loopt altijd van het laagste tot het hoogste punt van alle reeksen, ook als het overrendement negatief is.
-  function tekenKapitaal(rows, startK) {
+  function tekenKapitaal(rows, startK, overlays) {
     var W = 720, H = 280, pl = 84, pr = 24, pt = 16, pb = 34;
     var n = rows.length;
     var cumI = 0, cumO = 0, cumU = 0;
@@ -804,6 +1036,7 @@
 
     var waarden = [0];
     pts.forEach(function (p) { waarden.push(p.base, p.top1, p.top2, p.reeel); });
+    (overlays || []).forEach(function (o) { o.rows.forEach(function (r) { waarden.push(r.eind); }); });
     var lo = Math.min.apply(null, waarden);
     var hi = Math.max.apply(null, waarden);
     var stap = nieuweStap(Math.max(hi - lo, 1) / 4);
@@ -860,12 +1093,29 @@
       return s;
     }
 
+    // Lijnen voor de andere scenario's: alleen het eindkapitaal per maand.
+    var lijnen = (overlays || []).map(function (o) {
+      var d = '';
+      o.rows.forEach(function (r, i) { d += (i ? 'L' : 'M') + x(i).toFixed(1) + ',' + y(r.eind).toFixed(1); });
+      return '<path d="' + d + '" fill="none" stroke="' + o.kleur + '" stroke-width="1.75" stroke-dasharray="2 3"><title>' + o.naam + '</title></path>';
+    }).join('');
+
+    // Per maand een onzichtbare kolom met de cijfers als tooltip (muis of tik).
+    var kolom = Math.max(1, (W - pl - pr) / Math.max(1, n - 1));
+    var tips = rows.map(function (r, i) {
+      var uitleg = r.maand + ': kapitaal ' + eur0.format(r.eind);
+      (overlays || []).forEach(function (o) { uitleg += ' \u00B7 ' + o.naam.toLowerCase() + ' ' + eur0.format(o.rows[i].eind); });
+      return '<rect x="' + (x(i) - kolom / 2).toFixed(1) + '" y="' + pt + '" width="' + kolom.toFixed(1) + '" height="' + (H - pt - pb) +
+        '" fill="transparent"><title>' + uitleg + '</title></rect>';
+    }).join('');
+
     return '<svg class="grafiek" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Ontwikkeling van het pensioenvermogen: startkapitaal, premie-inleg en overrendement">' +
       grid + labels +
       '<path d="' + vanaf0('base') + '" fill="var(--muted)" fill-opacity="0.28"/>' +
       '<path d="' + band('base', 'top1') + '" fill="var(--accent)" fill-opacity="0.55"/>' +
       overrendementBanden() +
       '<path d="' + pR + '" fill="none" stroke="var(--fg)" stroke-width="1.75" stroke-dasharray="5 4"/>' +
+      lijnen + tips +
       '</svg>';
   }
 
@@ -883,7 +1133,7 @@
   }
 
   // Staafdiagram: per leeftijdsjaar het gemiddelde bedrag per maand (nominaal, en reëel als die schuif aanstaat).
-  function tekenUitkering(pts, aow, deelL, pensL, toonReeel) {
+  function tekenUitkering(pts, aow, deelL, pensL, toonReeel, aowHref) {
     var W = 720, H = 300, pl = 76, pr = 16, pt = 16, pb = 34;
     var groepen = {};
     pts.forEach(function (p) {
@@ -940,15 +1190,16 @@
       }
     });
 
-    function marker(age, label) {
+    function marker(age, label, href) {
       if (age === null || age === undefined) return '';
       var lo = minA, hi = rows[rows.length - 1].leeftijd + 1;
       if (age < lo || age > hi) return '';
       var x = pl + slot * (age - minA);
-      return '<line x1="' + x.toFixed(1) + '" x2="' + x.toFixed(1) + '" y1="' + pt + '" y2="' + (H - pb) + '" stroke="var(--muted)" stroke-dasharray="2 3"/>' +
-        '<text class="as" x="' + (x + 6).toFixed(1) + '" y="' + (pt + 12) + '">' + label + '</text>';
+      var tekst = '<text class="as' + (href ? ' as-link' : '') + '" x="' + (x + 6).toFixed(1) + '" y="' + (pt + 12) + '">' + label + '</text>';
+      if (href) tekst = '<a href="' + href + '">' + tekst + '</a>';
+      return '<line x1="' + x.toFixed(1) + '" x2="' + x.toFixed(1) + '" y1="' + pt + '" y2="' + (H - pb) + '" stroke="var(--muted)" stroke-dasharray="2 3"/>' + tekst;
     }
-    var lijnen = marker(deelL, 'Deeltijd') + marker(aow, 'AOW');
+    var lijnen = marker(deelL, 'Deeltijd') + marker(aow, 'AOW', aowHref);
     if (pensL !== null && Math.abs(pensL - aow) > 0.01) lijnen += marker(pensL, 'Volledig');
 
     return '<svg class="grafiek" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Staafdiagram van het maandbedrag per leeftijdsjaar">' +
