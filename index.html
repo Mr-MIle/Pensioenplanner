@@ -570,6 +570,20 @@
     render();
   }
 
+  // Deeltijdpensioen kan alleen ingaan vanaf 10 jaar vóór de AOW-leeftijd tot en met 1 maand vóór de AOW-leeftijd.
+  function deelBereik() {
+    var birth = E.maandIndex(C.deelnemer.geboortedatum);
+    var aow = birth + C.pensioenreglement.aowLeeftijdMaanden;
+    var calc = E.maandIndex(C.calculatiedatum);
+    return { min: Math.max(calc + 1, aow - 120), max: aow - 1 };
+  }
+  function zetDeelBereik() {
+    var b = deelBereik();
+    $('deelMaand').min = formatMaand(b.min);
+    $('deelMaand').max = formatMaand(b.max);
+    return b;
+  }
+
   function reset() {
     radioSet('start', 'aow');
     radioSet('deel', 'nee');
@@ -579,7 +593,7 @@
     var std = C.pensioenreglement.standaardPensioenleeftijd;
     $('leeftijd').value = $('leeftijd').querySelector('option[value="' + std + '"]') ? std : $('leeftijd').options[0].value;
     $('deelPct').value = 40;
-    $('deelMaand').value = '2030-01';
+    $('deelMaand').value = formatMaand(zetDeelBereik().min);
     parttimeRows = C.parttimepercentages.map(function (r) { return { vanaf: r.vanaf, pct: r.percentage }; });
     renderWerk();
     setBasis('netto');
@@ -631,7 +645,6 @@
     dk.addEventListener('change', function () { kiesDeelnemer(Number(dk.value)); });
     var dsel = $('deelPct');
     for (var p = 10; p <= 90; p += 10) dsel.add(new Option(p + '%', p));
-    $('deelMaand').min = C.calculatiedatum;
     $('kapDatum').textContent = E.maandLabel(E.maandIndex(C.calculatiedatum));
 
     // Stappen openen en sluiten: één tegelijk open
@@ -736,10 +749,11 @@
     // Deeltijd
     var deel = null;
     var melding = '';
+    var bereik = zetDeelBereik();
     if (deelAan) {
       var dIdx = E.maandIndex($('deelMaand').value);
-      if (dIdx <= calcIdx || dIdx >= pensIdx) {
-        melding = 'De ingangsdatum van het deeltijdpensioen moet na de calculatiedatum en vóór de pensioendatum liggen. Deeltijdpensioen wordt daarom niet meegerekend.';
+      if (!$('deelMaand').value || dIdx < bereik.min || dIdx > bereik.max) {
+        melding = 'Deeltijdpensioen kan alleen ingaan van 10 jaar vóór de AOW-leeftijd tot en met 1 maand vóór de AOW-leeftijd (' + E.maandLabel(bereik.min) + ' t/m ' + E.maandLabel(bereik.max) + '). Deeltijdpensioen wordt daarom niet meegerekend.';
       } else {
         deel = { idx: dIdx, pct: Number($('deelPct').value) / 100 };
       }
@@ -836,21 +850,35 @@
     var opNaJaar = u.post + deelJaar;        // levenslang OP vanaf de AOW
     var tijdJaar = u.t1 + u.t2;              // TOPAOW + TOPHL, alleen tot de AOW
     var opJaar = opVoorJaar, opPostJaar = opNaJaar;   // voor de verschillen met de standaardkeuzes
-    $('rVoorBlok').hidden = !voorAow;
-    $('rVoorLabel').textContent = 'Totaal tot de AOW-leeftijd, vanaf ' + pensLabel;
-    $('rVoor').textContent = eur0.format(maand(opVoorJaar + tijdJaar));
-    $('rVoorSub').textContent = basisNu + ' per maand';
-    $('rVoorDetail').innerHTML = '<div>Levenslang OP: <strong>' + eur0.format(maand(opVoorJaar)) + '</strong></div>' +
-      (tijdJaar > 0
-        ? '<div>Tijdelijk (' + (u.t1 > 0 ? 'TOPAOW' : '') + (u.t1 > 0 && u.t2 > 0 ? ' en ' : '') + (u.t2 > 0 ? 'TOPHL' : '') + '): <strong>' + eur0.format(maand(tijdJaar)) + '</strong></div>'
-        : '<div>Tijdelijk: geen TOPAOW of TOPHL gekozen</div>');
-    $('nettoUitleg').hidden = basisNu !== 'netto';
-
-    $('rNaLabel').textContent = voorAow ? 'Vanaf de AOW-leeftijd (' + AOW_LABEL + ')' : 'Vanaf ' + pensLabel;
-    $('rNa').textContent = eur0.format(maand(opNaJaar));
     var aowJaar = C.aowBrutoMaand * 12;
-    $('rNaSub').innerHTML = basisNu + ' per maand, levenslang' + (u.t2 > 0 ? ' (door TOPHL lager)' : '') +
-      '<br>Inclusief AOW: <strong>' + eur0.format(maand(opNaJaar + aowJaar)) + '</strong> ' + basisNu + ' per maand';
+    $('nettoUitleg').hidden = basisNu !== 'netto';
+    if (deel) {
+      // Deeltijd: tot de AOW-leeftijd alleen het deeltijdpensioen; vanaf de AOW-leeftijd 100% gepensioneerd.
+      $('rVoorBlok').hidden = false;
+      $('rVoorLabel').textContent = 'Deeltijdpensioen, vanaf ' + E.maandLabel(deel.idx) + ' tot de AOW-leeftijd';
+      $('rVoor').textContent = eur0.format(maand(deelJaar));
+      $('rVoorSub').textContent = basisNu + ' per maand. Uw premie daalt met ' + Math.round(deel.pct * 100) + '%.';
+      $('rVoorDetail').innerHTML = '';
+      $('rNaLabel').textContent = 'Vanaf de AOW-leeftijd (' + AOW_LABEL + '): 100% gepensioneerd';
+      $('rNa').textContent = eur0.format(maand(opNaJaar));
+      $('rNaSub').innerHTML = basisNu + ' per maand, levenslang' +
+        '<div class="uitsplitsing"><div>Ouderdomspensioen: <strong>' + eur0.format(maand(u.post)) + '</strong></div>' +
+        '<div>Deeltijdpensioen: <strong>' + eur0.format(maand(deelJaar)) + '</strong></div></div>' +
+        'Inclusief AOW: <strong>' + eur0.format(maand(opNaJaar + aowJaar)) + '</strong> ' + basisNu + ' per maand';
+    } else {
+      $('rVoorBlok').hidden = !voorAow;
+      $('rVoorLabel').textContent = 'Totaal tot de AOW-leeftijd, vanaf ' + pensLabel;
+      $('rVoor').textContent = eur0.format(maand(opVoorJaar + tijdJaar));
+      $('rVoorSub').textContent = basisNu + ' per maand';
+      $('rVoorDetail').innerHTML = '<div>Levenslang OP: <strong>' + eur0.format(maand(opVoorJaar)) + '</strong></div>' +
+        (tijdJaar > 0
+          ? '<div>Tijdelijk (' + (u.t1 > 0 ? 'TOPAOW' : '') + (u.t1 > 0 && u.t2 > 0 ? ' en ' : '') + (u.t2 > 0 ? 'TOPHL' : '') + '): <strong>' + eur0.format(maand(tijdJaar)) + '</strong></div>'
+          : '<div>Tijdelijk: geen TOPAOW of TOPHL gekozen</div>');
+      $('rNaLabel').textContent = voorAow ? 'Vanaf de AOW-leeftijd (' + AOW_LABEL + ')' : 'Vanaf ' + pensLabel;
+      $('rNa').textContent = eur0.format(maand(opNaJaar));
+      $('rNaSub').innerHTML = basisNu + ' per maand, levenslang' + (u.t2 > 0 ? ' (door TOPHL lager)' : '') +
+        '<br>Inclusief AOW: <strong>' + eur0.format(maand(opNaJaar + aowJaar)) + '</strong> ' + basisNu + ' per maand';
+    }
 
     $('rDeel').textContent = deel ? 'Deeltijdpensioen vanaf ' + E.maandLabel(deel.idx) + ': ' + eur0.format(maand(deelJaar)) + ' per maand (levenslang OP).' : '';
     $('rPartner').innerHTML = '<div class="label">Partnerpensioen, uitgekeerd bij overlijden van de hoofdverzekerde</div>' +
