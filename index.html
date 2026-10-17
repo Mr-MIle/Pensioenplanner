@@ -281,9 +281,8 @@
             <div class="rij">
               <label for="deelPct">Percentage pensioen</label>
               <select id="deelPct"></select>
-              <label for="deelMaand">Ingangsdatum</label>
-              <input id="deelMaand" type="month">
             </div>
+            <p class="muted" style="margin: 8px 0 0">De ingangsdatum is de pensioenleeftijd die u in stap 1 kiest: tussen 10 jaar en 1 jaar vóór de AOW-leeftijd. Vanaf de AOW-leeftijd bent u volledig met pensioen.</p>
           </div>
           <p class="melding" id="melding" role="status" hidden></p>
         </div>
@@ -570,30 +569,16 @@
     render();
   }
 
-  // Deeltijdpensioen kan alleen ingaan vanaf 10 jaar vóór de AOW-leeftijd tot en met 1 maand vóór de AOW-leeftijd.
-  function deelBereik() {
-    var birth = E.maandIndex(C.deelnemer.geboortedatum);
-    var aow = birth + C.pensioenreglement.aowLeeftijdMaanden;
-    var calc = E.maandIndex(C.calculatiedatum);
-    return { min: Math.max(calc + 1, aow - 120), max: aow - 1 };
-  }
-  function zetDeelBereik() {
-    var b = deelBereik();
-    $('deelMaand').min = formatMaand(b.min);
-    $('deelMaand').max = formatMaand(b.max);
-    return b;
-  }
-
   function reset() {
     radioSet('start', 'aow');
     radioSet('deel', 'nee');
+    vulLeeftijd();
     $('partnerPct').value = C.partnerpensioen.standaardPct;
     $('topaow').value = 0;
     $('tophl').value = 0;
     var std = C.pensioenreglement.standaardPensioenleeftijd;
     $('leeftijd').value = $('leeftijd').querySelector('option[value="' + std + '"]') ? std : $('leeftijd').options[0].value;
     $('deelPct').value = 40;
-    $('deelMaand').value = formatMaand(zetDeelBereik().min);
     parttimeRows = C.parttimepercentages.map(function (r) { return { vanaf: r.vanaf, pct: r.percentage }; });
     renderWerk();
     setBasis('netto');
@@ -612,14 +597,20 @@
   }
 
   // Keuzelijst pensioenleeftijd: alleen leeftijden die na de calculatiedatum liggen.
+  // Met deeltijdpensioen is de leeftijd de ingangsdatum daarvan: 10 jaar tot 1 jaar vóór de AOW-leeftijd.
   function vulLeeftijd() {
     var sel = $('leeftijd');
     var birthIdx = E.maandIndex(C.deelnemer.geboortedatum);
     var calcIdx = E.maandIndex(C.calculatiedatum);
+    var deelAan = radio('deel') === 'ja';
+    var lo = deelAan ? Math.round(AOW_JAREN) - 10 : 60;
+    var hi = deelAan ? Math.round(AOW_JAREN) - 1 : 70;
+    var oud = sel.value;
     sel.innerHTML = '';
-    for (var j = 60; j <= 70; j++) {
+    for (var j = lo; j <= hi; j++) {
       if (birthIdx + j * 12 > calcIdx) sel.add(new Option(j + ' jaar', j));
     }
+    if (oud && sel.querySelector('option[value="' + oud + '"]')) sel.value = oud;
   }
 
   // Kies een demo-deelnemer: die wordt het uitgangspunt (geboortedatum, startkapitaal, salaris).
@@ -687,6 +678,18 @@
       if (b) laadPlan(Number(b.getAttribute('data-plan')));
     });
 
+    // Deeltijd en de pensioenleeftijd hangen samen: deeltijd vraagt een ingangsleeftijd tussen 57 en 66 jaar.
+    document.querySelector('input[name="deel"][value="ja"]').addEventListener('change', function () {
+      radioSet('start', 'ander');
+      vulLeeftijd();
+    });
+    document.querySelector('input[name="deel"][value="nee"]').addEventListener('change', function () { vulLeeftijd(); });
+    document.querySelector('input[name="start"][value="aow"]').addEventListener('change', function () {
+      radioSet('deel', 'nee');
+      vulLeeftijd();
+    });
+    document.querySelector('input[name="start"][value="ander"]').addEventListener('change', function () { vulLeeftijd(); });
+
     var inputs = document.querySelectorAll('input, select');
     for (var i = 0; i < inputs.length; i++) {
       inputs[i].addEventListener('input', render);
@@ -749,16 +752,15 @@
     // Deeltijd
     var deel = null;
     var melding = '';
-    var bereik = zetDeelBereik();
     if (deelAan) {
-      var dIdx = E.maandIndex($('deelMaand').value);
-      if (!$('deelMaand').value || dIdx < bereik.min || dIdx > bereik.max) {
-        melding = 'Deeltijdpensioen kan alleen ingaan van 10 jaar vóór de AOW-leeftijd tot en met 1 maand vóór de AOW-leeftijd (' + E.maandLabel(bereik.min) + ' t/m ' + E.maandLabel(bereik.max) + '). Deeltijdpensioen wordt daarom niet meegerekend.';
+      var dLeeftijd = Number($('leeftijd').value);
+      var dLo = Math.round(AOW_JAREN) - 10, dHi = Math.round(AOW_JAREN) - 1;
+      if (!(dLeeftijd >= dLo && dLeeftijd <= dHi)) {
+        melding = 'Deeltijdpensioen kan alleen ingaan tussen ' + dLo + ' en ' + dHi + ' jaar (10 jaar tot 1 jaar vóór de AOW-leeftijd). Kies die leeftijd in stap 1. Deeltijdpensioen wordt daarom niet meegerekend.';
       } else {
-        deel = { idx: dIdx, pct: Number($('deelPct').value) / 100 };
+        deel = { idx: birthIdx + Math.round(dLeeftijd * 12), pct: Number($('deelPct').value) / 100 };
       }
     }
-    if (deelAan && start !== 'aow') melding = (melding ? melding + ' ' : '') + 'Bij deeltijdpensioen gaat u volledig met pensioen op de AOW-datum.';
     $('melding').textContent = melding;
     $('melding').hidden = !melding;
 
@@ -837,7 +839,7 @@
 
     // Stap-samenvattingen
     $('k1').textContent = start === 'aow' ? 'Op AOW-leeftijd, ' + AOW_LABEL : 'Op ' + jaar + ' jaar';
-    $('k2').textContent = deelAan ? 'Deels: ' + $('deelPct').value + '% vanaf ' + E.maandLabel(E.maandIndex($('deelMaand').value)) : 'Volledig met pensioen';
+    $('k2').textContent = deelAan ? 'Deels: ' + $('deelPct').value + '% vanaf ' + Number($('leeftijd').value) + ' jaar' : 'Volledig met pensioen';
     $('k3').textContent = partnerPct > 0 ? 'Partnerpensioen ' + partnerPct + '% van het ouderdomspensioen' : 'Geen partnerpensioen';
     $('k4').textContent = u.t1 > 0
       ? 'TOPAOW ' + eur0.format(u.t1) + ' per jaar' + (u.t2 > 0 ? ', TOPHL ' + Math.round(pctHL * 100) + '%' : '')
