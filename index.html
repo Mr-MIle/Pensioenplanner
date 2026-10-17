@@ -159,6 +159,8 @@
   .resultaat .seg { background: var(--panel-inner); color: var(--panel-fg); }
   .resultaat .seg + .seg { border-left-color: var(--panel-sub); }
   .resultaat .seg.actief { background: var(--panel-fg); color: var(--panel); }
+  .resultaat #rPartner { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--panel-sub); display: grid; gap: 4px; }
+  .resultaat .bedrag-klein { font-family: "Newsreader", Georgia, serif; font-size: 22px; line-height: 1.2; font-variant-numeric: tabular-nums; }
   .resultaat .netto-toelichting { font-size: 12px; color: var(--panel-sub); margin: 6px 0 0; }
   .resultaat .delta { font-size: 14px; background: var(--panel-inner); border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; font-variant-numeric: tabular-nums; }
   .resultaat .delta-kop { font-size: 12px; color: var(--panel-sub); }
@@ -280,7 +282,6 @@
           <div class="sub">
             <label for="partnerPct">Partnerpensioen als percentage van het ouderdomspensioen: <strong id="partnerPctWaarde">70%</strong></label>
             <input id="partnerPct" type="range" min="0" max="70" step="1" value="70">
-            <p class="muted" id="partnerUitleg" style="margin: 0"></p>
           </div>
         </div>
       </div>
@@ -341,7 +342,7 @@
       <div class="info" id="rInfo">
         <div id="rAow"></div>
         <div id="rDeel" style="margin-top: 6px"></div>
-        <div id="rPartner" style="margin-top: 6px"></div>
+        <div id="rPartner"></div>
       </div>
 
       <label class="schakel">
@@ -782,7 +783,7 @@
     $('k4').textContent = splitten === 'hoog' ? 'Hoger eerst, daarna lager' : splitten === 'laag' ? 'Lager eerst, daarna hoger' : 'Niet tijdelijk anders verdeeld';
 
     // Resultaatpaneel
-    $('rLabel').textContent = 'Vanaf ' + pensLabel;
+    $('rLabel').textContent = 'Ouderdomspensioen voor u, vanaf ' + pensLabel;
     $('rBedrag').textContent = eur0.format(maand(preJaar));
     $('rBedragSub').textContent = $('basis').value + ' per maand' + (gesplitst ? ' tot de AOW-leeftijd' : '');
     $('nettoUitleg').hidden = $('basis').value !== 'netto';
@@ -799,9 +800,11 @@
     $('rAow').innerHTML = 'Inclusief AOW vanaf ' + AOW_LABEL + ': <strong>' + eur0.format(maand(inclAow)) + '</strong> ' + $('basis').value + ' per maand';
 
     $('rDeel').textContent = deel ? 'Deeltijdpensioen vanaf ' + E.maandLabel(deel.idx) + ': ' + eur0.format(maand(deelJaar)) + ' per maand.' : '';
-    $('rPartner').textContent = 'Partner bij uw overlijden: ' + eur0.format(u.partner / 12) + ' per maand (bruto).';
-    var aOPnu = E.delerVoor(jaar, C.annuiteitsdelers);
-    $('partnerUitleg').textContent = 'Elke euro partnerpensioen kost \u20AC' + C.partnerpensioen.inkoopfactorNP + ' aan kapitaal. Een euro ouderdomspensioen kost \u20AC' + aOPnu.toFixed(1).replace('.', ',') + '. Samen moeten die twee het kapitaal opleveren.';
+    $('rPartner').innerHTML = '<div class="label">Partnerpensioen bij overlijden van de hoofdverzekerde</div>' +
+      (partnerPct === 0
+        ? '<div class="sub-tekst">Geen partnerpensioen gekozen.</div>'
+        : '<div class="bedrag-klein">' + eur0.format(u.partner / 12) + ' per maand (bruto)</div>' +
+          '<div class="sub-tekst">Voor uw partner, na uw overlijden. Ingekocht op de pensioendatum: ' + partnerPct + '% van uw ouderdomspensioen.</div>');
 
     // Verschil per maand met de standaardkeuzes. Verborgen als alle pensioenkeuzes op standaard staan.
     var isStandaard = start === 'aow' && !deelAan && partnerPct === C.partnerpensioen.standaardPct && splitten === 'nee';
