@@ -167,9 +167,6 @@
   .resultaat .uitsplitsing { font-size: 14px; color: var(--panel-sub); display: grid; gap: 2px; margin-top: 4px; font-variant-numeric: tabular-nums; }
   .resultaat .uitsplitsing strong { color: var(--panel-fg); }
   .resultaat .netto-toelichting { font-size: 12px; color: var(--panel-sub); margin: 6px 0 0; }
-  .resultaat .delta { font-size: 14px; background: var(--panel-inner); border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; font-variant-numeric: tabular-nums; }
-  .resultaat .delta-kop { font-size: 12px; color: var(--panel-sub); }
-  .resultaat .delta[hidden] { display: none; }
   .grafiek .as-link { fill: var(--accent); text-decoration: underline; font-weight: 600; }
   .grafiek-link { margin: 10px 0 0; font-size: 14px; }
   #vergelijk .link-knop { margin-top: 8px; justify-self: start; }
@@ -353,12 +350,6 @@
         <div class="label" id="rNaLabel">Vanaf de AOW-leeftijd</div>
         <div class="bedrag" id="rNa">–</div>
         <div class="sub-tekst" id="rNaSub"></div>
-      </div>
-
-      <div class="delta" id="rDelta" hidden>
-        <div class="delta-kop">Ten opzichte van de standaardkeuzes (AOW-leeftijd, geen deeltijd, standaard partnerpensioen, geen verdeling)</div>
-        <div id="rDeltaVoor"></div>
-        <div id="rDeltaNa"></div>
       </div>
 
       <div class="info" id="rInfo">
@@ -801,17 +792,10 @@
     $('scenarioRente').textContent = 'Overrendement per jaar na RTS: basis ' + pct2.format(rente * 100) + '%, pessimistisch ' +
       pct2.format((rente - marge) * 100) + '%, optimistisch ' + pct2.format((rente + marge) * 100) + '%.';
 
-    // Referentie: de standaardkeuzes (AOW-leeftijd, geen deeltijd, geen partnerverlaging, geen verdeling).
-    // Parttime-wijzigingen tellen in beide mee, zodat het verschil alleen de pensioenkeuzes laat zien.
-    var aowMaanden = C.pensioenreglement.aowLeeftijdMaanden;
-    var simStd = E.simuleer(C, { pensioenLeeftijdMaanden: aowMaanden, rente: rente, deeltijd: null, parttimepercentages: wl, startkapitaal: sk });
-    var uStd = E.uitkeringen(C, simStd, {}, AOW_JAREN);
-
     var pensLabel = E.maandLabel(pensIdx);
     var deelJaar = u.deelJaar;
     var preJaar = u.pre + deelJaar;
     var postJaar = u.post + deelJaar;
-    var gesplitst = voorAow && (u.t1 + u.t2) > 0;
 
     // Werkwijzigingen: melding en samenvatting
     var wMeld = '';
@@ -842,7 +826,6 @@
     var opVoorJaar = u.opNa + deelJaar;      // levenslang OP vóór de AOW, incl. deeltijdpensioen
     var opNaJaar = u.post + deelJaar;        // levenslang OP vanaf de AOW
     var tijdJaar = u.t1 + u.t2;              // TOPAOW + TOPHL, alleen tot de AOW
-    var opJaar = opVoorJaar, opPostJaar = opNaJaar;   // voor de verschillen met de standaardkeuzes
     var aowJaar = C.aowBrutoMaand * 12;
     $('nettoUitleg').hidden = basisNu !== 'netto';
     if (deel) {
@@ -880,14 +863,6 @@
         : '<div class="bedrag-klein">' + eur0.format(maand(u.partner)) + ' per maand (' + basisNu + ')</div>' +
           '<div class="sub-tekst">Voor uw partner, na uw overlijden. Ingekocht op de pensioendatum: ' + partnerPct + '% van uw ouderdomspensioen vóór TOPAOW en TOPHL.</div>');
 
-    // Verschil per maand met de standaardkeuzes. Verborgen als alle pensioenkeuzes op standaard staan.
-    var isStandaard = start === 'aow' && !deelAan && partnerPct === C.partnerpensioen.standaardPct && u.t1 === 0 && u.t2 === 0;
-    $('rDelta').hidden = isStandaard;
-    if (!isStandaard) {
-      var refBedrag = maand(uStd.pre);
-      $('rDeltaVoor').innerHTML = deltaRegel('Levenslang OP vanaf ' + pensLabel, maand(opJaar) - refBedrag);
-      $('rDeltaNa').innerHTML = gesplitst ? deltaRegel('Levenslang OP vanaf AOW-leeftijd', maand(opPostJaar) - refBedrag) : '';
-    }
     $('potLink').href = 'bij-en-afschrijvingen.html?d=' + huidigDeel;
 
     // Kapitaal
@@ -1193,13 +1168,6 @@
     });
     return '<svg class="grafiek" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Totaal inkomen per maand per leeftijd voor vier plannen">' +
       grid + labels + aowLijn + lijnen + '</svg>';
-  }
-
-  // Eén regel van het verschil met de standaardkeuzes. Neutrale kleuren: meer per maand is niet vanzelf beter.
-  function deltaRegel(label, verschil) {
-    var pijl = verschil > 0.5 ? '\u25B2' : (verschil < -0.5 ? '\u25BC' : '=');
-    var teken = verschil > 0.5 ? '+' : (verschil < -0.5 ? '\u2212' : '');
-    return '<span>' + label + ':</span> <strong>' + pijl + ' ' + teken + eur0.format(Math.abs(verschil)) + '</strong> per maand';
   }
 
   // Kies een mooie stapgrootte (1, 2 of 5 x een macht van 10) voor de Y-as.
