@@ -276,15 +276,11 @@
           <span class="pijl" aria-hidden="true">▾</span>
         </button>
         <div class="stap-body" id="s3" hidden>
-          <div class="keuze" role="radiogroup" aria-label="Partnerpensioen">
-            <label class="optie"><input type="radio" name="partner" value="nee" checked>
-              <span id="p3Nee"></span></label>
-            <label class="optie"><input type="radio" name="partner" value="ja">
-              <span id="p3Ja"></span></label>
-          </div>
-          <div class="sub" id="partnerSub" hidden>
-            <label for="uitruil"><span id="p3Label"></span> <strong id="uitruilWaarde">10%</strong></label>
-            <input id="uitruil" type="range" min="0" max="25" step="1" value="10">
+          <p class="muted" style="margin: 0">Het partnerpensioen wordt op de pensioendatum ingekocht. Het is een percentage van uw ouderdomspensioen: minimaal 0% en maximaal 70%. Hoe hoger het percentage, hoe lager uw eigen ouderdomspensioen.</p>
+          <div class="sub">
+            <label for="partnerPct">Partnerpensioen als percentage van het ouderdomspensioen: <strong id="partnerPctWaarde">70%</strong></label>
+            <input id="partnerPct" type="range" min="0" max="70" step="1" value="70">
+            <p class="muted" id="partnerUitleg" style="margin: 0"></p>
           </div>
         </div>
       </div>
@@ -337,7 +333,7 @@
       </div>
 
       <div class="delta" id="rDelta" hidden>
-        <div class="delta-kop">Ten opzichte van de standaardkeuzes (AOW-leeftijd, geen deeltijd, geen partnerverlaging, geen verdeling)</div>
+        <div class="delta-kop">Ten opzichte van de standaardkeuzes (AOW-leeftijd, geen deeltijd, standaard partnerpensioen, geen verdeling)</div>
         <div id="rDeltaVoor"></div>
         <div id="rDeltaNa"></div>
       </div>
@@ -473,6 +469,7 @@
       <p><strong>Toedeelfactor.</strong> Het rendement wordt per leeftijd aangepast met een toedeelfactor. Die is 1,05 tot 50 jaar en daalt daarna lineair naar 0,45 op 67 jaar. Naarmate u ouder wordt, krijgt u dus een kleiner deel van het rendement toegerekend.</p>
       <p><strong>Maandbedrag.</strong> Het kapitaal wordt omgerekend naar een maandelijks pensioen met een fictieve deler die afhangt van uw leeftijd. Hoe ouder u bent bij de ingang, hoe lager de deler en hoe hoger het maandbedrag.</p>
       <p><strong>Nominaal en reëel.</strong> Nominale bedragen zijn in de euro's van dat moment. Reële bedragen zijn omgerekend naar euro's van vandaag, met 2% prijsinflatie per jaar.</p>
+      <p><strong>Partnerpensioen.</strong> Het partnerpensioen is een percentage van uw ouderdomspensioen, van 0% tot 70%. Het kapitaal wordt verdeeld over beide: elke euro partnerpensioen kost 4 euro kapitaal, en elke euro ouderdomspensioen kost de annuïteitsfactor (nu rond 17).</p>
       <p><strong>Netto.</strong> Het nettobedrag is een indicatie op basis van een fictieve belastingtabel, geen officiële berekening.</p>
     </details>
   </section>
@@ -498,7 +495,7 @@
 
   var UITLEG = {
     deel: 'Bij deeltijdpensioen gaat het gekozen percentage van uw kapitaal op de ingangsdatum in één keer naar uitkering. Het overige kapitaal blijft staan en groeit door. Uw premie daalt met het percentage dat u met pensioen gaat.',
-    partner: 'Partnerpensioen is het bedrag dat uw partner krijgt als u overlijdt. Bij een standaard partnerpensioen kunt u het verlagen en krijgt u zelf een hoger ouderdomspensioen. Zonder standaard partnerpensioen kunt u een deel van uw ouderdomspensioen inruilen voor partnerpensioen.',
+    partner: 'Het partnerpensioen is een percentage van uw ouderdomspensioen, dat op de pensioendatum wordt ingekocht. Hoe hoger het percentage, hoe lager uw eigen ouderdomspensioen. Het bereik is 0% tot 70%.',
     verdeel: 'Bij een tijdelijke verdeling krijgt u vóór de AOW-leeftijd een hoger of lager bedrag dan het standaardpensioen. Na de AOW-leeftijd verschuift dat verschil, zodat het totaal ongeveer gelijk blijft. Het verschil kiest u zelf.'
   };
 
@@ -552,13 +549,12 @@
   function reset() {
     radioSet('start', 'aow');
     radioSet('deel', 'nee');
-    radioSet('partner', 'nee');
+    $('partnerPct').value = C.partnerpensioen.standaardPct;
     radioSet('verdeel', 'nee');
     var std = C.pensioenreglement.standaardPensioenleeftijd;
     $('leeftijd').value = $('leeftijd').querySelector('option[value="' + std + '"]') ? std : $('leeftijd').options[0].value;
     $('deelPct').value = 40;
     $('deelMaand').value = '2030-01';
-    $('uitruil').value = C.pensioenreglement.partnerpensioenStandaard ? 50 : 10;
     $('verschil').value = 25;
     parttimeRows = C.parttimepercentages.map(function (r) { return { vanaf: r.vanaf, pct: r.percentage }; });
     renderWerk();
@@ -601,17 +597,8 @@
   }
 
   function init() {
-    // Partnerpensioen: standaard gereserveerd of standaard niet. Bepaalt de teksten en het bereik van de schuif.
-    var metPartner = C.pensioenreglement.partnerpensioenStandaard;
-    $('p3Nee').innerHTML = metPartner
-      ? 'Nee, het partnerpensioen blijft zoals het is<small style="display:block;color:var(--muted);font-size:13px">Standaardkeuze.</small>'
-      : 'Nee, geen partnerpensioen<small style="display:block;color:var(--muted);font-size:13px">Standaardkeuze.</small>';
-    $('p3Ja').innerHTML = metPartner
-      ? 'Ja, ik verlaag het partnerpensioen<small style="display:block;color:var(--muted);font-size:13px">Het verlagen levert u een hoger eigen ouderdomspensioen op.</small>'
-      : 'Ja, ik ruil een deel van mijn ouderdomspensioen in voor partnerpensioen<small style="display:block;color:var(--muted);font-size:13px">Mijn ouderdomspensioen wordt lager, mijn partner krijgt partnerpensioen.</small>';
-    $('p3Label').textContent = metPartner ? 'Percentage van het partnerpensioen dat u verlaagt:' : 'Percentage van het ouderdomspensioen dat u inruilt:';
-    $('uitruil').max = metPartner ? 100 : 25;
-    $('uitruil').value = metPartner ? 50 : 10;
+    $('partnerPct').min = C.partnerpensioen.minPct;
+    $('partnerPct').max = C.partnerpensioen.maxPct;
 
     var dk = $('deelnemerKeuze');
     C.deelnemers.forEach(function (d, i) {
@@ -709,13 +696,11 @@
   function render() {
     var start = radio('start');
     var deelAan = radio('deel') === 'ja';
-    var partnerAan = radio('partner') === 'ja';
+    var partnerPct = Number($('partnerPct').value);
     var verdeel = radio('verdeel');
     $('startAnder').hidden = start !== 'ander';
     $('deelSub').hidden = !deelAan;
-    $('partnerSub').hidden = !partnerAan;
-    var metPartner = C.pensioenreglement.partnerpensioenStandaard;
-    $('uitruilWaarde').textContent = $('uitruil').value + '%';
+    $('partnerPctWaarde').textContent = partnerPct + '%';
     $('verschilWaarde').textContent = $('verschil').value + '%';
 
     // Bij deeltijdpensioen gaat u volledig met pensioen op de AOW-datum.
@@ -746,7 +731,6 @@
     $('verdeelMelding').hidden = voorAow || verdeel === 'nee';
     var splitten = voorAow ? verdeel : 'nee';
     var fractie = Number($('verschil').value) / 100;
-    var uitruil = partnerAan ? Number($('uitruil').value) : 0;
 
     var rente = C.rendement.overrendementNaRTS;
     var wl = parttimeLijst();
@@ -755,9 +739,9 @@
     var sim = E.simuleer(C, { pensioenLeeftijdMaanden: pensMaanden, rente: rente, deeltijd: deel, parttimepercentages: wl, startkapitaal: sk });
     var simLo = E.simuleer(C, { pensioenLeeftijdMaanden: pensMaanden, rente: rente - marge, deeltijd: deel, parttimepercentages: wl, startkapitaal: sk });
     var simHi = E.simuleer(C, { pensioenLeeftijdMaanden: pensMaanden, rente: rente + marge, deeltijd: deel, parttimepercentages: wl, startkapitaal: sk });
-    var u = E.uitkeringen(C, sim, { uitruilPct: uitruil, splitten: splitten, fractie: fractie }, jaar);
-    var lo = E.uitkeringen(C, simLo, { uitruilPct: uitruil, splitten: splitten, fractie: fractie }, jaar);
-    var hi = E.uitkeringen(C, simHi, { uitruilPct: uitruil, splitten: splitten, fractie: fractie }, jaar);
+    var u = E.uitkeringen(C, sim, { partnerPct: partnerPct, splitten: splitten, fractie: fractie }, jaar);
+    var lo = E.uitkeringen(C, simLo, { partnerPct: partnerPct, splitten: splitten, fractie: fractie }, jaar);
+    var hi = E.uitkeringen(C, simHi, { partnerPct: partnerPct, splitten: splitten, fractie: fractie }, jaar);
     // Kapitaal van het gekozen scenario (basis, pessimistisch of optimistisch).
     var selSim = scenario === 'pess' ? simLo : (scenario === 'opt' ? simHi : sim);
     var pct2 = new Intl.NumberFormat('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -768,7 +752,7 @@
     // Parttime-wijzigingen tellen in beide mee, zodat het verschil alleen de pensioenkeuzes laat zien.
     var aowMaanden = C.pensioenreglement.aowLeeftijdMaanden;
     var simStd = E.simuleer(C, { pensioenLeeftijdMaanden: aowMaanden, rente: rente, deeltijd: null, parttimepercentages: wl, startkapitaal: sk });
-    var uStd = E.uitkeringen(C, simStd, { uitruilPct: 0, splitten: 'nee', fractie: fractie }, AOW_JAREN);
+    var uStd = E.uitkeringen(C, simStd, { splitten: 'nee', fractie: fractie }, AOW_JAREN);
 
     var pensLabel = E.maandLabel(pensIdx);
     var deelJaar = u.deelJaar;
@@ -794,11 +778,7 @@
     // Stap-samenvattingen
     $('k1').textContent = start === 'aow' ? 'Op AOW-leeftijd, ' + AOW_LABEL : 'Op ' + jaar + ' jaar';
     $('k2').textContent = deelAan ? 'Deels: ' + $('deelPct').value + '% vanaf ' + E.maandLabel(E.maandIndex($('deelMaand').value)) : 'Volledig met pensioen';
-    if (metPartner) {
-      $('k3').textContent = partnerAan ? 'Partnerpensioen verlaagd met ' + $('uitruil').value + '%' : 'Partnerpensioen blijft staan';
-    } else {
-      $('k3').textContent = partnerAan ? 'Ouderdomspensioen ingeruild: ' + $('uitruil').value + '%' : 'Geen partnerpensioen';
-    }
+    $('k3').textContent = partnerPct > 0 ? 'Partnerpensioen ' + partnerPct + '% van het ouderdomspensioen' : 'Geen partnerpensioen';
     $('k4').textContent = splitten === 'hoog' ? 'Hoger eerst, daarna lager' : splitten === 'laag' ? 'Lager eerst, daarna hoger' : 'Niet tijdelijk anders verdeeld';
 
     // Resultaatpaneel
@@ -820,9 +800,11 @@
 
     $('rDeel').textContent = deel ? 'Deeltijdpensioen vanaf ' + E.maandLabel(deel.idx) + ': ' + eur0.format(maand(deelJaar)) + ' per maand.' : '';
     $('rPartner').textContent = 'Partner bij uw overlijden: ' + eur0.format(u.partner / 12) + ' per maand (bruto).';
+    var aOPnu = E.delerVoor(jaar, C.annuiteitsdelers);
+    $('partnerUitleg').textContent = 'Elke euro partnerpensioen kost \u20AC' + C.partnerpensioen.inkoopfactorNP + ' aan kapitaal. Een euro ouderdomspensioen kost \u20AC' + aOPnu.toFixed(1).replace('.', ',') + '. Samen moeten die twee het kapitaal opleveren.';
 
     // Verschil per maand met de standaardkeuzes. Verborgen als alle pensioenkeuzes op standaard staan.
-    var isStandaard = start === 'aow' && !deelAan && !partnerAan && splitten === 'nee';
+    var isStandaard = start === 'aow' && !deelAan && partnerPct === C.partnerpensioen.standaardPct && splitten === 'nee';
     $('rDelta').hidden = isStandaard;
     if (!isStandaard) {
       var refBedrag = maand(uStd.pre);
@@ -1021,7 +1003,7 @@
     var jaar = p.start === 'aow' ? AOW_JAREN : p.leeftijd;
     var pensM = Math.round(jaar * 12);
     var sim = E.simuleer(C, { pensioenLeeftijdMaanden: pensM, rente: rente, deeltijd: null, parttimepercentages: p.parttime, startkapitaal: sk });
-    var u = E.uitkeringen(C, sim, { uitruilPct: 0, splitten: 'nee', fractie: C.opties.aowOverbrugging }, jaar);
+    var u = E.uitkeringen(C, sim, { splitten: 'nee', fractie: C.opties.aowOverbrugging }, jaar);
     var reeks = E.uitkeringsreeks(C, sim, u, jaar, null).punten;
     var birthIdx = E.maandIndex(C.deelnemer.geboortedatum);
     return {
@@ -1041,7 +1023,7 @@
     radioSet('start', p.start);
     if (p.start === 'ander') $('leeftijd').value = String(p.leeftijd);
     radioSet('deel', 'nee');
-    radioSet('partner', 'nee');
+    $('partnerPct').value = C.partnerpensioen.standaardPct;
     radioSet('verdeel', 'nee');
     parttimeRows = p.parttime.map(function (r) { return { vanaf: r.vanaf, pct: r.percentage }; });
     renderWerk();

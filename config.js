@@ -47,10 +47,6 @@ window.PLANNER_CONFIG = {
     eindLeeftijd: 100,                // rekenkundige horizon voor de AOW-verschuiving (hoog/laag), jaren
     grafiekEindLeeftijd: 77,          // laatste leeftijd op de X-as van de uitkeringsgrafiek (jaren)
     standaardPensioenleeftijd: 65,    // startwaarde in de planner (jaren)
-    partnerpensioenFractie: 0.70,     // partnerpensioen als deel van het ouderdomspensioen
-    // true  = er is standaard partnerpensioen gereserveerd (ouderdomspensioen wordt verlaagd als u dat wilt verlagen).
-    // false = er is standaard GEEN partnerpensioen; u kunt ouderdomspensioen inruilen naar partnerpensioen.
-    partnerpensioenStandaard: true
   },
 
   // Parttimepercentage van het voltijdssalaris, vanaf een maand. Gesorteerd op datum.
@@ -100,9 +96,18 @@ window.PLANNER_CONFIG = {
   // Pensioenopties.
   // aowOverbrugging: hoog/laag verhoogt het pensioen vóór de AOW-leeftijd met deze fractie
   // en verlaagt het daarna (laag/hoog is het omgekeerde). Vereenvoudigd kostenneutraal.
-  // uitruilRatio: partnerpensioen (€) per euro ouderdomspensioen dat u inruilt. Omgekeerd geldt: 1 euro partnerpensioen minder = 1/uitruilRatio euro ouderdomspensioen meer.
+  // aowOverbrugging: hoog/laag verhoogt het pensioen vóór de AOW-leeftijd met deze fractie
+  // en verlaagt het daarna (laag/hoog is het omgekeerde). Vereenvoudigd kostenneutraal.
   opties: {
-    aowOverbrugging: 0.25,
-    uitruilRatio: 1.5
+    aowOverbrugging: 0.25
+  },
+
+  // Partnerpensioen (NP): het percentage van het ouderdomspensioen (OP) dat op de pensioendatum wordt ingekocht.
+  // inkoopfactorNP: kapitaal per euro NP per jaar. Kapitaal = OP x annuïteitsfactor OP + NP x inkoopfactorNP.
+  partnerpensioen: {
+    minPct: 0,
+    maxPct: 70,
+    standaardPct: 70,
+    inkoopfactorNP: 4
   }
 };

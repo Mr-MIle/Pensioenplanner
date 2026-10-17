@@ -130,31 +130,20 @@
     };
   }
 
-  // Jaarlijkse uitkeringen. opt = { uitruilPct, splitten: 'nee' | 'hoog' | 'laag', fractie }.
-  // Bij partnerpensioenStandaard = true: uitruilPct is het percentage van het partnerpensioen dat u verlaagt
-  //   (dat geeft extra ouderdomspensioen).
-  // Bij partnerpensioenStandaard = false: uitruilPct is het percentage van het ouderdomspensioen dat u inruilt
-  //   voor partnerpensioen.
-  // splitten: 'hoog' = hoger vóór de AOW, lager erna; 'laag' = lager vóór de AOW, hoger erna.
-  // fractie: hoe groot het verschil is (0-1). Vereenvoudigd kostenneutraal (zonder rente en sterfte).
+  // Jaarlijkse uitkeringen. opt = { partnerPct, splitten: 'nee' | 'hoog' | 'laag', fractie }.
+  // Partnerpensioen (NP) wordt op de pensioendatum ingekocht als percentage v (0-70%) van het ouderdomspensioen (OP).
+  // Kapitaal = OP x annuïteitsfactor OP + NP x inkoopfactor NP, met NP = v x OP.
+  // Dus OP = kapitaal / (annuïteitsfactor OP + v x inkoopfactor NP).
+  // Hoog/laag verschuift alleen het OP; het NP blijft gelijk.
   function uitkeringen(cfg, sim, opt, pensioenLeeftijdJaar) {
     const reg = cfg.pensioenreglement;
-    const d = delerVoor(pensioenLeeftijdJaar, cfg.annuiteitsdelers);
-    const std = sim.kapitaal / d;
-    const v = (opt.uitruilPct || 0) / 100;
-    const r = cfg.opties.uitruilRatio;
-    let base = std;
-    let partner;
-    if (reg.partnerpensioenStandaard) {
-      // Partnerpensioen is gereserveerd: verlagen geeft extra ouderdomspensioen.
-      const partnerStd = std * reg.partnerpensioenFractie;
-      partner = partnerStd * (1 - v);
-      base = std + partnerStd * v / r;
-    } else {
-      // Geen standaard partnerpensioen: inruilen van ouderdomspensioen levert partnerpensioen op.
-      base = std * (1 - v);
-      partner = std * v * r;
-    }
+    const pp = cfg.partnerpensioen;
+    const aOP = delerVoor(pensioenLeeftijdJaar, cfg.annuiteitsdelers);
+    const pct = opt.partnerPct !== undefined ? opt.partnerPct : pp.standaardPct;
+    const v = Math.min(pp.maxPct, Math.max(pp.minPct, pct)) / 100;
+    const std = sim.kapitaal / (aOP + v * pp.inkoopfactorNP);
+    const partner = v * std;
+    const base = std;
 
     const nPre = Math.max(0, reg.aowLeeftijdMaanden - pensioenLeeftijdJaar * 12);
     const nPost = Math.max(1, reg.eindLeeftijd * 12 - reg.aowLeeftijdMaanden);
