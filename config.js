@@ -54,10 +54,8 @@ window.PLANNER_CONFIG = {
   },
 
   // Parttimepercentage van het voltijdssalaris, vanaf een maand. Gesorteerd op datum.
-  parttimepercentages: [
-    { vanaf: "2026-11", percentage: 80 },
-    { vanaf: "2028-11", percentage: 100 }
-  ],
+  // Leeg: standaard werkt de deelnemer voltijd (100%). Wijzigingen kiest de gebruiker zelf in de wizard.
+  parttimepercentages: [],
 
   rendement: {
     overrendementNaRTS: 0.02,   // vast jaarlijks overrendement NA RTS-correctie
