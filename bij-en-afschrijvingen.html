@@ -52,6 +52,11 @@ tfoot td{font-weight:600;border-top:2px solid var(--line);border-bottom:none}
 .uitlezing span{color:var(--muted)}
 .uitlezing strong{color:var(--text)}
 .hint{color:var(--muted);font-size:.85rem;margin:8px 0 0}
+.serie-knoppen{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 10px}
+.serie-knop{font:inherit;display:flex;gap:10px;align-items:center;background:var(--card);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:8px 12px;cursor:pointer;text-align:left;font-size:.9rem}
+.serie-knop[aria-pressed="false"]{opacity:.45}
+.serie-knop i{display:inline-block;width:34px;min-width:34px;height:0;border-top:3px solid}
+.serie-knop .sw-k{border-color:var(--accent)} .serie-knop .sw-p{border-color:var(--serie2);border-top-style:dashed}
 tr.doel td{background:var(--head);font-weight:600}
 
 </style>
@@ -71,13 +76,13 @@ tr.doel td{background:var(--head);font-weight:600}
 
   <h2>Ontwikkeling laatste 24 maanden</h2>
   <div class="grafiek-kaart">
-    <div class="legenda">
-      <div class="leg-item"><i class="sw-k"></i><div><strong class="kleur-k">Blauwe lijn: kapitaal</strong> (linker as, in euro). Het totale opgebouwde pensioenvermogen aan het eind van de maand.</div></div>
-      <div class="leg-item"><i class="sw-p"></i><div><strong class="kleur-p">Gestippelde oranje lijn: verwacht pensioen per maand</strong> (rechter as, in euro). Het ouderdomspensioen per maand dat bij het kapitaal van diezelfde maand hoort.</div></div>
+    <div class="serie-knoppen" role="group" aria-label="Lijnen in de grafiek">
+      <button type="button" class="serie-knop" id="knopP" aria-pressed="true"><i class="sw-p"></i><span><strong class="kleur-p">Verwacht pensioen per maand</strong></span></button>
+      <button type="button" class="serie-knop" id="knopK" aria-pressed="false"><i class="sw-k"></i><span><strong class="kleur-k">Verwacht vermogen (kapitaal)</strong></span></button>
     </div>
     <div class="uitlezing" id="uitlezing" aria-live="polite"></div>
     <svg id="grafiek" viewBox="0 0 960 340" role="img" aria-label="Lijngrafiek van het kapitaal en het verwachte pensioen per maand over de laatste 24 maanden"></svg>
-    <p class="hint">Houd de muis boven de grafiek (of tik op een maand op een telefoon) om de cijfers van die maand te zien.</p>
+    <p class="hint">Verwacht pensioen per maand is het ouderdomspensioen dat bij het kapitaal van die maand hoort. Het kapitaal is het totale opgebouwde pensioenvermogen aan het eind van de maand. Kies met de knoppen welke lijn u ziet; er staat altijd minstens één lijn aan. Houd de muis boven de grafiek (of tik op een maand op een telefoon) om de cijfers van die maand te zien.</p>
   </div>
 
   <h2>Maandoverzicht</h2>
@@ -130,6 +135,9 @@ tr.doel td{background:var(--head);font-weight:600}
 
   var geo = null;      // gegevens en geometrie van de grafieken, nodig voor de muisaanwijzing
   var huidig = null;   // gekozen deelnemer met reeks, deler en pensioenleeftijd
+  var toonP = true;    // verwacht pensioen per maand: standaard aan
+  var toonK = false;   // verwacht vermogen (kapitaal): standaard uit
+  var lastIdx = 0;     // gekozen maand, om de uitlezing na een knopklik te behouden
 
   function $(id) { return document.getElementById(id); }
 
@@ -282,20 +290,25 @@ tr.doel td{background:var(--head);font-weight:600}
   // Toont de cijfers van één maand en markeert die maand in beide grafieken.
   function toon(i) {
     if (!geo) return;
+    lastIdx = i;
     var r = geo.data[i];
-    $('uitlezing').innerHTML =
-      '<span>Maand <strong>' + r.label + '</strong></span>' +
-      '<span>Kapitaal <strong style="color: var(--accent)">' + geld(r.kapitaal) + '</strong></span>' +
-      '<span>Verwacht pensioen per maand <strong style="color: var(--serie2)">' + geld(r.pensioen) + '</strong></span>' +
-      '<span>Verandering pensioen t.o.v. vorige maand <strong class="' + klasse(r.wijziging) + '">' + geld(r.wijziging) + '</strong></span>';
+    var delen = ['<span>Maand <strong>' + r.label + '</strong></span>'];
+    if (toonK) delen.push('<span>Kapitaal <strong style="color: var(--accent)">' + geld(r.kapitaal) + '</strong></span>');
+    if (toonP) {
+      delen.push('<span>Verwacht pensioen per maand <strong style="color: var(--serie2)">' + geld(r.pensioen) + '</strong></span>');
+      delen.push('<span>Verandering pensioen t.o.v. vorige maand <strong class="' + klasse(r.wijziging) + '">' + geld(r.wijziging) + '</strong></span>');
+    }
+    $('uitlezing').innerHTML = delen.join('');
 
     var x = geo.x(i).toFixed(1);
     $('hl').setAttribute('x1', x);
     $('hl').setAttribute('x2', x);
     $('hk').setAttribute('cx', x);
     $('hk').setAttribute('cy', geo.yK(r.kapitaal).toFixed(1));
+    $('hk').setAttribute('visibility', toonK ? 'visible' : 'hidden');
     $('hp').setAttribute('cx', x);
     $('hp').setAttribute('cy', geo.yP(r.pensioen).toFixed(1));
+    $('hp').setAttribute('visibility', toonP ? 'visible' : 'hidden');
     $('hover').setAttribute('visibility', 'visible');
   }
 
@@ -325,7 +338,7 @@ tr.doel td{background:var(--head);font-weight:600}
     var data = rijen.slice(-24);
     var n = data.length;
 
-    // Hoofdgrafiek: kapitaal (linker as) en verwacht pensioen per maand (rechter as), elk in euro.
+    // Hoofdgrafiek: kapitaal en verwacht pensioen per maand, elk met een eigen schaal. Alleen de aangezette lijnen.
     var M = MAIN;
     var pw = M.W - M.L - M.R, ph = M.H - M.T - M.B;
     var k = assen(data.map(function (r) { return r.kapitaal; }), 4);
@@ -335,37 +348,63 @@ tr.doel td{background:var(--head);font-weight:600}
     function yP(v) { return M.T + ph * (1 - (v - p.lo) / (p.hi - p.lo)); }
     geo = { data: data, x: x, yK: yK, yP: yP, n: n };
 
+    // Linker as: kapitaal als dat aan staat, anders het pensioen. Rechter as alleen als beide lijnen aan staan.
+    var links = toonK ? k : p, linksY = toonK ? yK : yP;
+    var beide = toonK && toonP;
+
     var g = '<rect x="' + M.L + '" y="' + M.T + '" width="' + pw + '" height="' + ph + '" fill="transparent"/>';
-    for (var t = k.lo; t <= k.hi + k.stap / 2; t += k.stap) {
-      var yy = yK(t).toFixed(1);
+    for (var t = links.lo; t <= links.hi + links.stap / 2; t += links.stap) {
+      var yy = linksY(t).toFixed(1);
       g += '<line class="raster" x1="' + M.L + '" x2="' + (M.W - M.R) + '" y1="' + yy + '" y2="' + yy + '"/>';
       g += '<text class="as-tekst" x="' + (M.L - 8) + '" y="' + (+yy + 4) + '" text-anchor="end">' + Math.round(t).toLocaleString('nl-NL') + '</text>';
     }
-    for (var u = p.lo; u <= p.hi + p.stap / 2; u += p.stap) {
-      var y2 = yP(u).toFixed(1);
-      g += '<text class="as-tekst" x="' + (M.W - M.R + 8) + '" y="' + (+y2 + 4) + '" text-anchor="start">' + Math.round(u).toLocaleString('nl-NL') + '</text>';
+    if (beide) {
+      for (var u = p.lo; u <= p.hi + p.stap / 2; u += p.stap) {
+        var y2 = yP(u).toFixed(1);
+        g += '<text class="as-tekst" x="' + (M.W - M.R + 8) + '" y="' + (+y2 + 4) + '" text-anchor="start">' + Math.round(u).toLocaleString('nl-NL') + '</text>';
+      }
+      g += '<text class="as-titel as-titel-k" x="0" y="22" text-anchor="start">Kapitaal (€)</text>';
+      g += '<text class="as-titel as-titel-p" x="' + M.W + '" y="22" text-anchor="end">Verwacht pensioen per maand (€)</text>';
+    } else if (toonK) {
+      g += '<text class="as-titel as-titel-k" x="0" y="22" text-anchor="start">Kapitaal (€)</text>';
+    } else {
+      g += '<text class="as-titel as-titel-p" x="0" y="22" text-anchor="start">Verwacht pensioen per maand (€)</text>';
     }
-    g += '<text class="as-titel as-titel-k" x="0" y="22" text-anchor="start">Kapitaal (€)</text>';
-    g += '<text class="as-titel as-titel-p" x="' + M.W + '" y="22" text-anchor="end">Verwacht pensioen per maand (€)</text>';
 
-    var pk = [], pp = [];
-    data.forEach(function (r, i) {
-      pk.push(x(i).toFixed(1) + ',' + yK(r.kapitaal).toFixed(1));
-      pp.push(x(i).toFixed(1) + ',' + yP(r.pensioen).toFixed(1));
-    });
-    g += '<path class="lijn-k" d="M' + pk.join('L') + '"/>';
-    g += '<path class="lijn-p" d="M' + pp.join('L') + '"/>';
-    data.forEach(function (r, i) {
-      g += '<circle class="punt-k" cx="' + x(i).toFixed(1) + '" cy="' + yK(r.kapitaal).toFixed(1) + '" r="2.5"/>';
-      g += '<circle class="punt-p" cx="' + x(i).toFixed(1) + '" cy="' + yP(r.pensioen).toFixed(1) + '" r="2.5"/>';
-    });
+    if (toonK) {
+      var pk = [];
+      data.forEach(function (r, i) { pk.push(x(i).toFixed(1) + ',' + yK(r.kapitaal).toFixed(1)); });
+      g += '<path class="lijn-k" d="M' + pk.join('L') + '"/>';
+      data.forEach(function (r, i) { g += '<circle class="punt-k" cx="' + x(i).toFixed(1) + '" cy="' + yK(r.kapitaal).toFixed(1) + '" r="2.5"/>'; });
+    }
+    if (toonP) {
+      var pp = [];
+      data.forEach(function (r, i) { pp.push(x(i).toFixed(1) + ',' + yP(r.pensioen).toFixed(1)); });
+      g += '<path class="lijn-p" d="M' + pp.join('L') + '"/>';
+      data.forEach(function (r, i) { g += '<circle class="punt-p" cx="' + x(i).toFixed(1) + '" cy="' + yP(r.pensioen).toFixed(1) + '" r="2.5"/>'; });
+    }
     g += '<g id="hover" pointer-events="none" visibility="hidden">' +
       '<line id="hl" y1="' + M.T + '" y2="' + (M.H - M.B) + '" stroke="var(--muted)" stroke-width="1.5"/>' +
       '<circle id="hk" r="6" fill="var(--accent)" stroke="var(--card)" stroke-width="2"/>' +
       '<circle id="hp" r="6" fill="var(--serie2)" stroke="var(--card)" stroke-width="2"/>' +
       '</g>';
     $('grafiek').innerHTML = g;
+    syncKnoppen();
+  }
 
+  function syncKnoppen() {
+    $('knopK').setAttribute('aria-pressed', toonK ? 'true' : 'false');
+    $('knopP').setAttribute('aria-pressed', toonP ? 'true' : 'false');
+  }
+
+  // Knop aan of uit. Er blijft altijd minstens één lijn aan.
+  function wissel(serie) {
+    if (serie === 'k') toonK = !toonK; else toonP = !toonP;
+    if (!toonK && !toonP) { if (serie === 'k') toonK = true; else toonP = true; syncKnoppen(); return; }
+    if (huidig) {
+      tekenGrafieken(huidig.rijen);
+      toon(Math.min(lastIdx, geo.data.length - 1));
+    }
   }
 
   function init() {
@@ -374,6 +413,8 @@ tr.doel td{background:var(--head);font-weight:600}
       sel.add(new Option(d.naam + ' · geboren ' + datumNl(d.geboortedatum) + ' · ' + geld(d.startkapitaal), i));
     });
     sel.addEventListener('change', function () { render(Number(sel.value)); });
+    $('knopP').addEventListener('click', function () { wissel('p'); });
+    $('knopK').addEventListener('click', function () { wissel('k'); });
 
     function aanwijzen(e) { if (geo) toon(naarIndex(e)); }
     function verlaten() { if (geo) toon(geo.data.length - 1); }

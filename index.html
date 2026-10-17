@@ -396,7 +396,7 @@
 
   <section class="paneel" aria-labelledby="h-kapitaal">
     <h2 id="h-kapitaal">Ontwikkeling pensioenvermogen</h2>
-    <p class="muted" style="margin: 6px 0 0">Standaard ziet u het verwachte ouderdomspensioen per maand. Met de schakelaar hieronder zet u de opbouw van het kapitaal erbij. Er is geen beschermingsrendement.</p>
+    <p class="muted" style="margin: 6px 0 0">De grafiek laat de ontwikkeling van het kapitaal tot de pensioendatum zien, opgesplitst in startkapitaal, premie-inleg en overrendement. Er is geen beschermingsrendement.</p>
     <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 14px 0 0">
       <div class="seg-groep" role="group" aria-label="Scenario">
         <button class="seg" type="button" data-sc="pess" aria-pressed="false">Pessimistisch</button>
@@ -417,17 +417,8 @@
         <div class="sub" id="kInlegSub">–</div>
       </div>
     </div>
-    <div style="display: grid; gap: 10px; margin: 14px 0 0">
-      <label class="weergave"><span>Verwacht pensioen per maand (voor u)</span><input id="toonPensioen" type="checkbox" checked></label>
-      <label class="weergave"><span>Ontwikkeling van het kapitaal erbij tonen</span><input id="toonKapitaal" type="checkbox"></label>
-    </div>
     <div id="grafiek" style="margin-top: 12px"></div>
-    <div class="legenda" id="legendaPensioen">
-      <span class="staaf" style="--c: var(--warm)">Verwacht ouderdomspensioen per maand</span>
-      <span class="punt" style="--c: var(--neg)">Pessimistisch</span>
-      <span class="punt" style="--c: var(--accent)">Optimistisch</span>
-    </div>
-    <div class="legenda" id="legendaKapitaal" hidden>
+    <div class="legenda" id="legendaKapitaal">
       <span style="--c: var(--muted)">Startkapitaal (na onttrekking)</span>
       <span style="--c: var(--accent)">Premie-inleg</span>
       <span style="--c: var(--warm)">Overrendement</span>
@@ -907,7 +898,7 @@
     var pv = Math.min(C.partnerpensioen.maxPct, Math.max(C.partnerpensioen.minPct, partnerPct)) / 100;
     var aOPv = E.delerVoor(jaar, C.annuiteitsdelers);
     var perMaand = function (eind) { return naarBasis(eind / (aOPv + pv * C.partnerpensioen.inkoopfactorNP) / 12); };
-    var toonK = $('toonKapitaal').checked, toonP = $('toonPensioen').checked;
+    var toonK = true, toonP = false;   // de planner toont alleen het kapitaal
     $('grafiek').innerHTML = tekenVermogen(selSim.rows, sk, {
       toonKapitaal: toonK,
       toonPensioen: toonP,
@@ -918,7 +909,6 @@
       kapHi: simHi.rows.map(function (r) { return r.eind; })
     });
     $('legendaKapitaal').hidden = !toonK;
-    $('legendaPensioen').hidden = !toonP;
 
     // Maandtabel
     $('tInleg').textContent = eur0.format(sim.totalen.inleg);
