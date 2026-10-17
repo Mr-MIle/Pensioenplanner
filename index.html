@@ -424,8 +424,10 @@
     <div id="uitkeringGrafiek" style="margin-top: 12px"></div>
     <p class="muted grafiek-link"><a id="aowLink" href="bij-en-afschrijvingen.html" style="color: var(--accent); font-weight: 600">Bekijk de pensioenpot op de AOW-datum &rarr;</a></p>
     <div class="legenda">
-      <span class="staaf" style="--c: var(--accent)">Nominaal, gemiddeld per maand per leeftijdsjaar</span>
-      <span id="legReeel" class="staaf" style="--c: var(--warm)" hidden>Reëel, gemiddeld per maand</span>
+      <span class="staaf" style="--c: var(--accent)">Levenslang ouderdomspensioen (OP)</span>
+      <span class="staaf" style="--c: var(--topaow)">TOPAOW</span>
+      <span class="staaf" style="--c: var(--tophl)">TOPHL</span>
+      <span id="legReeel" class="stippel" style="--c: var(--fg)" hidden>Reëel, gemiddeld per maand</span>
     </div>
   </section>
 
@@ -909,7 +911,13 @@
     var lhk = $('lhk').checked;
     var punten = reeks.punten.filter(function (p) { return p.leeftijd <= C.pensioenreglement.grafiekEindLeeftijd; }).map(function (p) {
       var f = function (m) { if (m === null || m === undefined) return null; return basis === 'netto' ? E.nettoJaar(C, m * 12, lhk) / 12 : m; };
-      return { leeftijd: p.leeftijd, nominaal: f(p.nominaal), reeel: f(p.reeel), standaard: f(p.standaard) };
+      // Opsplitsing: levenslang OP (incl. deeltijd), TOPAOW en TOPHL. Partnerpensioen staat niet in de grafiek.
+      var voorAowP = p.leeftijd < AOW_JAREN;
+      var isDeel = p.fase === 'deeltijd';
+      var opM = isDeel ? (deel ? deelJaar : 0) / 12 : ((voorAowP ? u.opNa : u.post) + deelJaar) / 12;
+      var t1M = (!isDeel && voorAowP) ? u.t1 / 12 : 0;
+      var t2M = (!isDeel && voorAowP) ? u.t2 / 12 : 0;
+      return { leeftijd: p.leeftijd, reeel: f(p.reeel), op: f(opM), t1: f(t1M), t2: f(t2M) };
     });
     var deelLabel = deel ? E.maandLabel(deel.idx) : null;
     var toonReeel = $('toonReeel').checked;
@@ -1377,26 +1385,28 @@
   }
 
   // Staafdiagram: per leeftijdsjaar het gemiddelde bedrag per maand (nominaal, en reëel als die schuif aanstaat).
+  // Gestapelde staven per leeftijdsjaar: levenslang OP onderaan, daarboven TOPAOW en TOPHL (tijdelijk, tot de AOW).
   function tekenUitkering(pts, aow, deelL, pensL, toonReeel, aowHref) {
     var W = 720, H = 300, pl = 76, pr = 16, pt = 16, pb = 34;
     var groepen = {};
     pts.forEach(function (p) {
       var k = Math.floor(p.leeftijd + 1e-9);
-      var g = groepen[k] || (groepen[k] = { nom: 0, nNom: 0, reel: 0, nReel: 0 });
-      if (p.nominaal !== null && p.nominaal !== undefined) { g.nom += p.nominaal; g.nNom++; }
+      var g = groepen[k] || (groepen[k] = { op: 0, t1: 0, t2: 0, n: 0, reel: 0, nReel: 0 });
+      g.op += p.op; g.t1 += p.t1; g.t2 += p.t2; g.n++;
       if (p.reeel !== null && p.reeel !== undefined) { g.reel += p.reeel; g.nReel++; }
     });
     var rows = Object.keys(groepen).map(Number).sort(function (a, b) { return a - b; })
-      .filter(function (k) { return groepen[k].nNom > 0; })
+      .filter(function (k) { return groepen[k].n > 0; })
       .map(function (k) {
         var g = groepen[k];
-        return { leeftijd: k, nom: g.nom / g.nNom, reel: g.nReel ? g.reel / g.nReel : null };
+        var op = g.op / g.n, t1 = g.t1 / g.n, t2 = g.t2 / g.n;
+        return { leeftijd: k, op: op, t1: t1, t2: t2, tot: op + t1 + t2, reel: g.nReel ? g.reel / g.nReel : null };
       });
     if (!rows.length) return '';
 
     var top = 0;
     rows.forEach(function (r) {
-      top = Math.max(top, r.nom);
+      top = Math.max(top, r.tot);
       if (toonReeel && r.reel !== null) top = Math.max(top, r.reel);
     });
     var as = uitkeringsAs(top || 1);
@@ -1404,7 +1414,7 @@
     var stapY = as.stap;
 
     var slot = (W - pl - pr) / rows.length;
-    var bw = Math.max(2, slot * 0.72 / (toonReeel ? 2 : 1));
+    var bw = Math.max(2, slot * 0.72);
     var minA = rows[0].leeftijd;
     function xc(a) { return pl + slot * (a - minA) + slot / 2; }
     function y(v) { return H - pb - (H - pt - pb) * v / top; }
@@ -1418,14 +1428,21 @@
     var bars = '';
     rows.forEach(function (r) {
       var cx = xc(r.leeftijd);
-      var x1 = toonReeel ? cx - bw : cx - bw / 2;
-      bars += '<rect x="' + x1.toFixed(1) + '" y="' + y(r.nom).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (H - pb - y(r.nom)).toFixed(1) + '" fill="var(--accent)"><title>' +
-        r.leeftijd + ' jaar: ' + eur0.format(r.nom) + ' per maand (nominaal)</title></rect>';
-      if (toonReeel && r.reel !== null) {
-        bars += '<rect x="' + cx.toFixed(1) + '" y="' + y(r.reel).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (H - pb - y(r.reel)).toFixed(1) + '" fill="var(--warm)"><title>' +
-          r.leeftijd + ' jaar: ' + eur0.format(r.reel) + ' per maand (reëel)</title></rect>';
-      }
+      var acc = 0;
+      [['op', 'var(--accent)', 'levenslang OP'], ['t1', 'var(--topaow)', 'TOPAOW'], ['t2', 'var(--tophl)', 'TOPHL']].forEach(function (d) {
+        var waarde = r[d[0]];
+        if (waarde <= 0) return;
+        var y0 = y(acc), y1 = y(acc + waarde);
+        bars += '<rect x="' + (cx - bw / 2).toFixed(1) + '" y="' + y1.toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + (y0 - y1).toFixed(1) +
+          '" fill="' + d[1] + '"><title>' + r.leeftijd + ' jaar, ' + d[2] + ': ' + eur0.format(waarde) + ' per maand</title></rect>';
+        acc += waarde;
+      });
     });
+    if (toonReeel) {
+      var reelPad = '';
+      rows.forEach(function (r, k) { if (r.reel !== null) reelPad += (reelPad ? 'L' : 'M') + xc(r.leeftijd).toFixed(1) + ',' + y(r.reel).toFixed(1); });
+      if (reelPad) bars += '<path d="' + reelPad + '" fill="none" stroke="var(--fg)" stroke-width="2" stroke-dasharray="5 4"/>';
+    }
 
     var ax = '';
     rows.forEach(function (r) {
