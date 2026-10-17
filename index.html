@@ -164,6 +164,8 @@
   .resultaat .seg.actief { background: var(--panel-fg); color: var(--panel); }
   .resultaat #rPartner { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--panel-sub); display: grid; gap: 4px; }
   .resultaat .bedrag-klein { font-family: "Newsreader", Georgia, serif; font-size: 22px; line-height: 1.2; font-variant-numeric: tabular-nums; }
+  .resultaat .uitsplitsing { font-size: 14px; color: var(--panel-sub); display: grid; gap: 2px; margin-top: 4px; font-variant-numeric: tabular-nums; }
+  .resultaat .uitsplitsing strong { color: var(--panel-fg); }
   .resultaat .netto-toelichting { font-size: 12px; color: var(--panel-sub); margin: 6px 0 0; }
   .resultaat .delta { font-size: 14px; background: var(--panel-inner); border-radius: 10px; padding: 10px 12px; display: grid; gap: 4px; font-variant-numeric: tabular-nums; }
   .resultaat .delta-kop { font-size: 12px; color: var(--panel-sub); }
@@ -340,15 +342,19 @@
         </select>
       </div>
 
-      <div class="blok">
-        <div class="label" id="rLabel">Levenslang ouderdomspensioen</div>
-        <div class="bedrag" id="rBedrag">–</div>
-        <div class="sub-tekst" id="rBedragSub">per maand</div>
+      <div class="blok" id="rVoorBlok">
+        <div class="label" id="rVoorLabel">Totaal tot de AOW-leeftijd</div>
+        <div class="bedrag" id="rVoor">–</div>
+        <div class="sub-tekst" id="rVoorSub"></div>
+        <div class="uitsplitsing" id="rVoorDetail"></div>
         <p class="netto-toelichting" id="nettoUitleg">Netto is een indicatie op basis van een fictieve belastingtabel. Geen officiële berekening. Elk bedrag is apart omgerekend, dus het totaal kan iets afwijken van de belasting over het samengestelde inkomen.</p>
-        <div class="sub-tekst" id="rAowSub" style="margin-top: 6px"></div>
       </div>
 
-      <div class="info" id="rTijd"></div>
+      <div class="blok" id="rNaBlok">
+        <div class="label" id="rNaLabel">Vanaf de AOW-leeftijd</div>
+        <div class="bedrag" id="rNa">–</div>
+        <div class="sub-tekst" id="rNaSub"></div>
+      </div>
 
       <div class="delta" id="rDelta" hidden>
         <div class="delta-kop">Ten opzichte van de standaardkeuzes (AOW-leeftijd, geen deeltijd, standaard partnerpensioen, geen verdeling)</div>
@@ -357,8 +363,7 @@
       </div>
 
       <div class="info" id="rInfo">
-        <div id="rAow"></div>
-        <div id="rDeel" style="margin-top: 6px"></div>
+        <div id="rDeel"></div>
       </div>
 
       <div class="info" id="rPartnerBlok">
@@ -825,40 +830,33 @@
       : 'Geen TOPAOW of TOPHL';
 
     // Resultaatpaneel
-    // Drie soorten pensioen: levenslang OP (verandert niet door TOPAOW), tijdelijk (TOPAOW + TOPHL, tot de AOW) en partnerpensioen.
-    var opJaar = u.opNa + deelJaar;          // levenslang OP vóór de AOW, incl. deeltijdpensioen
-    var opPostJaar = u.post + deelJaar;      // levenslang OP vanaf de AOW
-    $('rLabel').textContent = 'Levenslang ouderdomspensioen, vanaf ' + pensLabel;
-    $('rBedrag').textContent = eur0.format(maand(opJaar));
-    $('rBedragSub').textContent = $('basis').value + ' per maand, tot het overlijden';
-    $('nettoUitleg').hidden = $('basis').value !== 'netto';
+    // Overzicht: totaal tot de AOW-leeftijd (levenslang OP + tijdelijk), totaal vanaf de AOW-leeftijd (levenslang OP) en partnerpensioen.
+    var basisNu = $('basis').value;
+    var opVoorJaar = u.opNa + deelJaar;      // levenslang OP vóór de AOW, incl. deeltijdpensioen
+    var opNaJaar = u.post + deelJaar;        // levenslang OP vanaf de AOW
+    var tijdJaar = u.t1 + u.t2;              // TOPAOW + TOPHL, alleen tot de AOW
+    var opJaar = opVoorJaar, opPostJaar = opNaJaar;   // voor de verschillen met de standaardkeuzes
+    $('rVoorBlok').hidden = !voorAow;
+    $('rVoorLabel').textContent = 'Totaal tot de AOW-leeftijd, vanaf ' + pensLabel;
+    $('rVoor').textContent = eur0.format(maand(opVoorJaar + tijdJaar));
+    $('rVoorSub').textContent = basisNu + ' per maand';
+    $('rVoorDetail').innerHTML = '<div>Levenslang OP: <strong>' + eur0.format(maand(opVoorJaar)) + '</strong></div>' +
+      (tijdJaar > 0
+        ? '<div>Tijdelijk (' + (u.t1 > 0 ? 'TOPAOW' : '') + (u.t1 > 0 && u.t2 > 0 ? ' en ' : '') + (u.t2 > 0 ? 'TOPHL' : '') + '): <strong>' + eur0.format(maand(tijdJaar)) + '</strong></div>'
+        : '<div>Tijdelijk: geen TOPAOW of TOPHL gekozen</div>');
+    $('nettoUitleg').hidden = basisNu !== 'netto';
 
-    if (u.t2 > 0) {
-      $('rAowSub').textContent = 'Vanaf AOW-leeftijd: ' + eur0.format(maand(opPostJaar)) + ' per maand, door TOPHL lager';
-    } else {
-      $('rAowSub').textContent = '';
-    }
-
-    if (voorAow && (u.t1 + u.t2) > 0) {
-      $('rTijd').innerHTML = '<div class="label">Tijdelijk pensioen, tot de AOW-leeftijd (' + AOW_LABEL + ')</div>' +
-        (u.t1 > 0 ? '<div>TOPAOW: <strong>' + eur0.format(maand(u.t1)) + '</strong> per maand</div>' : '') +
-        (u.t2 > 0 ? '<div>TOPHL: <strong>' + eur0.format(maand(u.t2)) + '</strong> per maand</div>' : '') +
-        '<div class="sub-tekst">Stopt bij de AOW-leeftijd. Het levenslange OP is hierboven apart weergegeven.</div>';
-    } else {
-      $('rTijd').innerHTML = '<div class="label">Tijdelijk pensioen</div>' +
-        '<div class="sub-tekst">' + (voorAow ? 'Geen TOPAOW of TOPHL gekozen.' : 'Niet van toepassing: de pensioendatum valt op of na de AOW-leeftijd.') + '</div>';
-    }
-
-    // Inclusief AOW: vanaf de AOW-leeftijd, met het standaard AOW-bedrag uit de configuratie
+    $('rNaLabel').textContent = voorAow ? 'Vanaf de AOW-leeftijd (' + AOW_LABEL + ')' : 'Vanaf ' + pensLabel;
+    $('rNa').textContent = eur0.format(maand(opNaJaar));
     var aowJaar = C.aowBrutoMaand * 12;
-    var inclAow = voorAow ? postJaar + aowJaar : preJaar + aowJaar;
-    $('rAow').innerHTML = 'Inclusief AOW vanaf ' + AOW_LABEL + ': <strong>' + eur0.format(maand(inclAow)) + '</strong> ' + $('basis').value + ' per maand';
+    $('rNaSub').innerHTML = basisNu + ' per maand, levenslang' + (u.t2 > 0 ? ' (door TOPHL lager)' : '') +
+      '<br>Inclusief AOW: <strong>' + eur0.format(maand(opNaJaar + aowJaar)) + '</strong> ' + basisNu + ' per maand';
 
-    $('rDeel').textContent = deel ? 'Deeltijdpensioen vanaf ' + E.maandLabel(deel.idx) + ': ' + eur0.format(maand(deelJaar)) + ' per maand.' : '';
+    $('rDeel').textContent = deel ? 'Deeltijdpensioen vanaf ' + E.maandLabel(deel.idx) + ': ' + eur0.format(maand(deelJaar)) + ' per maand (levenslang OP).' : '';
     $('rPartner').innerHTML = '<div class="label">Partnerpensioen, uitgekeerd bij overlijden van de hoofdverzekerde</div>' +
       (partnerPct === 0
         ? '<div class="sub-tekst">Geen partnerpensioen gekozen.</div>'
-        : '<div class="bedrag-klein">' + eur0.format(u.partner / 12) + ' per maand (bruto)</div>' +
+        : '<div class="bedrag-klein">' + eur0.format(maand(u.partner)) + ' per maand (' + basisNu + ')</div>' +
           '<div class="sub-tekst">Voor uw partner, na uw overlijden. Ingekocht op de pensioendatum: ' + partnerPct + '% van uw ouderdomspensioen vóór TOPAOW en TOPHL.</div>');
 
     // Verschil per maand met de standaardkeuzes. Verborgen als alle pensioenkeuzes op standaard staan.
