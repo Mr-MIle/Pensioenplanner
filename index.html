@@ -193,6 +193,28 @@
   details.uitleg { margin-top: 12px; }
   details.uitleg summary { cursor: pointer; font-weight: 600; color: var(--accent); }
   details.uitleg p { margin: 10px 0 0; }
+  /* Welkomst-pop-ups */
+  .wkp-open { font: inherit; font-weight: 600; font-size: 14px; color: var(--accent); background: transparent; border: 1px solid var(--accent); border-radius: 6px; padding: 8px 14px; cursor: pointer; }
+  .wkp-open:hover { background: var(--accent-soft, #e2eeec); }
+  .wkp-open:focus-visible, .wkp-btn:focus-visible { outline: 3px solid var(--warm); outline-offset: 2px; }
+  .wkp-back { position: fixed; inset: 0; background: rgba(20, 26, 24, 0.55); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 100; }
+  .wkp-dialog { background: var(--surface); color: var(--fg); border-radius: 10px; max-width: 560px; width: 100%; max-height: calc(100vh - 32px); overflow-y: auto; padding: 24px; box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25); }
+  .wkp-dialog:focus { outline: none; }
+  .wkp-teller { font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+  .wkp-kop { font-family: "Newsreader", Georgia, serif; font-weight: 600; font-size: 24px; line-height: 1.2; margin: 6px 0 12px; text-wrap: balance; }
+  .wkp-tekst p { margin: 0 0 10px; }
+  .wkp-voortgang { display: flex; gap: 6px; margin: 16px 0; }
+  .wkp-voortgang span { flex: 1; height: 6px; border-radius: 3px; background: var(--line); }
+  .wkp-voortgang span.klaar { background: var(--accent); }
+  .wkp-voortgang span.huidig { box-shadow: inset 0 0 0 2px var(--warm); }
+  .wkp-check { display: flex; gap: 10px; align-items: center; margin: 8px 0 0; font-weight: 600; cursor: pointer; }
+  .wkp-check input { width: 18px; height: 18px; accent-color: var(--accent); }
+  .wkp-knoppen { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+  .wkp-btn { font: inherit; font-weight: 600; font-size: 15px; padding: 10px 16px; border-radius: 6px; border: 1px solid var(--accent); background: var(--accent); color: var(--surface); cursor: pointer; }
+  .wkp-btn.tweede { background: transparent; color: var(--accent); }
+  .wkp-btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .wkp-voet { margin-top: 12px; }
+  [hidden] { display: none !important; }
 </style>
 
 <main class="wrap">
@@ -202,6 +224,7 @@
     <h1>Pensioenplanner</h1>
     <p class="lead">Kies stap voor stap hoe u met pensioen gaat. Rechts ziet u direct wat dat oplevert. De rekensystematiek volgt de X%-projectie. De cijfers zijn voorbeeldcijfers, geen pensioenadvies.</p>
     <p class="lead"><a id="potLink" href="bij-en-afschrijvingen.html" style="color: var(--accent); font-weight: 600">Bekijk uw pensioenpot: bij- en afschrijvingen per maand &rarr;</a></p>
+    <p><button class="wkp-open" type="button" data-wkp-open>Pop-ups opnieuw bekijken</button></p>
   </header>
 
   <div class="paneel" style="padding: 16px 20px; display: grid; gap: 12px">
@@ -476,6 +499,7 @@
       <p><strong>Partnerpensioen.</strong> Het partnerpensioen is een percentage van uw ouderdomspensioen, van 0% tot 70%.</p>
       <p><strong>Netto.</strong> Het nettobedrag is een indicatie op basis van een fictieve belastingtabel, geen officiële berekening.</p>
     </details>
+    <p class="wkp-voet"><button class="wkp-open" type="button" data-wkp-open>Pop-ups opnieuw bekijken</button></p>
   </section>
 
 </main>
@@ -1316,5 +1340,180 @@
 
   // Staafdiagram: per leeftijdsjaar het gemiddelde bedrag per maand (nominaal, en reëel als die schuif aanstaat).
   init();
+})();
+</script>
+<div class="wkp-back" id="wkpBack" hidden>
+  <div class="wkp-dialog" id="wkpDialog" role="dialog" aria-modal="true" aria-labelledby="wkpKop" tabindex="-1">
+    <div class="wkp-teller" id="wkpTeller"></div>
+    <h2 class="wkp-kop" id="wkpKop"></h2>
+    <div class="wkp-voortgang" id="wkpVoortgang" aria-hidden="true"></div>
+    <div class="wkp-tekst" id="wkpTekst"></div>
+    <label class="wkp-check" id="wkpVinkWrap"><input type="checkbox" id="wkpVink"> Ik heb dit gelezen</label>
+    <div class="wkp-knoppen" id="wkpKnoppen"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var KEY = 'pensioenplanner.welkom.v1';
+  var AANTAL = 5;
+  var INTRO = {
+    kop: "Mogelijkheden bij pensionering",
+    alinea: ["Wilt u iets weten over de mogelijkheden bij uw pensionering? Dan lopen wij vijf punten met u door. Dat duurt een paar minuten. Wilt u dat nu niet, dan kunt u de punten later altijd opnieuw bekijken."]
+  };
+  var PUNTEN = [
+    { kop: "Ingangsdatum pensioen", alinea: [
+      "U kunt uw pensioen laten ingaan vanaf 10 jaar voor de AOW-leeftijd en tot 5 jaar na de AOW-leeftijd.",
+      "Als u eerder start, wordt het opgebouwde kapitaal uitgesmeerd over een langere periode. Uw levenslange uitkering wordt dan lager."
+    ] },
+    { kop: "Partnerpensioen", alinea: [
+      "Op de gekozen pensioendatum kunt u een deel van het opgebouwde kapitaal gebruiken om partnerpensioen te reserveren. Dat wordt uitbetaald bij overlijden van de hoofdverzekerde.",
+      "Het ouderdomspensioen vervalt dan aan het fonds bij overlijden. Het partnerpensioen mag maximaal 70% van het ouderdomspensioen bedragen. Elk percentage lager dan 70% is ook toegestaan."
+    ] },
+    { kop: "Gedeeltelijk met pensioen", alinea: [
+      "U kunt op de gekozen pensioendatum gedeeltelijk met pensioen gaan. Dat kan in stappen van 10%.",
+      "Het is gebruikelijk dat u voor het deel dat u pensioneert ook stopt met werken, maar dat is niet verplicht. In deze planner rekenen wij wel met stoppen met werken bij de verdere opbouw van uw pensioen na het deeltijdpensioen."
+    ] },
+    { kop: "Hoog/laag", alinea: [
+      "U kunt ervoor kiezen om voorafgaand aan uw AOW-uitkering tijdelijk een hogere uitkering te krijgen. Die verhoging wordt betaald uit uw eigen pensioenvermogen. Na de AOW-uitkering is uw uitkering dan lager.",
+      "De wet kent twee soorten: het AOW-overbruggingspensioen, maximaal 20.000 per jaar, en het hoog/laag-pensioen, maximaal 33% van het ouderdomspensioen. Het hoog/laag-pensioen kan alleen als er na het AOW-overbruggingspensioen nog pensioenvermogen over is."
+    ] },
+    { kop: "Let op: aannames", alinea: [
+      "Alles in deze planner gaat uit van aannames over de ontwikkeling van uw pensioenvermogen. De werkelijke ontwikkeling, en dus uw uitkering, kan hier sterk van afwijken.",
+      "Hoe dichter u bij uw pensioen zit, hoe concreter de voorspelling wordt. Het blijft een voorspelling waarvan de werkelijkheid kan afwijken."
+    ] }
+  ];
+
+  var s = lees();
+  var huidig = 0;
+  var vorigeFocus = null;
+
+  function $(id) { return document.getElementById(id); }
+  function lees() {
+    try {
+      var r = window.localStorage.getItem(KEY);
+      var o = r ? JSON.parse(r) : null;
+      if (o && o.gelezen && o.gelezen.length === AANTAL) return o;
+    } catch (e) {}
+    return { keuze: null, gelezen: [false, false, false, false, false] };
+  }
+  function bewaar() {
+    try { window.localStorage.setItem(KEY, JSON.stringify(s)); } catch (e) {}
+  }
+  function maak(tag, cls, tekst) {
+    var n = document.createElement(tag);
+    if (cls) n.className = cls;
+    if (tekst !== undefined) n.textContent = tekst;
+    return n;
+  }
+  function knop(tekst, extra, fn) {
+    var b = maak("button", "wkp-btn" + (extra ? " " + extra : ""), tekst);
+    b.type = "button";
+    b.addEventListener("click", fn);
+    return b;
+  }
+  function eersteOnbekende() {
+    for (var i = 0; i < AANTAL; i++) { if (!s.gelezen[i]) return i; }
+    return 0;
+  }
+  function vulTekst(alinea) {
+    var w = $("wkpTekst");
+    w.textContent = "";
+    alinea.forEach(function (t) { w.appendChild(maak("p", "", t)); });
+  }
+  function balken(i) {
+    var v = $("wkpVoortgang");
+    v.textContent = "";
+    for (var j = 0; j < AANTAL; j++) {
+      v.appendChild(maak("span", (s.gelezen[j] ? "klaar" : "") + (j === i ? " huidig" : "")));
+    }
+  }
+  function openen() {
+    if (!$("wkpBack").hidden) return;
+    vorigeFocus = document.activeElement;
+    $("wkpBack").hidden = false;
+    document.body.style.overflow = "hidden";
+  }
+  function sluit() {
+    $("wkpBack").hidden = true;
+    document.body.style.overflow = "";
+    if (vorigeFocus && vorigeFocus.focus) vorigeFocus.focus();
+  }
+
+  function toonIntro() {
+    $("wkpTeller").textContent = "Welkom";
+    $("wkpKop").textContent = INTRO.kop;
+    vulTekst(INTRO.alinea);
+    $("wkpVoortgang").hidden = true;
+    $("wkpVinkWrap").hidden = true;
+    var k = $("wkpKnoppen");
+    k.textContent = "";
+    k.appendChild(knop("Nee, niet nu", "tweede", function () {
+      s.keuze = "nee"; bewaar(); sluit();
+    }));
+    k.appendChild(knop("Ja, laat de punten zien", "", function () {
+      s.keuze = "ja"; bewaar(); toonPunt(eersteOnbekende());
+    }));
+    k.firstChild.focus();
+  }
+
+  function toonPunt(i) {
+    huidig = i;
+    var p = PUNTEN[i];
+    var laatste = i === AANTAL - 1;
+    $("wkpTeller").textContent = "Punt " + (i + 1) + " van " + AANTAL;
+    $("wkpKop").textContent = p.kop;
+    vulTekst(p.alinea);
+    $("wkpVoortgang").hidden = false;
+    balken(i);
+    $("wkpVinkWrap").hidden = false;
+    $("wkpVink").checked = !!s.gelezen[i];
+
+    var k = $("wkpKnoppen");
+    k.textContent = "";
+    if (i > 0) k.appendChild(knop("Vorige", "tweede", function () { toonPunt(i - 1); }));
+    k.appendChild(knop("Sluiten", "tweede", function () { sluit(); }));
+    var volg = knop(laatste ? "Naar de planner" : "Volgende", "", function () {
+      if (!s.gelezen[huidig]) return;
+      if (laatste) { sluit(); } else { toonPunt(huidig + 1); }
+    });
+    volg.id = "wkpVolgende";
+    volg.disabled = !s.gelezen[i];
+    k.appendChild(volg);
+    $("wkpVink").focus();
+  }
+
+  $("wkpVink").addEventListener("change", function () {
+    s.gelezen[huidig] = this.checked;
+    bewaar();
+    balken(huidig);
+    var vol = $("wkpVolgende");
+    if (vol) vol.disabled = !this.checked;
+  });
+
+  function start() {
+    if (s.keuze === "nee") return;
+    if (s.keuze === "ja" && s.gelezen.every(Boolean)) return;
+    openen();
+    if (s.keuze === "ja") { toonPunt(eersteOnbekende()); } else { toonIntro(); }
+  }
+
+  function opnieuw() {
+    openen();
+    toonPunt(0);
+  }
+
+  document.querySelectorAll("[data-wkp-open]").forEach(function (b) {
+    b.addEventListener("click", opnieuw);
+  });
+  $("wkpBack").addEventListener("click", function (e) {
+    if (e.target === this) sluit();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && !$("wkpBack").hidden) sluit();
+  });
+
+  start();
 })();
 </script>
