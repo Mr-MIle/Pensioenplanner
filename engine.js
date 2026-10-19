@@ -114,6 +114,7 @@
         over: over,
         eind: S,
         reeel: S / Math.pow(1 + pi, (i - calc) / 12),
+        defl: 1 / Math.pow(1 + pi, (i - calc) / 12),
         werk: werk,
         schema: schema,
         wijziging: schema !== vorigSchema,
