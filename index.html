@@ -266,6 +266,8 @@
   .bewaar-plan { display: grid; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
   .bewaar-plan h3 { font-size: 17px; }
   .bewaar-plan input[type="text"] { flex: 1 1 220px; min-width: 0; font: inherit; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+  .grafiek-keuze { display: inline-flex; align-items: center; gap: 8px; margin: 10px 0 0; font-size: 14px; cursor: pointer; }
+  .grafiek-keuze input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
 </style>
 
 <main class="wrap">
@@ -452,14 +454,15 @@
       <button class="link-knop mobiel" type="button" id="grafiekToggle" aria-expanded="true">Verberg grafiek</button>
     </div>
     <p class="muted" style="margin: 6px 0 0">Werkinkomen, pensioen en AOW samen, gemiddeld per maand per levensjaar. De grafiek volgt de keuzes uit de wizard en de netto/bruto-keuze.</p>
+    <label class="grafiek-keuze"><input id="toonGrens" type="checkbox"> Toon de 80%-grens en de jaren daaronder</label>
     <div id="tijdlijnGrafiek" style="margin-top: 12px"></div>
     <div class="legenda">
       <span class="staaf" style="--c: var(--accent)">Werkinkomen</span>
       <span class="staaf" style="--c: var(--warm)">Ouderdomspensioen</span>
       <span class="staaf" style="--c: var(--topaow)">Extra pensioen vóór de AOW</span>
       <span class="staaf" style="--c: var(--muted)">AOW</span>
-      <span class="staaf" style="--c: var(--warn-bg)">Lager inkomen na het hoogste punt (minder dan 80%)</span>
-      <span class="stippel" style="--c: var(--fg)">80% van het hoogste inkomen</span>
+      <span class="staaf grens" hidden style="--c: var(--warn-bg)">Lager inkomen na het hoogste punt (minder dan 80%)</span>
+      <span class="stippel grens" hidden style="--c: var(--fg)">80% van het hoogste inkomen</span>
       <span class="punt" style="--c: var(--fg)">Vorige keuze</span>
     </div>
     <p class="muted" id="tijdlijnNoot" style="margin: 10px 0 0"></p>
@@ -743,6 +746,11 @@
         setBasis(b.getAttribute('data-basis'));
         render();
       });
+    });
+
+    $('toonGrens').addEventListener('change', function () {
+      document.querySelectorAll('.grens').forEach(function (e) { e.hidden = !this.checked; }, this);
+      renderTijdlijn();
     });
 
     $('vergelijk').addEventListener('click', function (e) {
@@ -1138,7 +1146,7 @@
     var noot = dal.length
       ? 'Jaren onder 80% van het hoogste inkomen: van ' + dal[0].leeftijd + ' tot ' + dal[dal.length - 1].leeftijd + ' jaar. '
       : 'Geen jaren onder 80% van het hoogste inkomen. ';
-    $('tijdlijnNoot').textContent = noot + 'AOW is het standaardbedrag uit de configuratie en wordt niet geïndexeerd, zoals in de rest van de planner. Andere inkomsten, zoals vermogen of een partnerinkomen, zitten er niet in.';
+    $('tijdlijnNoot').textContent = ($('toonGrens').checked ? noot : '') + 'AOW is het standaardbedrag uit de configuratie en wordt niet geïndexeerd, zoals in de rest van de planner. Andere inkomsten, zoals vermogen of een partnerinkomen, zitten er niet in.';
     $('tijdlijnGrafiek').innerHTML = tekenTijdlijn(serie, L, grens, aowLeeftijd, dal, vorigeMap);
   }
 
@@ -1156,8 +1164,9 @@
     function y(v) { return H - pb - (H - pt - pb) * v / top; }
 
     // Alleen de jaren na het hoogste punt onder de 80% krijgen de achtergrond, zoals de noot en de legenda zeggen.
+    var toon = $('toonGrens').checked;
     var inDal = {};
-    dal.forEach(function (s) { inDal[s.leeftijd] = true; });
+    if (toon) dal.forEach(function (s) { inDal[s.leeftijd] = true; });
 
     // Fasen als achtergrondzones: Werken, Deeltijd, Pensioen en AOW. Elk levensjaar hoort bij precies één zone.
     // Deeltijd loopt van de gekozen leeftijd tot de volledige pensioendatum (pensIdx); daarna is het pensioen volledig.
@@ -1218,8 +1227,9 @@
     });
 
     // Drempel van 80% van het hoogste inkomen, met label rechts boven de lijn.
-    var drempel = '<line x1="' + pl + '" x2="' + x1 + '" y1="' + y(grens).toFixed(1) + '" y2="' + y(grens).toFixed(1) + '" stroke="var(--fg)" stroke-width="1" stroke-dasharray="4 3" opacity=".5"/>' +
+    var drempelSvg = '<line x1="' + pl + '" x2="' + x1 + '" y1="' + y(grens).toFixed(1) + '" y2="' + y(grens).toFixed(1) + '" stroke="var(--fg)" stroke-width="1" stroke-dasharray="4 3" opacity=".5"/>' +
       '<text class="as" x="' + x1 + '" y="' + (y(grens) - 6).toFixed(1) + '" text-anchor="end">80% van het hoogste</text>';
+    var drempel = toon ? drempelSvg : '';
 
     var basis = '<line x1="' + pl + '" x2="' + x1 + '" y1="' + y(0).toFixed(1) + '" y2="' + y(0).toFixed(1) + '" stroke="var(--muted)" stroke-width="1"/>';
 
