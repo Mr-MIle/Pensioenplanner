@@ -356,6 +356,7 @@
           <button class="seg actief" type="button" data-basis="netto" aria-pressed="true">Netto</button>
           <button class="seg" type="button" data-basis="bruto" aria-pressed="false">Bruto</button>
         </div>
+        <div class="seg-groep" role="group" aria-label="Nominaal of reëel bedragen"><button class="seg actief" type="button" data-reeel="nom" aria-pressed="true">Nominaal</button><button class="seg" type="button" data-reeel="reeel" aria-pressed="false">Reëel</button></div>
         <select id="basis" hidden>
           <option value="netto">netto</option>
           <option value="bruto">bruto</option>
@@ -397,7 +398,6 @@
     <h2 id="h-tijdlijn">Inkomen door de jaren heen</h2>
     <p class="muted" style="margin: 6px 0 0">Werkinkomen, pensioen en AOW samen, gemiddeld per maand per levensjaar. De grafiek volgt de keuzes uit de wizard en de netto/bruto-keuze.</p>
     <div class="kpis" id="tijdlijnKpi" style="margin: 14px 0"></div>
-    <div class="seg-groep" role="group" aria-label="Weergave inkomen" style="margin: 14px 0 0"><button class="seg actief" type="button" data-w="tijd" data-v="nom" aria-pressed="true">Nominaal</button><button class="seg" type="button" data-w="tijd" data-v="reeel" aria-pressed="false">Reëel</button></div>
     <div id="tijdlijnGrafiek" style="margin-top: 12px"></div>
     <div class="legenda">
       <span class="staaf" style="--c: var(--accent)">Werkinkomen</span>
@@ -420,7 +420,6 @@
         <button class="seg actief" type="button" data-sc="basis" aria-pressed="true">Basis</button>
         <button class="seg" type="button" data-sc="opt" aria-pressed="false">Optimistisch</button>
       </div>
-      <div class="seg-groep" role="group" aria-label="Weergave kapitaal"><button class="seg actief" type="button" data-w="kap" data-v="nom" aria-pressed="true">Nominaal</button><button class="seg" type="button" data-w="kap" data-v="reeel" aria-pressed="false">Reëel</button></div>
       <span class="muted" id="scenarioRente" style="font-size: 14px"></span>
     </div>
     <div class="kpis" style="margin: 14px 0">
@@ -448,7 +447,6 @@
   <section class="paneel" aria-label="Vier plannen naast elkaar">
     <details class="plannen">
     <summary>Vier plannen naast elkaar <span class="muted">(klik om te openen)</span></summary>
-    <div class="seg-groep" role="group" aria-label="Weergave plannen" style="margin: 0 0 14px"><button class="seg actief" type="button" data-w="verg" data-v="nom" aria-pressed="true">Nominaal</button><button class="seg" type="button" data-w="verg" data-v="reeel" aria-pressed="false">Reëel</button></div>
     <p class="muted" style="margin: 14px 0 0">Bedragen per maand, <span id="vergelijkBasis">netto</span>. Zelfde deelnemer en startkapitaal. Het verschil is ten opzichte van plan A. Met &ldquo;Laad in de wizard&rdquo; zet u een plan in de keuzes.</p>
     <div style="margin: 14px 0">
       <table class="maand vergelijk" id="vergelijk"><thead id="vergelijkKop"></thead><tbody id="vergelijkRijen"></tbody></table>
@@ -535,7 +533,7 @@
 
   var state = {};
   var huidigDeel = 0;
-  var weergave = { kap: 'nom', tijd: 'nom', verg: 'nom' };   // nominaal of reëel, per grafiek
+  var REEEL = false;   // één schakelaar voor alle bedragen: false = nominaal, true = reëel (euro's van vandaag)
   var laatsteBerekening = null;   // uitkomsten van de laatste render, voor de inkomenstijdlijn   // index van de gekozen deelnemer, voor de link naar bij-en-afschrijvingen
   var scenario = 'basis';   // basis | pess | opt: welk overrendement de kapitaalgrafiek en kapitaalcijfers gebruiken
   var parttimeRows = [];
@@ -704,12 +702,12 @@
       inputs[i].addEventListener('change', render);
     }
     $('reset').addEventListener('click', reset);
-    document.addEventListener('click', function (e) {
-      var b = e.target.closest && e.target.closest('[data-w]');
-      if (!b) return;
-      weergave[b.getAttribute('data-w')] = b.getAttribute('data-v') === 'reeel' ? 'reeel' : 'nom';
-      syncWissel();
-      render();
+    document.querySelectorAll('[data-reeel]').forEach(function (b) {
+      b.addEventListener('click', function () {
+        REEEL = b.getAttribute('data-reeel') === 'reeel';
+        syncReeel();
+        render();
+      });
     });
     $('parttimeVoegToe').addEventListener('click', parttimeVoegToe);
     $('parttimeLijst').addEventListener('change', function (e) {
@@ -745,20 +743,23 @@
     var ageNow = (E.maandIndex(C.calculatiedatum) - E.maandIndex(C.deelnemer.geboortedatum)) / 12;
     return Math.pow(1 + C.rendement.inflatiePrijs, -Math.max(0, leeftijd - ageNow));
   }
-  function syncWissel() {
-    document.querySelectorAll('[data-w]').forEach(function (b) {
-      var aan = b.getAttribute('data-v') === (weergave[b.getAttribute('data-w')] === 'reeel' ? 'reeel' : 'nom');
+  // Som van een maandveld over alle maanden: nominaal, of reëel met de factor per maand.
+  function somBedrag(rows, veld) {
+    return rows.reduce(function (a, r) { return a + r[veld] * (REEEL ? r.defl : 1); }, 0);
+  }
+  function syncReeel() {
+    document.querySelectorAll('[data-reeel]').forEach(function (b) {
+      var aan = b.getAttribute('data-reeel') === (REEEL ? 'reeel' : 'nom');
       b.classList.toggle('actief', aan);
       b.setAttribute('aria-pressed', aan ? 'true' : 'false');
     });
   }
 
   // Netto of bruto bedrag per maand, uit een jaarlijks bruto inkomen.
-  function maand(jaarBruto) {
-    if ($('basis').value === 'netto') {
-      return E.nettoJaar(C, jaarBruto, $('lhk').checked) / 12;
-    }
-    return jaarBruto / 12;
+  // jaar = leeftijd waarop het bedrag wordt uitgekeerd; met reëel wordt het bedrag daarop omgerekend.
+  function maand(jaarBruto, jaar) {
+    var v = $('basis').value === 'netto' ? E.nettoJaar(C, jaarBruto, $('lhk').checked) / 12 : jaarBruto / 12;
+    return REEEL && jaar !== undefined ? v * reeelFactor(jaar) : v;
   }
 
   function render() {
@@ -883,50 +884,50 @@
       // Deeltijd: tot de AOW-leeftijd alleen het deeltijdpensioen; vanaf de AOW-leeftijd 100% gepensioneerd.
       $('rVoorBlok').hidden = false;
       $('rVoorLabel').textContent = 'Deeltijdpensioen, vanaf ' + E.maandLabel(deel.idx) + ' tot de AOW-leeftijd';
-      $('rVoor').textContent = eur0.format(maand(deelJaar));
+      $('rVoor').textContent = eur0.format(maand(deelJaar, gekozenJaar));
       $('rVoorSub').textContent = basisNu + ' per maand. Uw premie daalt met ' + Math.round(deel.pct * 100) + '%.';
       $('rVoorDetail').innerHTML = '';
       $('rNaLabel').textContent = 'Vanaf de AOW-leeftijd (' + AOW_LABEL + '): 100% gepensioneerd';
-      $('rNa').textContent = eur0.format(maand(opNaJaar));
+      $('rNa').textContent = eur0.format(maand(opNaJaar, AOW_JAREN));
       $('rNaSub').innerHTML = basisNu + ' per maand, levenslang' +
-        '<div class="uitsplitsing"><div>Ouderdomspensioen: <strong>' + eur0.format(maand(u.post)) + '</strong></div>' +
-        '<div>Deeltijdpensioen: <strong>' + eur0.format(maand(deelJaar)) + '</strong></div></div>' +
-        'Inclusief AOW: <strong>' + eur0.format(maand(opNaJaar + aowJaar)) + '</strong> ' + basisNu + ' per maand';
+        '<div class="uitsplitsing"><div>Ouderdomspensioen: <strong>' + eur0.format(maand(u.post, AOW_JAREN)) + '</strong></div>' +
+        '<div>Deeltijdpensioen: <strong>' + eur0.format(maand(deelJaar, gekozenJaar)) + '</strong></div></div>' +
+        'Inclusief AOW: <strong>' + eur0.format(maand(opNaJaar + aowJaar, AOW_JAREN)) + '</strong> ' + basisNu + ' per maand';
     } else {
       $('rVoorBlok').hidden = !voorAow;
       $('rVoorLabel').textContent = 'Totaal tot de AOW-leeftijd, vanaf ' + pensLabel;
-      $('rVoor').textContent = eur0.format(maand(opVoorJaar + tijdJaar));
+      $('rVoor').textContent = eur0.format(maand(opVoorJaar + tijdJaar, gekozenJaar));
       $('rVoorSub').textContent = basisNu + ' per maand';
-      $('rVoorDetail').innerHTML = '<div>Levenslang OP: <strong>' + eur0.format(maand(opVoorJaar)) + '</strong></div>' +
+      $('rVoorDetail').innerHTML = '<div>Levenslang OP: <strong>' + eur0.format(maand(opVoorJaar, gekozenJaar)) + '</strong></div>' +
         (tijdJaar > 0
-          ? '<div>Tijdelijk (' + (u.t1 > 0 ? 'TOPAOW' : '') + (u.t1 > 0 && u.t2 > 0 ? ' en ' : '') + (u.t2 > 0 ? 'TOPHL' : '') + '): <strong>' + eur0.format(maand(tijdJaar)) + '</strong></div>'
+          ? '<div>Tijdelijk (' + (u.t1 > 0 ? 'TOPAOW' : '') + (u.t1 > 0 && u.t2 > 0 ? ' en ' : '') + (u.t2 > 0 ? 'TOPHL' : '') + '): <strong>' + eur0.format(maand(tijdJaar, gekozenJaar)) + '</strong></div>'
           : '<div>Tijdelijk: geen TOPAOW of TOPHL gekozen</div>');
       $('rNaLabel').textContent = voorAow ? 'Vanaf de AOW-leeftijd (' + AOW_LABEL + ')' : (deelGeldig ? 'Volledig pensioen vanaf de AOW-leeftijd' : 'Vanaf ' + pensLabel);
-      $('rNa').textContent = eur0.format(maand(opNaJaar));
+      $('rNa').textContent = eur0.format(maand(opNaJaar, AOW_JAREN));
       $('rNaSub').innerHTML = basisNu + ' per maand, levenslang' + (u.t2 > 0 ? ' (door TOPHL lager)' : '') +
-        '<br>Inclusief AOW: <strong>' + eur0.format(maand(opNaJaar + aowJaar)) + '</strong> ' + basisNu + ' per maand';
+        '<br>Inclusief AOW: <strong>' + eur0.format(maand(opNaJaar + aowJaar, AOW_JAREN)) + '</strong> ' + basisNu + ' per maand';
     }
 
-    $('rDeel').textContent = deel ? 'Deeltijdpensioen vanaf ' + E.maandLabel(deel.idx) + ': ' + eur0.format(maand(deelJaar)) + ' per maand (levenslang OP).' : '';
+    $('rDeel').textContent = deel ? 'Deeltijdpensioen vanaf ' + E.maandLabel(deel.idx) + ': ' + eur0.format(maand(deelJaar, gekozenJaar)) + ' per maand (levenslang OP).' : '';
     $('rPartner').innerHTML = '<div class="label">Partnerpensioen, uitgekeerd bij overlijden van de hoofdverzekerde</div>' +
       (partnerPct === 0
         ? '<div class="sub-tekst">Geen partnerpensioen gekozen.</div>'
-        : '<div class="bedrag-klein">' + eur0.format(maand(u.partner)) + ' per maand (' + basisNu + ')</div>' +
+        : '<div class="bedrag-klein">' + eur0.format(maand(u.partner, gekozenJaar)) + ' per maand (' + basisNu + ')</div>' +
           '<div class="sub-tekst">Voor uw partner, na uw overlijden. Ingekocht op de pensioendatum: ' + partnerPct + '% van uw ouderdomspensioen vóór TOPAOW en TOPHL.</div>');
 
     $('potLink').href = 'bij-en-afschrijvingen.html?d=' + huidigDeel;
 
     // Kapitaal
     var kapNom = selSim.kapitaal, kapReeelWaarde = selSim.kapitaal / selSim.inflIdx;
-    var kapReeelModus = weergave.kap === 'reeel';
+    var kapReeelModus = REEEL;
     $('kKapitaal').textContent = eur0.format(kapReeelModus ? kapReeelWaarde : kapNom);
     $('kKapitaalReeel').textContent = kapReeelModus ? 'Nominaal: ' + eur0.format(kapNom) : 'Reëel: ' + eur0.format(kapReeelWaarde);
-    $('kInleg').textContent = eur0.format(selSim.totalen.inleg);
-    $('kInlegSub').textContent = 'Overrendement: ' + eur0.format(selSim.totalen.over);
+    $('kInleg').textContent = eur0.format(somBedrag(selSim.rows, 'inleg'));
+    $('kInlegSub').textContent = 'Overrendement: ' + eur0.format(somBedrag(selSim.rows, 'over'));
     var pv = Math.min(C.partnerpensioen.maxPct, Math.max(C.partnerpensioen.minPct, partnerPct)) / 100;
     var aOPv = E.delerVoor(jaar, C.annuiteitsdelers);
     var perMaand = function (eind) { return naarBasis(eind / (aOPv + pv * C.partnerpensioen.inkoopfactorNP) / 12); };
-    var toonK = true, toonP = false; var kapRe = weergave.kap === 'reeel';   // de planner toont alleen het kapitaal
+    var toonK = true, toonP = false; var kapRe = REEEL;   // de planner toont alleen het kapitaal
     $('grafiek').innerHTML = tekenVermogen(selSim.rows, sk, {
       toonKapitaal: toonK,
       toonPensioen: toonP,
@@ -941,19 +942,20 @@
     $('legKapStip').textContent = kapRe ? 'Nominaal totaal' : 'Reëel totaal';
 
     // Maandtabel
-    $('tInleg').textContent = eur0.format(sim.totalen.inleg);
-    $('tOver').textContent = eur0.format(sim.totalen.over);
+    $('tInleg').textContent = eur0.format(somBedrag(sim.rows, 'inleg'));
+    $('tOver').textContent = eur0.format(somBedrag(sim.rows, 'over'));
     $('tabel').innerHTML = sim.rows.map(function (r) {
+      var k = REEEL ? r.defl : 1;
       return '<tr class="' + (r.wijziging ? 'wijz' : '') + '">' +
         '<td>' + r.maand + '</td>' +
         '<td>' + r.leeftijd + '</td>' +
         '<td>' + Math.round(r.werk * 100) + '%</td>' +
-        '<td>' + eur0.format(r.begin) + '</td>' +
-        '<td>' + eur2.format(r.inleg) + '</td>' +
-        '<td>' + eur2.format(r.over) + '</td>' +
+        '<td>' + eur0.format(r.begin * k) + '</td>' +
+        '<td>' + eur2.format(r.inleg * k) + '</td>' +
+        '<td>' + eur2.format(r.over * k) + '</td>' +
         '<td>' + (rente * r.toed * 100).toFixed(2).replace('.', ',') + '%</td>' +
-        '<td>' + (r.onttrokken ? eur0.format(r.onttrokken) : '–') + '</td>' +
-        '<td>' + eur0.format(r.eind) + '</td>' +
+        '<td>' + (r.onttrokken ? eur0.format(r.onttrokken * k) : '–') + '</td>' +
+        '<td>' + eur0.format(r.eind * k) + '</td>' +
         '<td>' + eur0.format(r.reeel) + '</td>' +
         '</tr>';
     }).join('');
@@ -1006,13 +1008,13 @@
     var L = laatsteBerekening;
     if (!L) return;
     var serie = jaarSerie({ sim: L.sim, u: L.u, pensIdx: L.pensIdx, birth: L.birth, deelIdx: L.deelIdx, deelJaar: L.deelJaar });
-    if (weergave.tijd === 'reeel') {
+    if (REEEL) {
       serie = serie.map(function (s) {
         var f = reeelFactor(s.leeftijd + 0.5);
         return { leeftijd: s.leeftijd, w: s.w * f, op: s.op * f, t1: s.t1 * f, t2: s.t2 * f, a: s.a * f, totaal: s.totaal * f };
       });
     }
-    var basis = $('basis').value + (weergave.tijd === 'reeel' ? ' · reëel' : ' · nominaal');
+    var basis = $('basis').value + (REEEL ? ' · reëel' : ' · nominaal');
     var aowIdx = L.birth + C.pensioenreglement.aowLeeftijdMaanden;
     if (!serie.length) return;
 
@@ -1185,7 +1187,7 @@
     var rente = C.rendement.overrendementNaRTS;
     var sk = Math.max(0, Number($('startkapitaal').value) || 0);
     var res = plannen().map(function (p) { return planUitkomst(p, rente, sk); });
-    if (weergave.verg === 'reeel') {
+    if (REEEL) {
       res = res.map(function (r) {
         var fp = reeelFactor(r.pensJaar), fa = reeelFactor(AOW_JAREN);
         return Object.assign({}, r, {
@@ -1203,7 +1205,7 @@
     var basis = $('basis').value;
     var ref = res[0].pl;
 
-    $('vergelijkBasis').textContent = basis + (weergave.verg === 'reeel' ? ', reëel (euro van vandaag)' : ', nominaal');
+    $('vergelijkBasis').textContent = basis + (REEEL ? ', reëel (euro van vandaag)' : ', nominaal');
     $('vergelijkKop').innerHTML = '<tr><th>Plan</th><th>Vóór AOW</th><th>Na AOW</th><th>Verschil met A</th></tr>';
     $('vergelijkRijen').innerHTML = res.map(function (r, i) {
       var verschil = r.pl - ref;
