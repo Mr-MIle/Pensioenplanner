@@ -23,6 +23,8 @@
     --panel-fg: #f4f8f7;
     --panel-sub: #bcd6d3;
     --panel-inner: #2a6d6a;
+    --invoer-bg: #e9e4d6;
+    --uitvoer-bg: #e1eeeb;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -30,6 +32,7 @@
       --accent: #7fc3bf; --accent-soft: #213330; --warm: #e8a077; --warn-bg: #3a2a1c; --warn-fg: #f3cfb0; --neg: #ff8a80;
       --topaow: #b9a2e8; --tophl: #8fd19a; --plan-d: #8ab4e8;
       --panel: #24504e; --panel-fg: #eef6f5; --panel-sub: #a9cbc7; --panel-inner: #2e6360;
+      --invoer-bg: #17201e; --uitvoer-bg: #14201e;
       color-scheme: dark;
     }
   }
@@ -38,6 +41,7 @@
     --accent: #7fc3bf; --accent-soft: #213330; --warm: #e8a077; --warn-bg: #3a2a1c; --warn-fg: #f3cfb0; --neg: #ff8a80;
       --topaow: #b9a2e8; --tophl: #8fd19a; --plan-d: #8ab4e8;
     --panel: #24504e; --panel-fg: #eef6f5; --panel-sub: #a9cbc7; --panel-inner: #2e6360;
+    --invoer-bg: #17201e; --uitvoer-bg: #14201e;
     color-scheme: dark;
   }
 
@@ -66,7 +70,7 @@
   /* Wizard */
   .opzet { display: grid; gap: 20px; min-width: 0; }
   @media (min-width: 880px) {
-    .opzet { grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr); align-items: start; }
+    .opzet { grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); align-items: start; }
   }
   .stap { border: 1px solid var(--line); border-radius: 12px; background: var(--surface); min-width: 0; }
   .stap + .stap { margin-top: 10px; }
@@ -110,6 +114,14 @@
   .melding { background: var(--warn-bg); color: var(--warn-fg); border-radius: 8px; padding: 10px 12px; margin: 0; font-size: 14px; }
   .melding[hidden] { display: none; }
   .link-knop { background: none; border: 0; padding: 0; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; }
+
+  /* Invoer (links) en uitvoer (rechts/onder) krijgen elk een eigen achtergrond */
+  .invoer { background: var(--invoer-bg); border-radius: 14px; padding: 14px; min-width: 0; }
+  .invoer .stap { background: var(--surface); }
+  .invoer label.optie { background: var(--surface); }
+  .invoer select, .invoer input[type="number"] { background: var(--surface); }
+  .paneel.uitvoer { background: var(--uitvoer-bg); }
+  .paneel.uitvoer table.maand thead th { background: var(--uitvoer-bg); }
 
   /* Resultaatpaneel */
   .resultaat { background: var(--panel); color: var(--panel-fg); border-radius: 14px; padding: 20px; display: grid; gap: 16px; min-width: 0; }
@@ -169,6 +181,7 @@
   .resultaat .uitsplitsing { font-size: 14px; color: var(--panel-sub); display: grid; gap: 2px; margin-top: 4px; font-variant-numeric: tabular-nums; }
   .resultaat .uitsplitsing strong { color: var(--panel-fg); }
   .resultaat .netto-toelichting { font-size: 12px; color: var(--panel-sub); margin: 6px 0 0; }
+  .grafiek .zone { font-weight: 600; fill: var(--muted); }
   .grafiek .as-link { fill: var(--accent); text-decoration: underline; font-weight: 600; }
   .grafiek-link { margin: 10px 0 0; font-size: 14px; }
   #vergelijk .link-knop { margin-top: 8px; justify-self: start; }
@@ -177,7 +190,11 @@
     #startkapitaal { width: 100% !important; }
     .resultaat .bedrag { font-size: 30px; }
   }
-  #tijdlijnKpi .waarde { font-size: 22px; }
+  #tijdlijnKpi { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 12px 0 !important; }
+  #tijdlijnKpi .kpi { padding: 10px 12px; }
+  #tijdlijnKpi .label { font-size: 12px; margin-bottom: 2px; }
+  #tijdlijnKpi .waarde { font-family: inherit; font-size: 15px; font-weight: 600; line-height: 1.3; }
+  #tijdlijnKpi .sub { font-size: 12px; margin-top: 4px; }
   .as-titel { font-size: 12px; font-weight: 600; }
   .legenda[hidden] { display: none; }
   table.vergelijk { table-layout: fixed; }
@@ -262,7 +279,7 @@
 
   <div class="opzet">
 
-    <section aria-label="Uw keuzes">
+    <section aria-label="Uw keuzes" class="invoer">
 
       <!-- Stap 1 -->
       <div class="stap" data-stap="1">
@@ -291,11 +308,11 @@
       <div class="stap" data-stap="werk">
         <button class="stap-kop" type="button" aria-expanded="true" aria-controls="sW">
           <span class="nummer">2</span>
-          <span class="stap-titel">Werkt u minder dan voltijd?<span class="stap-keuze" id="kW"></span></span>
+          <span class="stap-titel">Wilt u de komende jaren meer of minder werken?<span class="stap-keuze" id="kW"></span></span>
           <span class="pijl" aria-hidden="true">▾</span>
         </button>
         <div class="stap-body" id="sW">
-          <p class="muted" style="margin: 0">Kies de maand waarin uw werkweek verandert. Vanaf die maand betaalt u premie over het lagere percentage. Een wijziging geldt vanaf de eerste van die maand.</p>
+          <p class="muted" style="margin: 0">Hier geeft u aan of u voor uw pensioen meer of minder gaat werken, en over welke periode. Dat staat los van het moment waarop u stopt, maar het bepaalt wel hoeveel u nog inlegt en dus hoeveel kapitaal er bij pensionering beschikbaar is. Kies de maand waarin uw werkweek verandert. Vanaf die maand geldt het nieuwe percentage voor de premie. Een wijziging geldt vanaf de eerste van die maand.</p>
           <div id="parttimeLijst" style="display: grid; gap: 10px"></div>
           <div class="rij">
             <button class="link-knop" type="button" id="parttimeVoegToe">+ Wijziging toevoegen</button>
@@ -370,7 +387,7 @@
     </section>
 
     <div class="rechts">
-  <section class="paneel grafiekpaneel" id="tijdlijnPaneel" aria-labelledby="h-tijdlijn">
+  <section class="paneel grafiekpaneel uitvoer" id="tijdlijnPaneel" aria-labelledby="h-tijdlijn">
     <div class="grafiek-kop">
       <h2 id="h-tijdlijn">Inkomen door de jaren heen</h2>
       <div class="seg-groep" role="group" aria-label="Nominaal of reëel bedragen"><button class="seg actief" type="button" data-reeel="nom" aria-pressed="true">Nominaal</button><button class="seg" type="button" data-reeel="reeel" aria-pressed="false">Reëel</button></div>
@@ -382,8 +399,7 @@
     <div class="legenda">
       <span class="staaf" style="--c: var(--accent)">Werkinkomen</span>
       <span class="staaf" style="--c: var(--warm)">Ouderdomspensioen</span>
-      <span class="staaf" style="--c: var(--topaow)">TOPAOW</span>
-      <span class="staaf" style="--c: var(--tophl)">TOPHL</span>
+      <span class="staaf" style="--c: var(--topaow)">Extra pensioen vóór de AOW</span>
       <span class="staaf" style="--c: var(--muted)">AOW</span>
       <span class="staaf" style="--c: var(--warn-bg)">Lager inkomen na het hoogste punt (minder dan 80%)</span>
       <span class="stippel" style="--c: var(--fg)">80% van het hoogste inkomen</span>
@@ -437,7 +453,7 @@
     </div>
   </div>
 
-  <section class="paneel" aria-labelledby="h-kapitaal">
+  <section class="paneel uitvoer" aria-labelledby="h-kapitaal">
     <h2 id="h-kapitaal">Ontwikkeling pensioenvermogen</h2>
     <p class="muted" style="margin: 6px 0 0">De grafiek laat de ontwikkeling van het kapitaal tot de pensioendatum zien, opgesplitst in startkapitaal, premie-inleg en overrendement. Er is geen beschermingsrendement.</p>
     <div style="display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin: 14px 0 0">
@@ -470,7 +486,7 @@
     </div>
   </section>
 
-  <section class="paneel" aria-label="Vier plannen naast elkaar">
+  <section class="paneel uitvoer" aria-label="Vier plannen naast elkaar">
     <details class="plannen">
     <summary>Vier plannen naast elkaar <span class="muted">(klik om te openen)</span></summary>
     <p class="muted" style="margin: 14px 0 0">Bedragen per maand, <span id="vergelijkBasis">netto</span>. Zelfde deelnemer en startkapitaal. Het verschil is ten opzichte van plan A. Met &ldquo;Laad in de wizard&rdquo; zet u een plan in de keuzes.</p>
@@ -483,7 +499,7 @@
     </details>
   </section>
 
-  <section class="paneel" aria-labelledby="h-maand">
+  <section class="paneel uitvoer" aria-labelledby="h-maand">
     <h2 id="h-maand">Maandoverzicht kapitaal</h2>
     <div class="kpis" style="margin: 14px 0">
       <div class="kpi" style="padding: 12px">
@@ -583,7 +599,7 @@
     var html = '';
     parttimeRows.forEach(function (r, i) {
       var opts = '';
-      for (var p = 10; p <= 100; p += 5) {
+      for (var p = 0; p <= 100; p += 5) {
         opts += '<option value="' + p + '"' + (p === r.pct ? ' selected' : '') + '>' + p + '%</option>';
       }
       html += '<div class="rij" style="gap: 8px">' +
@@ -1097,7 +1113,7 @@
   }
 
   function tekenTijdlijn(serie, L, grens, aowLeeftijd, dal, vorigeMap) {
-    var W = 720, H = 300, pl = 76, pr = 16, pt = 36, pb = 34;
+    var W = 720, H = 330, pl = 76, pr = 16, pt = 56, pb = 34;
     var top = 0;
     serie.forEach(function (s) { top = Math.max(top, s.totaal); });
     if (vorigeMap) { Object.keys(vorigeMap).forEach(function (k) { top = Math.max(top, vorigeMap[k]); }); }
@@ -1113,6 +1129,41 @@
     var inDal = {};
     dal.forEach(function (s) { inDal[s.leeftijd] = true; });
 
+    // Fasen als achtergrondzones: Werken, Deeltijd, Pensioen en AOW. Elk levensjaar hoort bij precies één zone.
+    // Deeltijd loopt van de gekozen leeftijd tot de volledige pensioendatum (pensIdx); daarna is het pensioen volledig.
+    var pensAgeZ = Math.floor(L.pensIdx / 12 - L.birth / 12);
+    var deelAgeZ = (L.deelIdx !== null && L.deelIdx !== undefined) ? Math.floor((L.deelIdx - L.birth) / 12) : null;
+    function zoneVan(age) {
+      if (age < pensAgeZ) return (deelAgeZ !== null && age >= deelAgeZ) ? 'deeltijd' : 'werken';
+      if (age < aowLeeftijd) return 'pensioen';
+      return 'aow';
+    }
+    var zoneNamen = { werken: 'Werken', deeltijd: 'Deeltijd', pensioen: 'Pensioen', aow: 'AOW' };
+    var zoneStijl = {
+      werken: 'fill:color-mix(in srgb, var(--accent) 4%, transparent)',
+      deeltijd: 'fill:color-mix(in srgb, var(--accent) 16%, transparent)',
+      pensioen: 'fill:color-mix(in srgb, var(--warm) 16%, transparent)',
+      aow: 'fill:color-mix(in srgb, var(--muted) 16%, transparent)'
+    };
+    var runs = [];
+    serie.forEach(function (s, k) {
+      var z = zoneVan(s.leeftijd);
+      if (runs.length && runs[runs.length - 1].z === z) runs[runs.length - 1].e = k;
+      else runs.push({ z: z, b: k, e: k });
+    });
+    var zones = '';
+    runs.forEach(function (r) {
+      var zx0 = pl + slot * r.b, zx1 = pl + slot * (r.e + 1);
+      zones += '<rect x="' + zx0.toFixed(2) + '" y="0" width="' + (zx1 - zx0).toFixed(2) + '" height="' + (H - pb) + '" style="' + zoneStijl[r.z] + '"/>';
+      var van = serie[r.b].leeftijd, tot = serie[r.e].leeftijd, lang;
+      if (r.z === 'werken') lang = 'Werken t/m ' + tot + ' j';
+      else if (r.z === 'deeltijd') lang = 'Deeltijd ' + van + '–' + tot + ' j';
+      else if (r.z === 'pensioen') lang = 'Pensioen vanaf ' + van + ' j';
+      else lang = 'AOW vanaf ' + van + ' j';
+      var label = zx1 - zx0 >= 130 ? lang : (zx1 - zx0 >= 58 ? zoneNamen[r.z] : '');
+      if (label) zones += '<text class="as zone" x="' + (zx0 + 6).toFixed(1) + '" y="18">' + label + '</text>';
+    });
+
     var grid = '';
     for (var t = 0; t <= top + as.stap / 2; t += as.stap) {
       grid += '<line class="raster" x1="' + pl + '" x2="' + x1 + '" y1="' + y(t).toFixed(1) + '" y2="' + y(t).toFixed(1) + '"/>';
@@ -1126,8 +1177,8 @@
         body += '<rect x="' + sx.toFixed(2) + '" y="' + pt + '" width="' + slot.toFixed(2) + '" height="' + (H - pt - pb) + '" fill="var(--warn-bg)"/>';
       }
       var acc = 0;
-      [['w', 'var(--accent)', 'werkinkomen'], ['op', 'var(--warm)', 'ouderdomspensioen'], ['t1', 'var(--topaow)', 'TOPAOW'], ['t2', 'var(--tophl)', 'TOPHL'], ['a', 'var(--muted)', 'AOW']].forEach(function (d) {
-        var v = s[d[0]];
+      [['w', 'var(--accent)', 'werkinkomen'], ['op', 'var(--warm)', 'ouderdomspensioen'], ['tx', 'var(--topaow)', 'extra pensioen vóór de AOW'], ['a', 'var(--muted)', 'AOW']].forEach(function (d) {
+        var v = d[0] === 'tx' ? s.t1 + s.t2 : s[d[0]];
         if (v <= 0) return;
         var ya = y(acc), yb = y(acc + v);
         body += '<rect x="' + (sx + (slot - bw) / 2).toFixed(2) + '" y="' + yb.toFixed(2) + '" width="' + bw.toFixed(2) + '" height="' + (ya - yb).toFixed(2) +
@@ -1165,10 +1216,10 @@
       if (k < 0 || k >= serie.length) return '';
       var x = pl + slot * k;
       var tx = eindLabel ? x - 6 : x + 6;
-      return '<line x1="' + x.toFixed(1) + '" x2="' + x.toFixed(1) + '" y1="' + (pt - 10) + '" y2="' + (H - pb) + '" stroke="var(--fg)" stroke-dasharray="2 3" opacity=".6"/>' +
-        '<text class="as mk" x="' + tx.toFixed(1) + '" y="' + (pt - 14) + '" text-anchor="' + (eindLabel ? 'end' : 'start') + '">' + label + '</text>';
+      // De fasenamen staan in de zones, dus hier alleen de lijn.
+      return '<line x1="' + x.toFixed(1) + '" x2="' + x.toFixed(1) + '" y1="' + (pt - 10) + '" y2="' + (H - pb) + '" stroke="var(--fg)" stroke-dasharray="2 3" opacity=".6"/>';
     }
-    var pensAge = Math.floor((L.startIdx || L.pensIdx) / 12 - L.birth / 12);
+    var pensAge = Math.floor(L.pensIdx / 12 - L.birth / 12);
     var lijnen;
     if (pensAge === aowLeeftijd) {
       lijnen = marker(aowLeeftijd, 'AOW', false);
@@ -1179,7 +1230,7 @@
     }
 
     return '<svg class="grafiek" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Inkomen per levensjaar: werkinkomen, pensioen en AOW">' +
-      grid + body + drempel + basis + ax + ghost + lijnen + '</svg>';
+      zones + grid + body + drempel + basis + ax + ghost + lijnen + '</svg>';
   }
 
   // Drie vaste plannen voor dezelfde deelnemer. Plan B is drie jaar vóór de AOW-leeftijd, plan C werkt geleidelijk af.
