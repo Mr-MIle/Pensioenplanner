@@ -263,6 +263,9 @@
     .rechts > .resultaat .bedrag { font-size: 26px; }
     .rechts > .resultaat .blok { padding: 14px; }
   }
+  .bewaar-plan { display: grid; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+  .bewaar-plan h3 { font-size: 17px; }
+  .bewaar-plan input[type="text"] { flex: 1 1 220px; min-width: 0; font: inherit; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
 </style>
 
 <main class="wrap">
@@ -397,26 +400,6 @@
     </section>
 
     <div class="rechts">
-  <section class="paneel grafiekpaneel uitvoer" id="tijdlijnPaneel" aria-labelledby="h-tijdlijn">
-    <div class="grafiek-kop">
-      <h2 id="h-tijdlijn">Inkomen door de jaren heen</h2>
-      <div class="seg-groep" role="group" aria-label="Nominaal of reëel bedragen"><button class="seg actief" type="button" data-reeel="nom" aria-pressed="true">Nominaal</button><button class="seg" type="button" data-reeel="reeel" aria-pressed="false">Reëel</button></div>
-      <button class="link-knop mobiel" type="button" id="grafiekToggle" aria-expanded="true">Verberg grafiek</button>
-    </div>
-    <p class="muted" style="margin: 6px 0 0">Werkinkomen, pensioen en AOW samen, gemiddeld per maand per levensjaar. De grafiek volgt de keuzes uit de wizard en de netto/bruto-keuze.</p>
-    <div id="tijdlijnGrafiek" style="margin-top: 12px"></div>
-    <div class="legenda">
-      <span class="staaf" style="--c: var(--accent)">Werkinkomen</span>
-      <span class="staaf" style="--c: var(--warm)">Ouderdomspensioen</span>
-      <span class="staaf" style="--c: var(--topaow)">Extra pensioen vóór de AOW</span>
-      <span class="staaf" style="--c: var(--muted)">AOW</span>
-      <span class="staaf" style="--c: var(--warn-bg)">Lager inkomen na het hoogste punt (minder dan 80%)</span>
-      <span class="stippel" style="--c: var(--fg)">80% van het hoogste inkomen</span>
-      <span class="punt" style="--c: var(--fg)">Vorige keuze</span>
-    </div>
-    <p class="muted" id="tijdlijnNoot" style="margin: 10px 0 0"></p>
-  </section>
-
     <aside class="resultaat" aria-live="polite" aria-label="Resultaat">
       <div class="kop">
         <strong>Met deze keuzes krijgt u</strong>
@@ -462,6 +445,26 @@
     </div>
   </div>
 
+  <section class="paneel grafiekpaneel uitvoer" id="tijdlijnPaneel" aria-labelledby="h-tijdlijn">
+    <div class="grafiek-kop">
+      <h2 id="h-tijdlijn">Inkomen door de jaren heen</h2>
+      <div class="seg-groep" role="group" aria-label="Nominaal of reëel bedragen"><button class="seg actief" type="button" data-reeel="nom" aria-pressed="true">Nominaal</button><button class="seg" type="button" data-reeel="reeel" aria-pressed="false">Reëel</button></div>
+      <button class="link-knop mobiel" type="button" id="grafiekToggle" aria-expanded="true">Verberg grafiek</button>
+    </div>
+    <p class="muted" style="margin: 6px 0 0">Werkinkomen, pensioen en AOW samen, gemiddeld per maand per levensjaar. De grafiek volgt de keuzes uit de wizard en de netto/bruto-keuze.</p>
+    <div id="tijdlijnGrafiek" style="margin-top: 12px"></div>
+    <div class="legenda">
+      <span class="staaf" style="--c: var(--accent)">Werkinkomen</span>
+      <span class="staaf" style="--c: var(--warm)">Ouderdomspensioen</span>
+      <span class="staaf" style="--c: var(--topaow)">Extra pensioen vóór de AOW</span>
+      <span class="staaf" style="--c: var(--muted)">AOW</span>
+      <span class="staaf" style="--c: var(--warn-bg)">Lager inkomen na het hoogste punt (minder dan 80%)</span>
+      <span class="stippel" style="--c: var(--fg)">80% van het hoogste inkomen</span>
+      <span class="punt" style="--c: var(--fg)">Vorige keuze</span>
+    </div>
+    <p class="muted" id="tijdlijnNoot" style="margin: 10px 0 0"></p>
+  </section>
+
   <section class="paneel uitvoer" aria-labelledby="h-kapitaal">
     <h2 id="h-kapitaal">Ontwikkeling pensioenvermogen</h2>
     <p class="muted" style="margin: 6px 0 0">De grafiek laat de ontwikkeling van het kapitaal tot de pensioendatum zien, opgesplitst in startkapitaal, premie-inleg en overrendement. Er is geen beschermingsrendement.</p>
@@ -497,14 +500,20 @@
 
   <section class="paneel uitvoer" aria-label="Vier plannen naast elkaar">
     <details class="plannen">
-    <summary>Vier plannen naast elkaar <span class="muted">(klik om te openen)</span></summary>
+    <summary>Plannen naast elkaar <span class="muted">(klik om te openen)</span></summary>
     <p class="muted" style="margin: 14px 0 0">Bedragen per maand, <span id="vergelijkBasis">netto</span>. Zelfde deelnemer en startkapitaal. Het verschil is ten opzichte van plan A. Met &ldquo;Laad in de wizard&rdquo; zet u een plan in de keuzes.</p>
     <div style="margin: 14px 0">
       <table class="maand vergelijk" id="vergelijk"><thead id="vergelijkKop"></thead><tbody id="vergelijkRijen"></tbody></table>
     </div>
-    <div id="vergelijkGrafiek"></div>
-    <div class="legenda" id="vergelijkLegenda"></div>
-    <p class="muted" style="margin: 10px 0 0">Totaal inkomen per maand per levensjaar: werkinkomen, pensioen en AOW samen, bij de basis-rendementsaanname. De grafiek begint bij 58 jaar.</p>
+    <div class="bewaar-plan">
+      <h3>Bewaar de huidige keuzes als plan</h3>
+      <p class="muted" style="margin: 0">Zet de keuzes uit de wizard als eigen plan in deze tabel, met een naam die u zelf kiest. Het plan blijft bewaard in deze browser.</p>
+      <div class="rij">
+        <input id="planNaam" type="text" maxlength="60" placeholder="Bijvoorbeeld: deeltijd vanaf 63" aria-label="Naam van het plan">
+        <button class="wkp-btn" type="button" id="planBewaar">Bewaar plan</button>
+      </div>
+      <p class="muted" id="planMelding" role="status" style="margin: 0"></p>
+    </div>
     </details>
   </section>
 
@@ -738,7 +747,24 @@
 
     $('vergelijk').addEventListener('click', function (e) {
       var b = e.target.closest('[data-plan]');
-      if (b) laadPlan(Number(b.getAttribute('data-plan')));
+      if (b) { laadPlan(Number(b.getAttribute('data-plan'))); return; }
+      var d = e.target.closest('[data-delete]');
+      if (d) {
+        var lijst = leesRuwe();
+        lijst.splice(Number(d.getAttribute('data-delete')), 1);
+        bewaarRuwe(lijst);
+        renderVergelijk();
+      }
+    });
+    $('planBewaar').addEventListener('click', function () {
+      var naam = $('planNaam').value.trim();
+      if (!naam) { $('planMelding').textContent = 'Geef het plan eerst een naam.'; return; }
+      var lijst = leesRuwe();
+      lijst.push(huidigeKeuzes(naam));
+      bewaarRuwe(lijst);
+      $('planNaam').value = '';
+      $('planMelding').textContent = 'Plan \u201c' + naam + '\u201d is bewaard in deze browser.';
+      renderVergelijk();
     });
 
     // Deeltijd en de pensioenleeftijd hangen samen: deeltijd vraagt een ingangsleeftijd tussen 57 en 66 jaar.
@@ -1237,8 +1263,8 @@
       zones + grid + body + drempel + basis + ax + ghost + lijnen + '</svg>';
   }
 
-  // Drie vaste plannen voor dezelfde deelnemer. Plan B is drie jaar vóór de AOW-leeftijd, plan C werkt geleidelijk af.
-  // De vier plannen. opties 'max': TOPAOW op het maximum en TOPHL op 33% van het OP na uitruil.
+  // Vaste plannen voor dezelfde deelnemer, in dezelfde vorm als de keuzes in de wizard.
+  // Plan C gebruikt TOPAOW op het maximum en TOPHL op het maximum van het OP na uitruil.
   function plannen() {
     var birthIdx = E.maandIndex(C.deelnemer.geboortedatum);
     var calcIdx = E.maandIndex(C.calculatiedatum);
@@ -1246,29 +1272,72 @@
     function rij(leeftijd, pct) { return { vanaf: formatMaand(birthIdx + Math.round(leeftijd * 12)), percentage: pct }; }
     var std = C.parttimepercentages.map(function (r) { return { vanaf: r.vanaf, percentage: r.percentage }; });
     var geleidelijk = [rij(62, 80), rij(64, 50), rij(66, 25)].filter(function (r) { return E.maandIndex(r.vanaf) > calcIdx; });
+    var basis = { deel: false, deelPct: $('deelPct').value, partnerPct: C.partnerpensioen.standaardPct, topaow: 0, tophl: 0 };
+    function plan(naam, extra) { return Object.assign({}, basis, { naam: naam }, extra); }
     return [
-      { naam: 'Regulier, pensioen op AOW-leeftijd', start: 'aow', leeftijd: null, parttime: std, opties: null },
-      { naam: 'Regulier, pensioen 3 jaar eerder', start: 'ander', leeftijd: aowJaar - 3, parttime: std, opties: null },
-      { naam: '3 jaar eerder, met maximaal TOPAOW en TOPHL', start: 'ander', leeftijd: aowJaar - 3, parttime: std, opties: 'max' },
-      { naam: 'Geleidelijk minder werken tot de AOW', start: 'aow', leeftijd: null, parttime: geleidelijk, opties: null }
+      plan('Regulier, pensioen op AOW-leeftijd', { start: 'aow', leeftijd: aowJaar, parttime: std }),
+      plan('Regulier, pensioen 3 jaar eerder', { start: 'ander', leeftijd: aowJaar - 3, parttime: std }),
+      plan('3 jaar eerder, met maximaal TOPAOW en TOPHL', { start: 'ander', leeftijd: aowJaar - 3, parttime: std, topaow: 100000, tophl: Math.round(C.tophl.maxPctOP * 100) }),
+      plan('Geleidelijk minder werken tot de AOW', { start: 'aow', leeftijd: aowJaar, parttime: geleidelijk })
     ];
   }
 
-  // Uitkomsten van één plan, met dezelfde rekenkern als de wizard.
+  // Zelf bewaarde plannen, in de browser (localStorage). Ruwe lijst, zoals opgeslagen.
+  function leesRuwe() {
+    try {
+      var a = JSON.parse(window.localStorage.getItem('pensioenplanner.plannen.v1') || '[]');
+      if (!Array.isArray(a)) return [];
+      return a.filter(function (p) {
+        return p && typeof p.naam === 'string' && Array.isArray(p.parttime) && (p.start === 'aow' || p.start === 'ander');
+      });
+    } catch (e) { return []; }
+  }
+  function bewaarRuwe(lijst) {
+    try { window.localStorage.setItem('pensioenplanner.plannen.v1', JSON.stringify(lijst)); } catch (e) {}
+  }
+  function opgeslagenPlannen() {
+    return leesRuwe().map(function (p) { return Object.assign({ deel: false, deelPct: 50, partnerPct: C.partnerpensioen.standaardPct, topaow: 0, tophl: 0 }, p); });
+  }
+  function allePlannen() { return plannen().concat(opgeslagenPlannen()); }
+
+  // De huidige keuzes uit de wizard, als plan.
+  function huidigeKeuzes(naam) {
+    return {
+      naam: naam,
+      start: radio('start'),
+      leeftijd: Number($('leeftijd').value),
+      deel: radio('deel') === 'ja',
+      deelPct: $('deelPct').value,
+      parttime: parttimeLijst().map(function (r) { return { vanaf: r.vanaf, percentage: r.percentage }; }),
+      partnerPct: Number($('partnerPct').value),
+      topaow: Number($('topaow').value),
+      tophl: Number($('tophl').value)
+    };
+  }
+
+  // Uitkomsten van één plan, met dezelfde regels als de wizard.
   function planUitkomst(p, rente, sk) {
     var birthIdx = E.maandIndex(C.deelnemer.geboortedatum);
-    var jaar = p.start === 'aow' ? AOW_JAREN : p.leeftijd;
+    var gekozenJaar = p.start === 'aow' ? AOW_JAREN : Number(p.leeftijd);
+    var dLo = Math.round(AOW_JAREN) - 10, dHi = Math.round(AOW_JAREN) - 1;
+    // Deeltijd alleen met een ingangsleeftijd tussen 10 jaar en 1 jaar vóór de AOW. Met de AOW-leeftijd als keuze is er geen deeltijd.
+    var deelGeldig = !!p.deel && p.start === 'ander' && gekozenJaar >= dLo && gekozenJaar <= dHi;
+    var jaar = deelGeldig ? AOW_JAREN : gekozenJaar;
     var pensM = Math.round(jaar * 12);
     var pensIdx = birthIdx + pensM;
-    var sim = E.simuleer(C, { pensioenLeeftijdMaanden: pensM, rente: rente, deeltijd: null, parttimepercentages: p.parttime, startkapitaal: sk });
+    var voorAow = pensM < C.pensioenreglement.aowLeeftijdMaanden;
+    var deel = deelGeldig ? { idx: birthIdx + Math.round(gekozenJaar * 12), pct: Number(p.deelPct) / 100 } : null;
+    var partnerPct = Number(p.partnerPct);
+    var sim = E.simuleer(C, { pensioenLeeftijdMaanden: pensM, rente: rente, deeltijd: deel, parttimepercentages: p.parttime, startkapitaal: sk });
     var werk = sim.rows.length ? sim.rows[sim.rows.length - 1].werk : 1;
-    var t1 = 0, hl = 0;
-    if (p.opties === 'max') {
-      t1 = E.uitkeringen(C, sim, { topaow: Infinity, werkfractie: werk }, jaar).maxT1;
-      hl = C.tophl.maxPctOP;
-    }
-    var u = E.uitkeringen(C, sim, { topaow: t1, tophlPct: hl, werkfractie: werk }, jaar);
-    var serie = jaarSerie({ sim: sim, u: u, pensIdx: pensIdx, birth: birthIdx, deelIdx: null, deelJaar: 0 });
+    var maxT1 = E.uitkeringen(C, sim, { partnerPct: partnerPct, topaow: Infinity, werkfractie: werk }, jaar).maxT1;
+    var maxHeel = Math.floor(maxT1);
+    var sl1 = voorAow && maxHeel > 0 ? Math.min(Math.max(0, Number(p.topaow) || 0), maxHeel) : 0;
+    var opMax = maxHeel > 0 && sl1 >= maxHeel;
+    var t1 = opMax ? maxT1 : sl1;
+    var hl = opMax ? Math.max(0, Number(p.tophl) || 0) / 100 : 0;
+    var u = E.uitkeringen(C, sim, { partnerPct: partnerPct, topaow: t1, tophlPct: hl, werkfractie: werk }, jaar);
+    var serie = jaarSerie({ sim: sim, u: u, pensIdx: pensIdx, birth: birthIdx, deelIdx: deel ? deel.idx : null, deelJaar: u.deelJaar });
     return {
       naam: p.naam,
       pensLabel: E.maandLabel(pensIdx),
@@ -1286,16 +1355,17 @@
   // Zet een plan in de wizard. Daarna rekent de hele pagina met de keuzes van dat plan.
   function laadPlan(i) {
     wijzigd = true;
-    var p = plannen()[i];
+    var p = allePlannen()[i];
     radioSet('start', p.start);
+    radioSet('deel', p.deel ? 'ja' : 'nee');
     if (p.start === 'ander') $('leeftijd').value = String(p.leeftijd);
-    radioSet('deel', 'nee');
-    $('partnerPct').value = C.partnerpensioen.standaardPct;
+    $('deelPct').value = p.deelPct;
+    $('partnerPct').value = p.partnerPct;
     parttimeRows = p.parttime.map(function (r) { return { vanaf: r.vanaf, pct: r.percentage }; });
     // Het maximum wordt in render bepaald; eerst de bovengrens openen, anders klemt de browser de waarde af.
     $('topaow').max = 100000;
-    $('topaow').value = p.opties === 'max' ? 100000 : 0;
-    $('tophl').value = p.opties === 'max' ? Math.round(C.tophl.maxPctOP * 100) : 0;
+    $('topaow').value = p.topaow;
+    $('tophl').value = p.tophl;
     renderWerk();
     render();
   }
@@ -1308,7 +1378,9 @@
   function renderVergelijk() {
     var rente = C.rendement.overrendementNaRTS;
     var sk = Math.max(0, Number($('startkapitaal').value) || 0);
-    var res = plannen().map(function (p) { return planUitkomst(p, rente, sk); });
+    var lijst = allePlannen();
+    var aantalVast = plannen().length;
+    var res = lijst.map(function (p) { return planUitkomst(p, rente, sk); });
     if (REEEL) {
       res = res.map(function (r) {
         var fp = reeelFactor(r.pensJaar), fa = reeelFactor(AOW_JAREN);
@@ -1322,8 +1394,7 @@
         });
       });
     }
-    var kleuren = ['var(--muted)', 'var(--accent)', 'var(--topaow)', 'var(--plan-d)'];
-    var letters = ['A', 'B', 'C', 'D'];
+    var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     var basis = $('basis').value;
     var ref = res[0].pl;
 
@@ -1339,55 +1410,17 @@
       var opties = [];
       if (r.t1 > 0) opties.push('TOPAOW ' + eur0.format(r.t1) + ' per jaar');
       if (r.t2 > 0) opties.push('TOPHL ' + Math.round(r.pctHL * 100) + '%');
+      var eigen = i >= aantalVast ? ' <span class="sub-cel" style="display: inline">(eigen plan)</span>' : '';
+      var wis = i >= aantalVast ? '<button class="link-knop" type="button" data-delete="' + (i - aantalVast) + '">Verwijder</button>' : '';
       return '<tr>' +
-        '<td><span class="dot" style="background: ' + kleuren[i] + '"></span><strong>Plan ' + letters[i] + '</strong> ' + r.naam +
+        '<td><strong>Plan ' + letters[i] + '</strong> ' + r.naam + eigen +
           '<span class="sub-cel">Pensioen vanaf ' + r.pensLabel + ' · kapitaal ' + eur0.format(r.kapitaal) + (opties.length ? ' · ' + opties.join(' · ') : '') + '</span>' +
-          '<button class="link-knop" type="button" data-plan="' + i + '">Laad in de wizard</button></td>' +
+          '<button class="link-knop" type="button" data-plan="' + i + '">Laad in de wizard</button> ' + wis + '</td>' +
         '<td>' + eur0.format(r.pl) + '</td>' +
         '<td>' + eur0.format(r.na) + '</td>' +
         '<td>' + verschilTxt + '</td>' +
         '</tr>';
     }).join('');
-
-    $('vergelijkGrafiek').innerHTML = tekenLijnen(res.map(function (r) { return r.serie; }), kleuren, C.pensioenreglement.aowLeeftijdMaanden / 12);
-    $('vergelijkLegenda').innerHTML = res.map(function (r, i) {
-      return '<span class="staaf" style="--c: ' + kleuren[i] + '">Plan ' + letters[i] + ': ' + r.naam + '</span>';
-    }).join('');
-  }
-
-  // Lijngrafiek: totaal inkomen per maand per leeftijd, per plan. Vanaf 58 jaar.
-  function tekenLijnen(reeksen, kleuren, aowLeeftijd) {
-    var W = 720, H = 320, pl = 76, pr = 16, pt = 16, pb = 34;
-    var van = 58, tot = C.pensioenreglement.grafiekEindLeeftijd;
-    reeksen = reeksen.map(function (r) { return r.filter(function (s) { return s.leeftijd >= van && s.leeftijd <= tot; }); });
-    var top = 0;
-    reeksen.forEach(function (r) { r.forEach(function (s) { top = Math.max(top, s.totaal); }); });
-    var as = uitkeringsAs(top || 1);
-    top = as.top;
-    var span = tot - van;
-    function x(a) { return pl + (W - pl - pr) * (a - van) / span; }
-    function y(v) { return H - pb - (H - pt - pb) * v / top; }
-
-    var grid = '';
-    for (var t = 0; t <= top + as.stap / 2; t += as.stap) {
-      grid += '<line class="raster" x1="' + pl + '" x2="' + (W - pr) + '" y1="' + y(t).toFixed(1) + '" y2="' + y(t).toFixed(1) + '"/>';
-      grid += '<text class="as" x="' + (pl - 8) + '" y="' + (y(t) + 4).toFixed(1) + '" text-anchor="end">' + eur0.format(t) + '</text>';
-    }
-    var labels = '';
-    for (var a = van; a <= tot; a += 1) {
-      if (a % 5 === 0) labels += '<text class="as" x="' + x(a).toFixed(1) + '" y="' + (H - 10) + '" text-anchor="middle">' + a + ' j</text>';
-    }
-    var aowX = x(aowLeeftijd).toFixed(1);
-    var aowLijn = '<line x1="' + aowX + '" x2="' + aowX + '" y1="' + pt + '" y2="' + (H - pb) + '" stroke="var(--fg)" stroke-dasharray="2 3" opacity=".6"/>' +
-      '<text class="as" x="' + (+aowX + 6) + '" y="' + (pt + 12) + '">AOW</text>';
-    var lijnen = '';
-    reeksen.forEach(function (r, ri) {
-      if (!r.length) return;
-      var d = r.map(function (s, k) { return (k ? 'L' : 'M') + x(s.leeftijd).toFixed(1) + ',' + y(s.totaal).toFixed(1); }).join('');
-      lijnen += '<path d="' + d + '" fill="none" stroke="' + kleuren[ri] + '" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round"/>';
-    });
-    return '<svg class="grafiek" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Totaal inkomen per maand per leeftijd voor vier plannen">' +
-      grid + labels + aowLijn + lijnen + '</svg>';
   }
 
   // Kies een mooie stapgrootte (1, 2 of 5 x een macht van 10) voor de Y-as.
