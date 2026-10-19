@@ -190,11 +190,6 @@
     #startkapitaal { width: 100% !important; }
     .resultaat .bedrag { font-size: 30px; }
   }
-  #tijdlijnKpi { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 12px 0 !important; }
-  #tijdlijnKpi .kpi { padding: 10px 12px; }
-  #tijdlijnKpi .label { font-size: 12px; margin-bottom: 2px; }
-  #tijdlijnKpi .waarde { font-family: inherit; font-size: 15px; font-weight: 600; line-height: 1.3; }
-  #tijdlijnKpi .sub { font-size: 12px; margin-top: 4px; }
   .as-titel { font-size: 12px; font-weight: 600; }
   .legenda[hidden] { display: none; }
   table.vergelijk { table-layout: fixed; }
@@ -253,6 +248,21 @@
     body.met-sheet { padding-bottom: 52vh; }
     body.met-sheet.sheet-ingeklapt { padding-bottom: 96px; }
   }
+
+  /* Desktop: grafiek bovenaan, resultaat horizontaal eronder (niet meer sticky) */
+  @media (min-width: 880px) {
+    .rechts { position: static; height: auto; min-height: 0; }
+    .rechts > .resultaat { flex: none; overflow: visible; display: flex; flex-wrap: wrap; align-items: stretch; gap: 12px; }
+    .rechts > .resultaat > .blok { flex: 1 1 230px; }
+    .rechts > .resultaat > .kop,
+    .rechts > .resultaat > .info,
+    .rechts > .resultaat > .schakel,
+    .rechts > .resultaat > .knop { flex-basis: 100%; }
+    .rechts > .resultaat > #rPartnerBlok { flex-basis: 100%; }
+    .rechts > .resultaat > #rInfo:not(:has(#rDeel:not(:empty))) { display: none; }
+    .rechts > .resultaat .bedrag { font-size: 26px; }
+    .rechts > .resultaat .blok { padding: 14px; }
+  }
 </style>
 
 <main class="wrap">
@@ -283,12 +293,12 @@
 
       <!-- Stap 1 -->
       <div class="stap" data-stap="1">
-        <button class="stap-kop" type="button" aria-expanded="true" aria-controls="s1">
+        <button class="stap-kop" type="button" aria-expanded="false" aria-controls="s1">
           <span class="nummer">1</span>
           <span class="stap-titel">Wanneer wilt u stoppen met werken?<span class="stap-keuze" id="k1"></span></span>
           <span class="pijl" aria-hidden="true">▾</span>
         </button>
-        <div class="stap-body" id="s1">
+        <div class="stap-body" id="s1" hidden>
           <div class="keuze" role="radiogroup" aria-label="Start van uw pensioen">
             <label class="optie"><input type="radio" name="start" value="aow" checked>
               <span>Op mijn AOW-leeftijd<small>Dat is 67 jaar. De meeste mensen kiezen dit.</small></span></label>
@@ -306,12 +316,12 @@
 
       <!-- Stap werken -->
       <div class="stap" data-stap="werk">
-        <button class="stap-kop" type="button" aria-expanded="true" aria-controls="sW">
+        <button class="stap-kop" type="button" aria-expanded="false" aria-controls="sW">
           <span class="nummer">2</span>
           <span class="stap-titel">Wilt u de komende jaren meer of minder werken?<span class="stap-keuze" id="kW"></span></span>
           <span class="pijl" aria-hidden="true">▾</span>
         </button>
-        <div class="stap-body" id="sW">
+        <div class="stap-body" id="sW" hidden>
           <p class="muted" style="margin: 0">Hier geeft u aan of u voor uw pensioen meer of minder gaat werken, en over welke periode. Dat staat los van het moment waarop u stopt, maar het bepaalt wel hoeveel u nog inlegt en dus hoeveel kapitaal er bij pensionering beschikbaar is. Kies de maand waarin uw werkweek verandert. Vanaf die maand geldt het nieuwe percentage voor de premie. Een wijziging geldt vanaf de eerste van die maand.</p>
           <div id="parttimeLijst" style="display: grid; gap: 10px"></div>
           <div class="rij">
@@ -323,12 +333,12 @@
 
       <!-- Stap 2 -->
       <div class="stap" data-stap="2">
-        <button class="stap-kop" type="button" aria-expanded="true" aria-controls="s2">
+        <button class="stap-kop" type="button" aria-expanded="false" aria-controls="s2">
           <span class="nummer">3</span>
           <span class="stap-titel">Wilt u al deels met pensioen, terwijl u werkt?<span class="stap-keuze" id="k2"></span></span>
           <span class="pijl" aria-hidden="true">▾</span>
         </button>
-        <div class="stap-body" id="s2">
+        <div class="stap-body" id="s2" hidden>
           <div class="keuze" role="radiogroup" aria-label="Deeltijdpensioen">
             <label class="optie"><input type="radio" name="deel" value="nee" checked>
               <span>Nee, ik stop in één keer helemaal</span></label>
@@ -348,12 +358,12 @@
 
       <!-- Stap 3 -->
       <div class="stap" data-stap="3">
-        <button class="stap-kop" type="button" aria-expanded="true" aria-controls="s3">
+        <button class="stap-kop" type="button" aria-expanded="false" aria-controls="s3">
           <span class="nummer">4</span>
           <span class="stap-titel">Wat krijgt uw partner als u overlijdt?<span class="stap-keuze" id="k3"></span></span>
           <span class="pijl" aria-hidden="true">▾</span>
         </button>
-        <div class="stap-body" id="s3">
+        <div class="stap-body" id="s3" hidden>
           <p class="muted" style="margin: 0">Uw partner krijgt een uitkering als u overlijdt. Het wordt op de pensioendatum ingekocht, als percentage van uw ouderdomspensioen (maximaal 70%). Hoe hoger het percentage, hoe lager uw eigen pensioen.</p>
           <div class="sub">
             <label for="partnerPct">Partner krijgt: <strong id="partnerPctWaarde">70%</strong></label>
@@ -364,12 +374,12 @@
 
       <!-- Stap 4 -->
       <div class="stap" data-stap="4">
-        <button class="stap-kop" type="button" aria-expanded="true" aria-controls="s4">
+        <button class="stap-kop" type="button" aria-expanded="false" aria-controls="s4">
           <span class="nummer">5</span>
           <span class="stap-titel">Wilt u eerder extra inkomen, vóór de AOW?<span class="stap-keuze" id="k4"></span></span>
           <span class="pijl" aria-hidden="true">▾</span>
         </button>
-        <div class="stap-body" id="s4">
+        <div class="stap-body" id="s4" hidden>
           <p class="muted" style="margin: 0">Met TOPAOW krijgt u vóór de AOW-leeftijd een extra uitkering uit uw eigen kapitaal. Daarna is uw pensioen lager. TOPHL is een extra percentage bovenop TOPAOW, en kan alleen als TOPAOW op het maximum staat.</p>
           <div class="sub" id="topaowSub">
             <label for="topaow">Extra per jaar (TOPAOW): <strong id="topaowWaarde">€ 0</strong></label>
@@ -394,7 +404,6 @@
       <button class="link-knop mobiel" type="button" id="grafiekToggle" aria-expanded="true">Verberg grafiek</button>
     </div>
     <p class="muted" style="margin: 6px 0 0">Werkinkomen, pensioen en AOW samen, gemiddeld per maand per levensjaar. De grafiek volgt de keuzes uit de wizard en de netto/bruto-keuze.</p>
-    <div class="kpis" id="tijdlijnKpi" style="margin: 14px 0"></div>
     <div id="tijdlijnGrafiek" style="margin-top: 12px"></div>
     <div class="legenda">
       <span class="staaf" style="--c: var(--accent)">Werkinkomen</span>
@@ -1099,11 +1108,6 @@
     var aowLeeftijd = Math.floor(C.pensioenreglement.aowLeeftijdMaanden / 12);
     var naAow = serie.filter(function (s) { return s.leeftijd === aowLeeftijd; })[0];
     var dal = na.filter(function (s) { return s.totaal < grens; });
-
-    $('tijdlijnKpi').innerHTML =
-      '<div class="kpi"><div class="label">Hoogste inkomen per maand</div><div class="waarde">' + eur0.format(piek.totaal) + '</div><div class="sub">' + basis + ', op ' + piek.leeftijd + ' jaar</div></div>' +
-      '<div class="kpi"><div class="label">Laagste inkomen na het hoogste punt</div><div class="waarde">' + eur0.format(laagste.totaal) + '</div><div class="sub">' + basis + ', op ' + laagste.leeftijd + ' jaar</div></div>' +
-      '<div class="kpi"><div class="label">Inkomen vanaf de AOW-leeftijd</div><div class="waarde">' + (naAow ? eur0.format(naAow.totaal) : '–') + '</div><div class="sub">' + basis + ' per maand, incl. pensioen</div></div>';
 
     var noot = dal.length
       ? 'Jaren onder 80% van het hoogste inkomen: van ' + dal[0].leeftijd + ' tot ' + dal[dal.length - 1].leeftijd + ' jaar. '
