@@ -65,7 +65,10 @@ button:disabled { opacity: 0.6; cursor: wait; }
 </head>
 <body>
 <main>
-  <p><a class="terugknop" href="index.html">&larr; Terug naar de pensioenplanner</a></p>
+  <p>
+    <a class="terugknop" href="index.html">&larr; Terug naar de pensioenplanner</a>
+    <a class="terugknop" href="config-bewerken.html">Configuratie bewerken &rarr;</a>
+  </p>
   <h1>Testspecialisten: Pensioenplanner</h1>
   <p class="intro">Deze pagina draait 29 tests tegen de huidige <code>engine.js</code>. Alle bedragen, grenzen en percentages worden uit <code>config.js</code> gelezen. In de tests staan alleen de testinvoer (zoals 40% deeltijd of 60% werkfractie) en de verwachte regel uit het reglement.</p>
 
@@ -95,6 +98,7 @@ button:disabled { opacity: 0.6; cursor: wait; }
 </main>
 
 <script src="config.js"></script>
+<script src="config-overlay.js"></script>
 <script src="engine.js"></script>
 <script>
 (function () {
@@ -399,7 +403,8 @@ button:disabled { opacity: 0.6; cursor: wait; }
         run: function () {
           var X = ta.maxPerJaar / 2;
           var kOPdoel = ta.ondergrensOP * aOP + ta.inkoopfactor * X;
-          var K = kOPdoel * (aOP + std / 100 * pp.inkoopfactorNP) / aOP;
+          var vGeklemd = Math.min(pp.maxPct, Math.max(pp.minPct, std)) / 100;
+          var K = kOPdoel * (aOP + vGeklemd * pp.inkoopfactorNP) / aOP;
           var hi = E.uitkeringen(cfg, fake(K), { partnerPct: std, topaow: 1e9 }, c.preJ);
           var lo = E.uitkeringen(cfg, fake(K * 0.99), { partnerPct: std, topaow: 1e9 }, c.preJ);
           var ok = near(hi.t1, X, 0.01) && near(hi.opNa, ta.ondergrensOP, 0.01) &&

@@ -1,0 +1,400 @@
+<!doctype html>
+<html lang="nl" data-configbewerker>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Configuratie bewerken</title>
+<style>
+:root {
+  --bg: #f6f7f9; --card: #ffffff; --ink: #1d2330; --muted: #5b6475; --line: #e3e6ec;
+  --accent: #1f4e8c; --ok: #1e7b4a; --okbg: #e4f5ec; --fail: #b42318; --failbg: #fdecea; --warn: #8a5a00; --warnbg: #fff4d6;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14171d; --card: #1c2129; --ink: #e8ebf0; --muted: #9aa3b2; --line: #2c333d;
+    --accent: #7fb0ea; --ok: #6fd39c; --okbg: #1d3327; --fail: #ff8a80; --failbg: #3a211f; --warn: #f2c46b; --warnbg: #3a2f14;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14171d; --card: #1c2129; --ink: #e8ebf0; --muted: #9aa3b2; --line: #2c333d;
+  --accent: #7fb0ea; --ok: #6fd39c; --okbg: #1d3327; --fail: #ff8a80; --failbg: #3a211f; --warn: #f2c46b; --warnbg: #3a2f14;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.45; }
+main { max-width: 1000px; margin: 0 auto; padding: 16px; display: grid; gap: 16px; }
+h1 { font-size: 1.5rem; margin: 8px 0 0; }
+h2 { font-size: 1.05rem; margin: 0 0 12px; }
+h3 { font-size: 0.95rem; margin: 14px 0 6px; }
+.lead { color: var(--muted); margin: 0; font-size: 0.95rem; }
+.kaart { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+.nav { display: flex; flex-wrap: wrap; gap: 8px; }
+.knop-link, .knop { font: inherit; font-weight: 600; border-radius: 8px; padding: 8px 14px; text-decoration: none; cursor: pointer; border: 1px solid var(--line); background: var(--card); color: var(--accent); }
+.knop.primair { background: var(--accent); color: #fff; border-color: var(--accent); }
+.knop:disabled { opacity: 0.5; cursor: not-allowed; }
+.acties { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.stand { font-weight: 700; }
+.meldingen { margin: 8px 0 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 0.92rem; }
+.meldingen li { padding: 8px 10px; border-radius: 8px; }
+.meldingen .fout { background: var(--failbg); color: var(--fail); }
+.meldingen .waarschuwing { background: var(--warnbg); color: var(--warn); }
+.status { min-height: 1.4em; font-size: 0.92rem; color: var(--muted); }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px 14px; }
+.veld { display: grid; gap: 4px; font-size: 0.92rem; }
+.veld > span:first-child { color: var(--muted); }
+.veld .hint { color: var(--muted); font-size: 0.82rem; }
+input[type="text"] {
+  font: inherit; width: 100%; padding: 7px 9px; border: 1px solid var(--line); border-radius: 7px; background: var(--bg); color: var(--ink);
+}
+input.ongeldig { border-color: var(--fail); background: var(--failbg); }
+fieldset { border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px 12px; margin: 10px 0 0; display: grid; gap: 10px; min-width: 0; }
+legend { padding: 0 6px; color: var(--muted); font-size: 0.9rem; }
+.tabelwrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+th, td { text-align: left; padding: 6px 6px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+th { color: var(--muted); font-weight: 600; font-size: 0.8rem; }
+td input[type="text"] { min-width: 90px; }
+.rijknop { font-size: 0.85rem; padding: 5px 9px; }
+.voet { color: var(--muted); font-size: 0.85rem; }
+@media (max-width: 640px) {
+  .grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+<main>
+  <nav class="nav" aria-label="Navigatie">
+    <a class="knop-link" href="testspecialisten.html">&larr; Testspecialisten</a>
+    <a class="knop-link" href="index.html">Naar de planner</a>
+  </nav>
+
+  <header>
+    <h1>Configuratie bewerken</h1>
+    <p class="lead">Wijzigingen werken direct in de planner en op de testpagina, in deze browser. Open pagina's met de planner verversen zichzelf na opslaan. Met "Download config.js" maakt u de wijziging blijvend in de map.</p>
+  </header>
+
+  <section class="kaart" aria-live="polite">
+    <div class="acties">
+      <span id="stand" class="stand">Laden...</span>
+      <span style="flex: 1"></span>
+      <button id="opslaan" class="knop primair" type="button">Opslaan en toepassen</button>
+      <button id="herstel" class="knop" type="button">Terugzetten naar config.js</button>
+      <button id="download" class="knop" type="button">Download config.js</button>
+    </div>
+    <div id="status" class="status" role="status"></div>
+    <ul id="meldingen" class="meldingen"></ul>
+  </section>
+
+  <div id="formulier"></div>
+
+  <p class="voet">Tip: de testpagina draait de tests opnieuw op de nieuwe waarden. Na "Download config.js" kunt u de aanpassingen wissen met "Terugzetten" zodat u niet dubbel telt.</p>
+</main>
+
+<script src="config.js"></script>
+<script src="config-overlay.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  var O = window.PensioenOverlay;
+
+  // ---------- labels en instellingen ----------
+  var LABELS = {
+    calculatiedatum: 'Calculatiedatum (jjjj-mm)',
+    deelnemers: 'Deelnemers (testgevallen)',
+    naam: 'Naam', geboortedatum: 'Geboortedatum (jjjj-mm-dd)', startkapitaal: 'Startkapitaal (€)', brutoSalaris: 'Bruto salaris (€/jaar)',
+    standaardDeelnemer: 'Standaard deelnemer (nummer, 0 = eerste)',
+    stabiliteit: 'Stabiliteit (bij- en afschrijvingen)',
+    maxSchokJong: 'Grootste schok, jong (fractie)', maxSchokOud: 'Grootste schok, oud (fractie)',
+    leeftijdJong: 'Leeftijd jong (jaar)', leeftijdOud: 'Leeftijd oud (jaar)',
+    ondergrensFractie: 'Ondergrens schok (fractie van maximum)',
+    kapitaalAandeelJong: 'Aandeel in kapitaal, jong (fractie)', kapitaalAandeelOud: 'Aandeel in kapitaal, oud (fractie)',
+    pensioenAandeelJong: 'Aandeel in pensioen, jong (fractie)', pensioenAandeelOud: 'Aandeel in pensioen, oud (fractie)',
+    pensioenreglement: 'Pensioenreglement',
+    premiepercentage: 'Premiepercentage (fractie)',
+    franchise: 'Franchise (€/jaar)',
+    maxPensioengevendSalaris: 'Maximum pensioengevend salaris (€/jaar)',
+    aowLeeftijdMaanden: 'AOW-leeftijd (maanden)',
+    eindLeeftijd: 'Eindleeftijd rekenhorizon (jaar)',
+    grafiekEindLeeftijd: 'Laatste leeftijd op grafiek (jaar)',
+    standaardPensioenleeftijd: 'Standaard pensioenleeftijd (jaar)',
+    parttimepercentages: 'Parttimepercentages (vanaf datum)',
+    vanaf: 'Vanaf (jjjj-mm)', percentage: 'Percentage (%)',
+    rendement: 'Rendement',
+    overrendementNaRTS: 'Overrendement na RTS (fractie per jaar)',
+    loonInflatie: 'Loon-inflatie (fractie per jaar)',
+    inflatiePrijs: 'Prijsinflatie (fractie per jaar)',
+    yFactor: 'Y-factor bandbreedte',
+    toedeelschaal: 'Toedeelschaal',
+    leeftijdStart: 'Leeftijd start afbouw (jaar)', leeftijdEind: 'Leeftijd einde afbouw (jaar)',
+    factorVoor: 'Factor voor afbouw', factorNa: 'Factor na afbouw',
+    annuiteitsdelers: 'Annuïteitsdelers (leeftijd → deler)',
+    aowBrutoMaand: 'AOW bruto per maand (€)',
+    belasting: 'Belasting (fictief)',
+    schijven: 'Belastingschijven', tot: 'Tot (€/jaar, leeg = geen grens)', tarief: 'Tarief (fractie)',
+    heffingskorting: 'Heffingskorting (€/jaar)',
+    topaow: 'TOPAOW',
+    maxPerJaar: 'Maximum per jaar (€)',
+    ondergrensOP: 'Ondergrens OP na ruil (€/jaar)',
+    inkoopfactor: 'Inkoopfactor',
+    tophl: 'TOPHL',
+    maxPctOP: 'Maximum als deel van resterend OP (fractie)',
+    partnerpensioen: 'Partnerpensioen',
+    minPct: 'Minimum (%)', maxPct: 'Maximum (%)', standaardPct: 'Standaard (%)',
+    inkoopfactorNP: 'Inkoopfactor partnerpensioen'
+  };
+
+  // Waarden als fractie (0,20 = 20%): hiernaast tonen we het percentage.
+  var FRACTIE = ['premiepercentage', 'maxSchokJong', 'maxSchokOud', 'ondergrensFractie', 'kapitaalAandeelJong', 'kapitaalAandeelOud',
+                 'pensioenAandeelJong', 'pensioenAandeelOud', 'overrendementNaRTS', 'loonInflatie', 'inflatiePrijs', 'maxPctOP'];
+
+  // Lijsten met rijen: kolommen en het model voor een nieuwe rij.
+  var TABELLEN = {
+    deelnemers: {
+      kolommen: [['naam', 'Naam', 'text'], ['geboortedatum', 'Geboortedatum', 'text'], ['startkapitaal', 'Startkapitaal (€)', 'num'], ['brutoSalaris', 'Bruto salaris (€/jaar)', 'num']],
+      nieuw: function () { return { naam: 'Nieuwe deelnemer', geboortedatum: '1980-01-01', startkapitaal: 0, brutoSalaris: 0 }; }
+    },
+    parttimepercentages: {
+      kolommen: [['vanaf', 'Vanaf (jjjj-mm)', 'text'], ['percentage', 'Percentage (%)', 'num']],
+      nieuw: function () { return { vanaf: '2030-01', percentage: 100 }; }
+    },
+    schijven: {
+      kolommen: [['tot', 'Tot (€/jaar, leeg = geen grens)', 'numOpt'], ['tarief', 'Tarief (fractie)', 'num']],
+      nieuw: function () { return { tot: null, tarief: 0.4 }; }
+    }
+  };
+
+  var SECTIE_VOLGORDE = ['calculatiedatum', 'deelnemers', 'standaardDeelnemer', 'pensioenreglement', 'parttimepercentages', 'rendement',
+                         'toedeelschaal', 'topaow', 'tophl', 'partnerpensioen', 'annuiteitsdelers', 'aowBrutoMaand', 'belasting', 'stabiliteit'];
+  var OVERSLAAN = ['deelnemer'];
+
+  // ---------- hulpfuncties ----------
+  function isObj(v) { return v !== null && typeof v === 'object' && !Array.isArray(v); }
+  function clone(v) { return JSON.parse(JSON.stringify(v)); }
+  function esc(s) { return String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, function (ch) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]; }); }
+  function fmt(v) { return Number(v).toLocaleString('nl-NL', { maximumFractionDigits: 2 }); }
+  function getAt(obj, p) { return p.reduce(function (o, k) { return o[k]; }, obj); }
+  function setAt(obj, p, val) { var parent = getAt(obj, p.slice(0, -1)); parent[p[p.length - 1]] = val; }
+  function pad(s) { return String(s).length === 1 ? '0' + s : String(s); }
+  function label(p) { return p.map(function (k) { return typeof k === 'number' ? 'rij ' + (k + 1) : (LABELS[k] || k); }).join(' > '); }
+  function maandIdx(s) { var d = String(s).split('-').map(Number); return d[0] * 12 + (d[1] - 1); }
+
+  // ---------- HTML van het formulier ----------
+  var teller = 0;
+
+  function veld(p, v, key, labelTekst) {
+    var id = 'f' + (++teller);
+    var type = key === 'tot' ? 'numOpt' : (typeof v === 'string' ? 'text' : 'num');
+    var waarde = v === null || v === undefined ? '' : String(v);
+    var hint = '';
+    if (FRACTIE.indexOf(key) >= 0 && typeof v === 'number') {
+      hint = '<span class="hint" id="h' + id + '">= ' + esc(fmt(v * 100)) + '%</span>';
+    }
+    return '<label class="veld"><span>' + esc(labelTekst || LABELS[key] || key) + '</span>' +
+           '<input type="text" inputmode="decimal" id="' + id + '" value="' + esc(waarde) + '" data-path="' + esc(JSON.stringify(p)) +
+           '" data-type="' + type + '"' + (hint ? ' data-hint="h' + id + '"' : '') + '>' + hint + '</label>';
+  }
+
+  function tabel(p, arr, key) {
+    var cfg = TABELLEN[key];
+    var koppen = cfg.kolommen.map(function (k) { return '<th>' + esc(k[1]) + '</th>'; }).join('');
+    var rijen = arr.map(function (rij, i) {
+      var cellen = cfg.kolommen.map(function (k) {
+        var v = rij[k[0]];
+        var waarde = v === null || v === undefined ? '' : String(v);
+        var pad2 = p.concat([i, k[0]]);
+        return '<td><input type="text" inputmode="decimal" value="' + esc(waarde) + '" data-path="' + esc(JSON.stringify(pad2)) +
+               '" data-type="' + k[2] + '"></td>';
+      }).join('');
+      return '<tr>' + cellen + '<td><button type="button" class="knop rijknop" data-act="del" data-path="' +
+             esc(JSON.stringify(p)) + '" data-idx="' + i + '">Verwijder</button></td></tr>';
+    }).join('');
+    return '<div class="tabelwrap"><table><thead><tr>' + koppen + '<th></th></tr></thead><tbody>' + rijen + '</tbody></table></div>' +
+           '<p><button type="button" class="knop rijknop" data-act="add" data-path="' + esc(JSON.stringify(p)) + '" data-key="' + esc(key) + '">+ Rij toevoegen</button></p>';
+  }
+
+  function kinderen(obj, p) {
+    return Object.keys(obj).filter(function (k) { return OVERSLAAN.indexOf(k) < 0 || p.length; }).map(function (k) {
+      var v = obj[k], pk = p.concat([k]);
+      if (Array.isArray(v) && TABELLEN[k]) return '<h3>' + esc(LABELS[k] || k) + '</h3>' + tabel(pk, v, k);
+      if (k === 'annuiteitsdelers' && isObj(v)) {
+        return '<fieldset><legend>' + esc(LABELS[k]) + '</legend><div class="grid">' +
+               Object.keys(v).map(function (a) { return veld(pk.concat([a]), v[a], a, 'Leeftijd ' + a); }).join('') + '</div></fieldset>';
+      }
+      if (isObj(v)) return '<fieldset><legend>' + esc(LABELS[k] || k) + '</legend><div class="grid">' + kinderen(v, pk) + '</div></fieldset>';
+      return veld(pk, v, k);
+    }).join('');
+  }
+
+  function sectie(key, v) {
+    var inhoud;
+    if (Array.isArray(v) && TABELLEN[key]) inhoud = tabel([key], v, key);
+    else if (isObj(v)) inhoud = '<div class="grid">' + kinderen(v, [key]) + '</div>';
+    else inhoud = '<div class="grid">' + veld([key], v, key) + '</div>';
+    return '<section class="kaart"><h2>' + esc(LABELS[key] || key) + '</h2>' + inhoud + '</section>';
+  }
+
+  function bouwHtml(cfg) {
+    teller = 0;
+    var keys = SECTIE_VOLGORDE.filter(function (k) { return k in cfg; });
+    Object.keys(cfg).forEach(function (k) { if (keys.indexOf(k) < 0 && OVERSLAAN.indexOf(k) < 0) keys.push(k); });
+    return keys.map(function (k) { return sectie(k, cfg[k]); }).join('');
+  }
+
+  // ---------- validatie ----------
+  function valideer(cfg) {
+    var fouten = [], waarschuwingen = [];
+    function walk(o, p) {
+      if (isObj(o)) Object.keys(o).forEach(function (k) { walk(o[k], p.concat([k])); });
+      else if (Array.isArray(o)) o.forEach(function (x, i) { walk(x, p.concat([i])); });
+      else if (typeof o === 'number' && !isFinite(o)) fouten.push('Ongeldig getal bij ' + label(p) + '.');
+    }
+    walk(cfg, []);
+
+    if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(String(cfg.calculatiedatum))) fouten.push('Calculatiedatum moet de vorm jjjj-mm hebben.');
+    var dl = cfg.deelnemers || [];
+    dl.forEach(function (d) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(String(d.geboortedatum))) fouten.push('Geboortedatum van ' + d.naam + ' moet de vorm jjjj-mm-dd hebben.');
+    });
+    if (!(cfg.standaardDeelnemer >= 0 && cfg.standaardDeelnemer < dl.length)) fouten.push('Standaard deelnemer verwijst naar een rij die niet bestaat.');
+
+    var inkoop = [['TOPAOW', cfg.topaow && cfg.topaow.inkoopfactor], ['TOPHL', cfg.tophl && cfg.tophl.inkoopfactor], ['Partnerpensioen', cfg.partnerpensioen && cfg.partnerpensioen.inkoopfactorNP]];
+    inkoop.forEach(function (x) { if (!(x[1] > 0)) fouten.push('Inkoopfactor ' + x[0] + ' moet groter dan 0 zijn.'); });
+    if (cfg.topaow && (cfg.topaow.maxPerJaar < 0 || cfg.topaow.ondergrensOP < 0)) fouten.push('TOPAOW-bedragen mogen niet negatief zijn.');
+    if (cfg.pensioenreglement && !(cfg.pensioenreglement.aowLeeftijdMaanden > 0)) fouten.push('AOW-leeftijd moet groter dan 0 zijn.');
+
+    var pp = cfg.partnerpensioen;
+    if (pp && !(pp.minPct <= pp.standaardPct && pp.standaardPct <= pp.maxPct && pp.maxPct <= 100 && pp.minPct >= 0)) {
+      waarschuwingen.push('Partnerpensioen: minimum, standaard en maximum liggen niet in de juiste volgorde (0 tot 100%).');
+    }
+    if (cfg.tophl && !(cfg.tophl.maxPctOP >= 0 && cfg.tophl.maxPctOP <= 1)) waarschuwingen.push('TOPHL-maximum hoort tussen 0 en 1 (fractie) te liggen.');
+    dl.forEach(function (d) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(String(d.geboortedatum)) || !/^\d{4}-\d{2}$/.test(String(cfg.calculatiedatum))) return;
+      var pIdx = maandIdx(d.geboortedatum.slice(0, 7)) + cfg.pensioenreglement.standaardPensioenleeftijd * 12;
+      if (pIdx <= maandIdx(cfg.calculatiedatum)) {
+        waarschuwingen.push(d.naam + ': de standaard pensioenleeftijd ligt vóór de calculatiedatum.');
+      }
+    });
+    (cfg.parttimepercentages || []).forEach(function (r) {
+      if (!(r.percentage >= 0 && r.percentage <= 100)) waarschuwingen.push('Parttimepercentage ' + r.percentage + ' ligt buiten 0 tot 100.');
+    });
+    return { fouten: fouten, waarschuwingen: waarschuwingen };
+  }
+
+  // ---------- pagina ----------
+  var bewerkt = null;
+
+  function init() {
+    var stand = document.getElementById('stand');
+    var meldingen = document.getElementById('meldingen');
+    var status = document.getElementById('status');
+    var formulier = document.getElementById('formulier');
+    var opslaanKnop = document.getElementById('opslaan');
+
+    if (!window.PLANNER_CONFIG || !window.PLANNER_BASIS) {
+      stand.textContent = 'config.js niet gevonden';
+      status.textContent = 'Zet deze pagina in dezelfde map als config.js.';
+      opslaanKnop.disabled = true;
+      return;
+    }
+
+    bewerkt = O.clone(window.PLANNER_CONFIG);
+
+    function ververs() {
+      var v = valideer(bewerkt);
+      var aantal = O.tel(O.diff(window.PLANNER_BASIS, bewerkt));
+      stand.textContent = aantal === 0 ? 'Geen wijzigingen t.o.v. config.js' : aantal + (aantal === 1 ? ' wijziging' : ' wijzigingen') + ' t.o.v. config.js';
+      meldingen.innerHTML = v.fouten.map(function (m) { return '<li class="fout">' + esc(m) + '</li>'; }).join('') +
+                            v.waarschuwingen.map(function (m) { return '<li class="waarschuwing">' + esc(m) + '</li>'; }).join('');
+      opslaanKnop.disabled = v.fouten.length > 0;
+      return v;
+    }
+
+    function teken() {
+      formulier.innerHTML = bouwHtml(bewerkt);
+      ververs();
+    }
+
+    formulier.addEventListener('input', function (e) {
+      var el = e.target;
+      if (!el.getAttribute || !el.getAttribute('data-path')) return;
+      var p = JSON.parse(el.getAttribute('data-path'));
+      var type = el.getAttribute('data-type');
+      var raw = el.value.trim().replace(',', '.');
+      var val;
+      if (type === 'text') val = el.value;
+      else if (type === 'numOpt' && raw === '') val = null;
+      else { val = raw === '' ? NaN : Number(raw); }
+      setAt(bewerkt, p, val);
+
+      el.classList.toggle('ongeldig', typeof val === 'number' && !isFinite(val));
+      var hintId = el.getAttribute('data-hint');
+      if (hintId) {
+        var h = document.getElementById(hintId);
+        if (h) h.textContent = isFinite(val) ? '= ' + fmt(val * 100) + '%' : '';
+      }
+      status.textContent = '';
+      ververs();
+    });
+
+    formulier.addEventListener('click', function (e) {
+      var btn = e.target.closest ? e.target.closest('button[data-act]') : null;
+      if (!btn) return;
+      var p = JSON.parse(btn.getAttribute('data-path'));
+      var arr = getAt(bewerkt, p);
+      if (btn.getAttribute('data-act') === 'add') {
+        arr.push(TABELLEN[btn.getAttribute('data-key')].nieuw());
+      } else if (btn.getAttribute('data-act') === 'del') {
+        arr.splice(Number(btn.getAttribute('data-idx')), 1);
+      }
+      teken();
+    });
+
+    opslaanKnop.addEventListener('click', function () {
+      var v = valideer(bewerkt);
+      if (v.fouten.length) { status.textContent = 'Opslaan niet mogelijk: los eerst de fouten op.'; return; }
+      var verschil = O.diff(window.PLANNER_BASIS, bewerkt);
+      if (O.schrijf(verschil)) {
+        status.textContent = 'Opgeslagen. De planner en de testpagina gebruiken deze waarden vanaf nu; open pagina\'s verversen zichzelf.';
+      } else {
+        status.textContent = 'Opslaan lukt niet in deze browser. Gebruik Download config.js.';
+      }
+    });
+
+    document.getElementById('herstel').addEventListener('click', function () {
+      if (!window.confirm('Alle aanpassingen in deze browser wissen en de waarden uit config.js terugzetten?')) return;
+      O.schrijf(null);
+      bewerkt = O.clone(window.PLANNER_BASIS);
+      teken();
+      status.textContent = 'Teruggezet naar config.js.';
+    });
+
+    document.getElementById('download').addEventListener('click', function () {
+      var v = valideer(bewerkt);
+      if (v.fouten.length) { status.textContent = 'Download niet mogelijk: los eerst de fouten op.'; return; }
+      var inhoud = '/*\n  Pensioenplanner: configuratie, gegenereerd vanuit config-bewerken.html.\n  Vervangt config.js. Wis daarna de aanpassingen in de browser met "Terugzetten".\n*/\n' +
+                   'window.PLANNER_CONFIG = ' + JSON.stringify(bewerkt, null, 2) + ';\n';
+      var blob = new Blob([inhoud], { type: 'text/javascript' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'config.js';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      status.textContent = 'config.js gedownload. Zet het bestand in de map om de wijziging blijvend te maken.';
+    });
+
+    teken();
+  }
+
+  // Pure functies voor controle buiten de pagina.
+  window.ConfigBewerker = { valideer: valideer, bouwHtml: bouwHtml };
+
+  if (typeof document !== 'undefined' && document.getElementById('formulier')) {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
+  }
+})();
+</script>
+</body>
+</html>
