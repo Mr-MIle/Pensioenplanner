@@ -1,0 +1,574 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Testspecialisten: Pensioenplanner</title>
+<style>
+:root {
+  --bg: #f6f7f9; --card: #ffffff; --ink: #1d2330; --muted: #5b6475; --line: #e3e6ec;
+  --accent: #1f4e8c; --ok: #1e7b4a; --okbg: #e4f5ec; --fail: #b42318; --failbg: #fdecea; --warn: #8a5a00; --warnbg: #fff4d6;
+}
+:root:not([data-theme="light"]) { }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14171d; --card: #1c2129; --ink: #e8ebf0; --muted: #9aa3b2; --line: #2c333d;
+    --accent: #7fb0ea; --ok: #6fd39c; --okbg: #1d3327; --fail: #ff8a80; --failbg: #3a211f; --warn: #f2c46b; --warnbg: #3a2f14;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #14171d; --card: #1c2129; --ink: #e8ebf0; --muted: #9aa3b2; --line: #2c333d;
+  --accent: #7fb0ea; --ok: #6fd39c; --okbg: #1d3327; --fail: #ff8a80; --failbg: #3a211f; --warn: #f2c46b; --warnbg: #3a2f14;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.45; }
+main { max-width: 1000px; margin: 0 auto; padding: 16px; }
+h1 { font-size: 1.5rem; margin: 8px 0 4px; }
+h2 { font-size: 1.05rem; margin: 0 0 10px; }
+.intro { color: var(--muted); margin: 0 0 16px; font-size: 0.95rem; }
+.kaart { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+.config dl { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 8px 16px; margin: 0; }
+.config dt { font-size: 0.8rem; color: var(--muted); }
+.config dd { margin: 0; font-weight: 600; }
+.acties { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+button { font: inherit; font-weight: 600; background: var(--accent); color: #fff; border: 0; border-radius: 8px; padding: 10px 18px; cursor: pointer; }
+button:disabled { opacity: 0.6; cursor: wait; }
+.samenvatting { font-weight: 700; font-size: 1.05rem; }
+.samenvatting.ok { color: var(--ok); }
+.samenvatting.fout { color: var(--fail); }
+.tijd { color: var(--muted); font-size: 0.85rem; }
+.waarschuwing { background: var(--warnbg); color: var(--warn); border-radius: 8px; padding: 10px 12px; margin-bottom: 16px; font-size: 0.92rem; display: none; }
+.waarschuwing.zichtbaar { display: block; }
+.fout-melding { background: var(--failbg); color: var(--fail); }
+.tabel { display: grid; gap: 0; }
+.kop, .rij { display: grid; grid-template-columns: 70px minmax(200px, 2fr) minmax(120px, 1.2fr) minmax(120px, 1.2fr) 96px; gap: 12px; padding: 10px 8px; align-items: start; }
+.kop { font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); border-bottom: 1px solid var(--line); }
+.groep { font-weight: 700; margin: 14px 0 4px; padding: 6px 8px; background: var(--bg); border-radius: 6px; }
+.rij { border-bottom: 1px solid var(--line); font-size: 0.93rem; }
+.rij .titel { font-weight: 600; }
+.rij .uitleg { color: var(--muted); font-size: 0.85rem; }
+.rij .id { font-family: ui-monospace, Consolas, monospace; font-size: 0.85rem; color: var(--muted); }
+.badge { display: inline-block; padding: 3px 10px; border-radius: 999px; font-weight: 700; font-size: 0.82rem; text-align: center; }
+.badge.ok { background: var(--okbg); color: var(--ok); }
+.badge.fout { background: var(--failbg); color: var(--fail); }
+.badge.nog { background: var(--line); color: var(--muted); }
+.voet { color: var(--muted); font-size: 0.82rem; margin-top: 16px; }
+@media (max-width: 720px) {
+  .kop { display: none; }
+  .rij { grid-template-columns: 1fr; gap: 4px; padding: 12px 4px; }
+  .rij > div::before { content: attr(data-label); display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.03em; color: var(--muted); }
+  .rij > .resultaat { order: -1; }
+  .rij > .resultaat::before { content: none; }
+}
+</style>
+</head>
+<body>
+<main>
+  <h1>Testspecialisten: Pensioenplanner</h1>
+  <p class="intro">Deze pagina draait 29 tests tegen de huidige <code>engine.js</code>. Alle bedragen, grenzen en percentages worden uit <code>config.js</code> gelezen. In de tests staan alleen de testinvoer (zoals 40% deeltijd of 60% werkfractie) en de verwachte regel uit het reglement.</p>
+
+  <div id="waarschuwing" class="waarschuwing"></div>
+
+  <section class="kaart config" aria-labelledby="cfg-titel">
+    <h2 id="cfg-titel">Huidige configuratie (uit config.js)</h2>
+    <dl id="configlijst"></dl>
+  </section>
+
+  <section class="kaart">
+    <div class="acties">
+      <button id="startknop" type="button">Draai alle tests</button>
+      <div>
+        <div id="samenvatting" class="samenvatting">Nog niet gedraaid</div>
+        <div id="tijd" class="tijd"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="kaart" aria-label="Testresultaten">
+    <div class="kop" aria-hidden="true"><div>ID</div><div>Test</div><div>Verwacht</div><div>Gemeten</div><div>Resultaat</div></div>
+    <div id="tabel" class="tabel"></div>
+  </section>
+
+  <p class="voet">Een rode test betekent dat de huidige berekening afwijkt van de regel of van de configuratie. Controleer eerst of de configuratie bewust is aangepast.</p>
+</main>
+
+<script src="config.js"></script>
+<script src="engine.js"></script>
+<script>
+(function () {
+  'use strict';
+
+  // ---------- hulpfuncties ----------
+  function near(a, b, abs) {
+    var t = abs === undefined ? 0.01 : abs;
+    return Math.abs(a - b) <= Math.max(t, 1e-6 * Math.max(Math.abs(a), Math.abs(b)));
+  }
+  function fmt(v) { return Number(v).toLocaleString('nl-NL', { maximumFractionDigits: 2 }); }
+  function eur(v) { return '€ ' + fmt(v); }
+  function pctFrac(x) { return fmt(x * 100) + '%'; }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (ch) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[ch]; }); }
+
+  // ---------- context: alles uit config.js ----------
+  function context() {
+    var CFG0 = window.PLANNER_CONFIG, E = window.PensioenEngine;
+    if (!CFG0 || !E) throw new Error('config.js of engine.js is niet geladen');
+    var cfg = JSON.parse(JSON.stringify(CFG0));
+    cfg.deelnemer = Object.assign({}, cfg.deelnemers[cfg.standaardDeelnemer]);
+    var reg = cfg.pensioenreglement;
+    var birth = E.maandIndex(cfg.deelnemer.geboortedatum);
+    var calc = E.maandIndex(cfg.calculatiedatum);
+    var aowJ = reg.aowLeeftijdMaanden / 12;
+    var ageNow = (calc - birth) / 12;
+    // Pensioendatum voor de TOPAOW/TOPHL-tests: 5 jaar voor de AOW, minimaal 2 jaar na nu.
+    var preJ = Math.floor(aowJ) - 5;
+    if (preJ < Math.ceil(ageNow) + 2) preJ = Math.ceil(ageNow) + 2;
+    var rente = cfg.rendement.overrendementNaRTS;
+    function sim(pensJ, extra) {
+      return E.simuleer(cfg, Object.assign({
+        pensioenLeeftijdMaanden: Math.round(pensJ * 12),
+        rente: rente,
+        deeltijd: null,
+        parttimepercentages: cfg.parttimepercentages,
+        startkapitaal: cfg.deelnemer.startkapitaal
+      }, extra || {}));
+    }
+    var c = { cfg: cfg, E: E, reg: reg, birth: birth, calc: calc, aowJ: aowJ, preJ: preJ, rente: rente, sim: sim };
+    c.simAOW = sim(aowJ);
+    c.simPre = sim(preJ);
+    return c;
+  }
+
+  // ---------- de 20 tests ----------
+  function defs(c) {
+    var cfg = c.cfg, E = c.E, pp = cfg.partnerpensioen, ta = cfg.topaow, th = cfg.tophl;
+    var std = pp.standaardPct;
+    var aOP = E.delerVoor(c.preJ, cfg.annuiteitsdelers);
+    function uit(opt, sim) { return E.uitkeringen(cfg, sim || c.simPre, opt, c.preJ); }
+    function uitAOW(opt) { return E.uitkeringen(cfg, c.simAOW, opt, c.aowJ); }
+    // Maximum TOPAOW uit de reglementstekst: min(maxPerJaar x werkfractie, (OP voor ruil - ondergrens) x aOP / inkoopfactor)
+    function maxT1(u, wf) {
+      return Math.max(0, Math.min(ta.maxPerJaar * (wf === undefined ? 1 : wf), (u.standaard - ta.ondergrensOP) * aOP / ta.inkoopfactor));
+    }
+
+    // Maximum TOPHL uit het resterend-OP-criterium (zelfde regel als HL-02).
+    function hlMax(kOP, opNa, t1) {
+      return Math.max(0, Math.min(th.maxPctOP * opNa / (1 + th.maxPctOP * th.inkoopfactor / aOP),
+                                  (kOP - ta.inkoopfactor * t1) / th.inkoopfactor));
+    }
+    // Vaste kapitaalwaarde als simulatie-object, zodat een scenario precies dat kapitaal krijgt.
+    function fake(k) { return { kapitaal: k, deelJaar: 0, inflIdx: 1 }; }
+
+    return [
+      // Partnerpensioen (4)
+      { id: 'PP-01', groep: 'Partnerpensioen', titel: 'Standaardpercentage partnerpensioen',
+        uitleg: 'Zonder keuze geldt partnerpensioen.standaardPct.',
+        run: function () {
+          var u = uitAOW({});
+          var exp = std / 100 * u.standaard;
+          var binnen = std >= pp.minPct && std <= pp.maxPct;
+          return { verwacht: eur(exp) + ' (' + fmt(std) + '% van OP, binnen ' + fmt(pp.minPct) + '%-' + fmt(pp.maxPct) + '%)',
+                   gemeten: eur(u.partner) + (binnen ? '' : ' (standaard ligt buiten min-max: configfout)'),
+                   ok: binnen && near(u.partner, exp) };
+        } },
+      { id: 'PP-02', groep: 'Partnerpensioen', titel: 'Partnerpensioen begrensd op maximum',
+        uitleg: 'Een keuze boven partnerpensioen.maxPct wordt afgekapt.',
+        run: function () {
+          var u = uitAOW({ partnerPct: pp.maxPct + 50 });
+          var exp = pp.maxPct / 100 * u.standaard;
+          return { verwacht: eur(exp) + ' (max ' + fmt(pp.maxPct) + '%)', gemeten: eur(u.partner), ok: near(u.partner, exp) };
+        } },
+      { id: 'PP-03', groep: 'Partnerpensioen', titel: 'Kapitaal klopt bij elk percentage',
+        uitleg: 'OP x annuïteit + NP x inkoopfactorNP = kapitaal, bij min, standaard en max.',
+        run: function () {
+          var worst = 0;
+          [pp.minPct, pp.standaardPct, pp.maxPct].forEach(function (p) {
+            var u = uitAOW({ partnerPct: p });
+            var rec = u.standaard * aOP_AOW() + u.partner * pp.inkoopfactorNP;
+            worst = Math.max(worst, Math.abs(rec - c.simAOW.kapitaal));
+          });
+          return { verwacht: 'afwijking onder € 0,01 op kapitaal ' + eur(c.simAOW.kapitaal), gemeten: 'afwijking ' + fmt(worst), ok: worst <= 0.01 + 1e-6 * c.simAOW.kapitaal };
+          function aOP_AOW() { return E.delerVoor(c.aowJ, cfg.annuiteitsdelers); }
+        } },
+      { id: 'PP-04', groep: 'Partnerpensioen', titel: 'Meer partnerpensioen geeft minder ouderdomspensioen',
+        uitleg: 'Het OP bij maximaal partnerpensioen is lager dan bij minimaal.',
+        run: function () {
+          var uMin = uitAOW({ partnerPct: pp.minPct });
+          var uMax = uitAOW({ partnerPct: pp.maxPct });
+          return { verwacht: 'OP bij ' + fmt(pp.maxPct) + '% < OP bij ' + fmt(pp.minPct) + '%',
+                   gemeten: eur(uMax.standaard) + ' vs ' + eur(uMin.standaard),
+                   ok: uMax.standaard < uMin.standaard };
+        } },
+
+      // TOPAOW (5)
+      { id: 'TA-01', groep: 'TOPAOW', titel: 'Maximum TOPAOW uit config',
+        uitleg: 'min(maxPerJaar, (OP voor ruil - ondergrensOP) x aOP / inkoopfactor).',
+        run: function () {
+          var u = uit({ partnerPct: std, topaow: 0 });
+          var exp = maxT1(u);
+          return { verwacht: eur(exp), gemeten: eur(u.maxT1), ok: near(u.maxT1, exp) };
+        } },
+      { id: 'TA-02', groep: 'TOPAOW', titel: 'Keuze boven maximum wordt afgekapt',
+        uitleg: 'Een TOPAOW-keuze van 1 miljard levert het maximum op.',
+        run: function () {
+          var u = uit({ partnerPct: std, topaow: 1e9 });
+          var exp = maxT1(u);
+          return { verwacht: eur(exp), gemeten: eur(u.t1), ok: near(u.t1, exp) };
+        } },
+      { id: 'TA-03', groep: 'TOPAOW', titel: 'OP na TOPAOW blijft boven ondergrens',
+        uitleg: 'Bij maximale TOPAOW komt het OP niet onder ondergrensOP.',
+        run: function () {
+          var u = uit({ partnerPct: std, topaow: 1e9 });
+          var ok = u.t1 === 0 || u.opNa >= ta.ondergrensOP - 0.01;
+          return { verwacht: '>= ' + eur(ta.ondergrensOP) + ' (of TOPAOW 0)',
+                   gemeten: eur(u.opNa) + (u.t1 === 0 ? ' (TOPAOW 0, n.v.t.)' : ''), ok: ok };
+        } },
+      { id: 'TA-04', groep: 'TOPAOW', titel: 'Werkfractie schaalt het maximum',
+        uitleg: 'Bij 60% werkfractie geldt 60% van maxPerJaar als plafond.',
+        run: function () {
+          var u = uit({ partnerPct: std, topaow: 1e9, werkfractie: 0.6 });
+          var exp = maxT1(u, 0.6);
+          return { verwacht: eur(exp) + ' (plafond ' + eur(ta.maxPerJaar * 0.6) + ')', gemeten: eur(u.maxT1), ok: near(u.maxT1, exp) };
+        } },
+      { id: 'TA-05', groep: 'TOPAOW', titel: 'Geen TOPAOW vanaf de AOW-datum',
+        uitleg: 'Op of na de AOW-datum is TOPAOW en TOPHL niet mogelijk.',
+        run: function () {
+          var u = uitAOW({ partnerPct: std, topaow: 1e9, tophlPct: th.maxPctOP });
+          return { verwacht: 'TOPAOW 0 en TOPHL 0',
+                   gemeten: 'TOPAOW ' + eur(u.t1) + ', TOPHL ' + eur(u.t2),
+                   ok: u.t1 === 0 && u.t2 === 0 && near(u.pre, u.post) };
+        } },
+
+      // TOPHL (5)
+      { id: 'HL-01', groep: 'TOPHL', titel: 'TOPHL geblokkeerd zonder TOPAOW-maximum',
+        uitleg: 'Zonder TOPAOW op maximum is TOPHL 0.',
+        run: function () {
+          var u = uit({ partnerPct: std, topaow: 0, tophlPct: th.maxPctOP });
+          return { verwacht: eur(0), gemeten: eur(u.t2), ok: u.t2 === 0 };
+        } },
+      { id: 'HL-02', groep: 'TOPHL', titel: 'TOPHL begrensd op 33% van resterend OP',
+        uitleg: 'TOPHL is nooit meer dan tophl.maxPctOP van het OP dat na de TOPHL-inkoop overblijft.',
+        run: function () {
+          var u = uit({ partnerPct: std, topaow: 1e9, tophlPct: th.maxPctOP + 0.5 });
+          var kOP = u.standaard * aOP;
+          var exp = Math.max(0, Math.min(th.maxPctOP * u.opNa / (1 + th.maxPctOP * th.inkoopfactor / aOP),
+                                         (kOP - ta.inkoopfactor * u.t1) / th.inkoopfactor));
+          var resterend = u.opNa - th.inkoopfactor * u.t2 / aOP;
+          return { verwacht: eur(exp) + ' (max ' + pctFrac(th.maxPctOP) + ' van resterend OP)',
+                   gemeten: eur(u.t2) + ' (resterend OP ' + eur(resterend) + ')',
+                   ok: near(u.t2, exp) && u.t2 <= th.maxPctOP * resterend + 0.01 };
+        } },
+      { id: 'HL-03', groep: 'TOPHL', titel: '0% TOPHL geeft geen TOPHL',
+        uitleg: 'Een keuze van 0% levert geen inkoop op.',
+        run: function () {
+          var u = uit({ partnerPct: std, topaow: 1e9, tophlPct: 0 });
+          return { verwacht: eur(0), gemeten: eur(u.t2), ok: u.t2 === 0 && near(u.pre, u.opNa + u.t1) };
+        } },
+      { id: 'HL-04', groep: 'TOPHL', titel: 'Ruil is kapitaalneutraal',
+        uitleg: 'OP na ruil x aOP + inkoopTOPAOW x T1 + inkoopTOPHL x T2 = kapitaal voor ruil.',
+        run: function () {
+          var u = uit({ partnerPct: std, topaow: 1e9, tophlPct: th.maxPctOP });
+          var kOP = u.standaard * aOP;
+          var ident = u.post * aOP + ta.inkoopfactor * u.t1 + th.inkoopfactor * u.t2;
+          return { verwacht: eur(kOP), gemeten: eur(ident), ok: near(ident, kOP) };
+        } },
+      { id: 'HL-05', groep: 'TOPHL', titel: 'Uitkering vóór AOW is som van de onderdelen',
+        uitleg: 'Vóór de AOW-datum = OP na ruil + TOPAOW + TOPHL.',
+        run: function () {
+          var u = uit({ partnerPct: std, topaow: 1e9, tophlPct: th.maxPctOP });
+          var som = u.opNa + u.t1 + u.t2;
+          return { verwacht: eur(som), gemeten: eur(u.pre), ok: near(u.pre, som) };
+        } },
+
+      // Opbouw en deeltijd (4)
+      { id: 'OP-01', groep: 'Opbouw en deeltijd', titel: 'Maandsaldo klopt',
+        uitleg: 'Begin + inleg + overrendement - onttrokken = eind, elke maand.',
+        run: function () {
+          var w = 0;
+          c.simAOW.rows.forEach(function (r) {
+            w = Math.max(w, Math.abs(r.begin + r.inleg + r.over - r.onttrokken - r.eind));
+          });
+          return { verwacht: 'afwijking onder € 0,01', gemeten: 'afwijking ' + fmt(w), ok: w < 0.01 };
+        } },
+      { id: 'OP-02', groep: 'Opbouw en deeltijd', titel: 'Reële eindwaarde klopt met prijsinflatie',
+        uitleg: 'Reëel = nominaal / (1 + prijsinflatie)^jaren.',
+        run: function () {
+          var rows = c.simAOW.rows, last = rows[rows.length - 1], n = rows.length - 1;
+          var exp = last.eind / Math.pow(1 + cfg.rendement.inflatiePrijs, n / 12);
+          return { verwacht: eur(exp), gemeten: eur(last.reeel), ok: near(last.reeel, exp) };
+        } },
+      { id: 'OP-03', groep: 'Opbouw en deeltijd', titel: 'Deeltijd onttrekt het ingestelde percentage',
+        uitleg: 'Testinvoer: 40% deeltijd na 12 maanden. Werk daalt met 40%.',
+        run: function () {
+          var sim = c.sim(c.preJ, { deeltijd: { idx: c.calc + 12, pct: 0.4 } });
+          var r = sim.rows[12];
+          var exp = r.begin * 0.4;
+          return { verwacht: eur(exp) + ' onttrokken, werk ' + fmt(r.schema * 0.6 * 100) + '%',
+                   gemeten: eur(r.onttrokken) + ', werk ' + fmt(r.werk * 100) + '%',
+                   ok: near(r.onttrokken, exp) && near(r.werk, r.schema * 0.6, 1e-9) };
+        } },
+      { id: 'OP-04', groep: 'Opbouw en deeltijd', titel: 'Parttime-wijziging werkt in de juiste maand',
+        uitleg: 'Testinvoer: 50% vanaf 6 maanden na de calculatiedatum.',
+        run: function () {
+          var i = c.calc + 6;
+          var ym = Math.floor(i / 12) + '-' + String(i % 12 + 1).padStart(2, '0');
+          var sim = c.sim(c.preJ, { parttimepercentages: [{ vanaf: ym, percentage: 50 }] });
+          var a = sim.rows[5], b = sim.rows[6];
+          return { verwacht: '100% in ' + a.maand + ', 50% vanaf ' + b.maand,
+                   gemeten: fmt(a.werk * 100) + '% in ' + a.maand + ', ' + fmt(b.werk * 100) + '% in ' + b.maand,
+                   ok: near(a.werk, 1, 1e-9) && near(b.werk, 0.5, 1e-9) && b.wijziging === true };
+        } },
+
+      // Netto en overig (2)
+      { id: 'NE-01', groep: 'Netto en overig', titel: 'Netto stijgt, blijft onder bruto en heffingskorting klopt',
+        uitleg: 'Netto is monotoon stijgend en nooit hoger dan bruto. Het verschil met de heffingskorting is min(korting, belasting).',
+        run: function () {
+          var mono = true, prev = -1, bad = null;
+          for (var b = 0; b <= 150000; b += 5000) {
+            var n = E.nettoJaar(cfg, b, true);
+            if (n > b + 1e-9 || n < prev - 1e-9) { mono = false; bad = b; break; }
+            prev = n;
+          }
+          var nZonder = E.nettoJaar(cfg, 30000, false);
+          var diff = E.nettoJaar(cfg, 30000, true) - nZonder;
+          var expDiff = Math.min(cfg.belasting.heffingskorting, 30000 - nZonder);
+          return { verwacht: 'stijgend, <= bruto; korting-effect ' + eur(expDiff) + ' bij € 30.000',
+                   gemeten: (mono ? 'stijgend, <= bruto' : 'fout bij ' + eur(bad)) + '; korting-effect ' + eur(diff),
+                   ok: mono && near(diff, expDiff) };
+        } },
+      { id: 'NE-02', groep: 'Netto en overig', titel: 'Negatief rendement geeft lager kapitaal',
+        uitleg: 'Testinvoer: -2% overrendement. Geen rekenfouten (NaN).',
+        run: function () {
+          var s = c.sim(c.aowJ, { rente: -0.02 });
+          return { verwacht: '< ' + eur(c.simAOW.kapitaal) + ' en geen rekenfout',
+                   gemeten: eur(s.kapitaal),
+                   ok: isFinite(s.kapitaal) && s.kapitaal < c.simAOW.kapitaal };
+        } },
+
+      // Deelnemers en config (3)
+      { id: 'DEL-01', groep: 'Deelnemers en config', titel: 'Pensioendatum na calculatiedatum voor alle deelnemers',
+        uitleg: 'Bij de standaard pensioenleeftijd moet de pensioendatum na de calculatiedatum liggen. Controleert alle deelnemers uit de config.',
+        run: function () {
+          var std = c.reg.standaardPensioenleeftijd;
+          var delen = cfg.deelnemers.map(function (d) {
+            var pIdx = E.maandIndex(d.geboortedatum) + std * 12;
+            return { ok: pIdx > c.calc, label: d.naam + ': ' + (pIdx > c.calc ? 'ok' : 'pensioen ' + std + ' jaar ligt vóór calculatiedatum') };
+          });
+          return { verwacht: 'pensioendatum (' + std + ' jaar) na calculatiedatum voor alle deelnemers',
+                   gemeten: delen.map(function (d) { return d.label; }).join('; '),
+                   ok: delen.every(function (d) { return d.ok; }) };
+        } },
+      { id: 'CFG-01', groep: 'Deelnemers en config', titel: 'Config bevat geldige waarden',
+        uitleg: 'Inkoopfactoren zijn groter dan 0, bedragen zijn niet negatief, en partnerpensioen is minPct <= standaardPct <= maxPct.',
+        run: function () {
+          var f = [ta.inkoopfactor, th.inkoopfactor, pp.inkoopfactorNP];
+          var inkoopOk = f.every(function (x) { return x > 0; });
+          var bedragenOk = ta.maxPerJaar >= 0 && ta.ondergrensOP >= 0;
+          var partnerOk = pp.minPct <= pp.standaardPct && pp.standaardPct <= pp.maxPct && pp.maxPct <= 100 && th.maxPctOP >= 0 && th.maxPctOP <= 1;
+          return { verwacht: 'inkoopfactoren > 0, bedragen >= 0, minPct <= standaardPct <= maxPct',
+                   gemeten: 'inkoopfactoren ' + f.map(fmt).join(' / ') + '; partner ' + fmt(pp.minPct) + '% - ' + fmt(pp.maxPct) + '%',
+                   ok: inkoopOk && bedragenOk && partnerOk };
+        } },
+      { id: 'CFG-02', groep: 'Deelnemers en config', titel: 'Randgeval: TOPAOW-maximum 0',
+        uitleg: 'Testinvoer: maxPerJaar op 0. TOPAOW en TOPHL moeten 0 zijn, zonder rekenfouten.',
+        run: function () {
+          var k = JSON.parse(JSON.stringify(cfg));
+          k.topaow.maxPerJaar = 0;
+          var u = E.uitkeringen(k, c.simPre, { partnerPct: std, topaow: 1e9, tophlPct: th.maxPctOP }, c.preJ);
+          var finite = [u.pre, u.post, u.standaard, u.partner].every(isFinite);
+          return { verwacht: 'TOPAOW 0, TOPHL 0 en geen NaN',
+                   gemeten: 'TOPAOW ' + eur(u.t1) + ', TOPHL ' + eur(u.t2) + (finite ? ', geen NaN' : ', NaN gevonden'),
+                   ok: u.t1 === 0 && u.t2 === 0 && finite };
+        } },
+
+      // Combinaties en grenzen (3)
+      { id: 'COM-01', groep: 'Combinaties en grenzen', titel: 'Combinatie TOPAOW-max, TOPHL-max en partnerpensioen klopt',
+        uitleg: 'Alle drie de keuzes tegelijk: kapitaal blijft gelijk, en elk onderdeel staat op de grens uit de regel.',
+        run: function () {
+          var u = uit({ partnerPct: std, topaow: 1e9, tophlPct: th.maxPctOP });
+          var K = c.simPre.kapitaal;
+          var kOP = u.standaard * aOP;
+          var ident = kOP + u.partner * pp.inkoopfactorNP;
+          var ok = near(ident, K, 1e-6 * K) && near(u.t1, maxT1(u)) && near(u.t2, hlMax(kOP, u.opNa, u.t1));
+          return { verwacht: 'kapitaal ' + eur(K) + '; TOPAOW op max ' + eur(maxT1(u)) + '; TOPHL op max ' + eur(hlMax(kOP, u.opNa, u.t1)),
+                   gemeten: 'kapitaal ' + eur(ident) + '; TOPAOW ' + eur(u.t1) + '; TOPHL ' + eur(u.t2), ok: ok };
+        } },
+      { id: 'GRS-01', groep: 'Combinaties en grenzen', titel: 'Randkapitaal: OP na TOPAOW precies op de ondergrens',
+        uitleg: 'Testinvoer: kapitaal zo gekozen dat de ondergrens precies bindt. Ook 1% minder kapitaal mag het OP niet onder de ondergrens brengen.',
+        run: function () {
+          var X = ta.maxPerJaar / 2;
+          var kOPdoel = ta.ondergrensOP * aOP + ta.inkoopfactor * X;
+          var K = kOPdoel * (aOP + std / 100 * pp.inkoopfactorNP) / aOP;
+          var hi = E.uitkeringen(cfg, fake(K), { partnerPct: std, topaow: 1e9 }, c.preJ);
+          var lo = E.uitkeringen(cfg, fake(K * 0.99), { partnerPct: std, topaow: 1e9 }, c.preJ);
+          var ok = near(hi.t1, X, 0.01) && near(hi.opNa, ta.ondergrensOP, 0.01) &&
+                   near(lo.opNa, ta.ondergrensOP, 0.01) && lo.t1 < hi.t1;
+          return { verwacht: 'bij exact kapitaal: OP ' + eur(ta.ondergrensOP) + ' en TOPAOW ' + eur(X) + '; bij -1%: OP ' + eur(ta.ondergrensOP),
+                   gemeten: 'exact: TOPAOW ' + eur(hi.t1) + ', OP ' + eur(hi.opNa) + '; -1%: TOPAOW ' + eur(lo.t1) + ', OP ' + eur(lo.opNa),
+                   ok: ok };
+        } },
+      { id: 'AOW-01', groep: 'Combinaties en grenzen', titel: 'Overgang rond de AOW-datum',
+        uitleg: 'TOPAOW is er één maand vóór de AOW-datum wel en één maand erna niet. De sprong in de uitkering is niet groter dan het TOPAOW-bedrag.',
+        run: function () {
+          var K = c.simAOW.kapitaal;
+          var vo = E.uitkeringen(cfg, fake(K), { partnerPct: std, topaow: 1e9 }, c.aowJ - 1 / 12);
+          var na = E.uitkeringen(cfg, fake(K), { partnerPct: std, topaow: 1e9 }, c.aowJ + 1 / 12);
+          var sprong = (vo.opNa + vo.t1) - na.pre;
+          var ok = vo.t1 > 0 && na.t1 === 0 && na.t2 === 0 && sprong >= -0.01 && sprong <= vo.t1 + 0.01 * na.pre;
+          return { verwacht: 'TOPAOW > 0 vóór AOW en 0 erna; sprong <= TOPAOW-bedrag',
+                   gemeten: 'vóór AOW TOPAOW ' + eur(vo.t1) + ', sprong ' + eur(sprong) + ', erna TOPAOW ' + eur(na.t1),
+                   ok: ok };
+        } },
+      { id: 'VRO-01', groep: 'Combinaties en grenzen', titel: 'Vervroegd pensioen op 60 jaar',
+        uitleg: 'TOPAOW-maximum uit de config, ook bij 30% van het kapitaal. Het OP na TOPAOW blijft boven de ondergrens.',
+        run: function () {
+          var a60 = E.delerVoor(60, cfg.annuiteitsdelers);
+          var exp = function (u) { return Math.max(0, Math.min(ta.maxPerJaar, (u.standaard - ta.ondergrensOP) * a60 / ta.inkoopfactor)); };
+          var u1 = E.uitkeringen(cfg, c.sim(60, {}), { partnerPct: std, topaow: 1e9 }, 60);
+          var u2 = E.uitkeringen(cfg, c.sim(60, { startkapitaal: cfg.deelnemer.startkapitaal * 0.3 }), { partnerPct: std, topaow: 1e9 }, 60);
+          var ok = near(u1.t1, exp(u1)) && near(u2.t1, exp(u2)) &&
+                   (u1.t1 === 0 || u1.opNa >= ta.ondergrensOP - 0.01) && (u2.t1 === 0 || u2.opNa >= ta.ondergrensOP - 0.01);
+          return { verwacht: 'TOPAOW ' + eur(exp(u1)) + ' (vol kapitaal) en ' + eur(exp(u2)) + ' (30%)',
+                   gemeten: 'TOPAOW ' + eur(u1.t1) + ' (vol kapitaal), ' + eur(u2.t1) + ' (30%)',
+                   ok: ok };
+        } },
+
+      // Monotonie (2)
+      { id: 'MON-01', groep: 'Monotonie', titel: 'TOPAOW: meer inleg geeft meer TOPAOW en minder OP',
+        uitleg: 'Bij oplopende TOPAOW stijgt het bedrag vóór AOW en daalt het OP na ruil. Boven het maximum verandert er niets meer.',
+        run: function () {
+          var tmax = E.uitkeringen(cfg, c.simPre, { partnerPct: std, topaow: 1e9 }, c.preJ).maxT1;
+          var prevT = -1, prevO = Infinity, ok = true;
+          for (var s = 0; s <= 12; s++) {
+            var u = E.uitkeringen(cfg, c.simPre, { partnerPct: std, topaow: tmax * s / 10 }, c.preJ);
+            if (u.t1 < prevT - 1e-9 || u.opNa > prevO + 1e-9) ok = false;
+            prevT = u.t1; prevO = u.opNa;
+          }
+          var boven = E.uitkeringen(cfg, c.simPre, { partnerPct: std, topaow: tmax * 1.2 }, c.preJ);
+          var opMax = E.uitkeringen(cfg, c.simPre, { partnerPct: std, topaow: tmax }, c.preJ);
+          ok = ok && near(boven.t1, opMax.t1);
+          return { verwacht: 'TOPAOW stijgt, OP na ruil daalt; boven maximum vlak',
+                   gemeten: 'maximum ' + eur(tmax) + '; boven maximum ' + eur(boven.t1), ok: ok };
+        } },
+      { id: 'MON-02', groep: 'Monotonie', titel: 'TOPHL: hogere keuze geeft hogere uitkering tot de grens',
+        uitleg: 'Bij oplopende TOPHL (bij TOPAOW op maximum) stijgt de uitkering vóór AOW tot de resterend-OP-grens, en daarna blijft die vlak.',
+        run: function () {
+          var prevT2 = -1, prevPre = -1, ok = true, cap = null;
+          for (var s = 0; s <= 10; s++) {
+            var u = E.uitkeringen(cfg, c.simPre, { partnerPct: std, topaow: 1e9, tophlPct: th.maxPctOP * s / 10 * 1.5 }, c.preJ);
+            if (u.t2 < prevT2 - 1e-9 || u.pre < prevPre - 1e-9) ok = false;
+            prevT2 = u.t2; prevPre = u.pre; cap = u.t2;
+          }
+          var kOP = E.uitkeringen(cfg, c.simPre, { partnerPct: std, topaow: 1e9 }, c.preJ);
+          var grens = hlMax(kOP.standaard * aOP, kOP.opNa, kOP.t1);
+          ok = ok && near(cap, grens, 1e-6 * Math.max(1, grens));
+          return { verwacht: 'TOPHL stijgt tot ' + eur(grens) + ' en blijft dan vlak',
+                   gemeten: 'TOPHL bij hoogste keuze ' + eur(cap), ok: ok };
+        } }
+    ];
+  }
+
+  // ---------- uitvoeren ----------
+  function runAll() {
+    var c = context();
+    return defs(c).map(function (t) {
+      var r;
+      try { r = t.run(); }
+      catch (e) { r = { verwacht: '-', gemeten: 'Fout: ' + e.message, ok: false }; }
+      return { id: t.id, groep: t.groep, titel: t.titel, uitleg: t.uitleg, verwacht: r.verwacht, gemeten: r.gemeten, ok: r.ok };
+    });
+  }
+
+  // Exporteer voor gebruik buiten de pagina (controle in de browserconsole).
+  window.PensioenTests = { run: runAll };
+
+  // ---------- weergave ----------
+  if (typeof document === 'undefined') return;
+
+  function toonConfig(c) {
+    var cfg = c.cfg;
+    var items = [
+      ['Calculatiedatum', cfg.calculatiedatum],
+      ['Testdeelnemer', cfg.deelnemer.naam],
+      ['AOW-leeftijd', fmt(c.aowJ) + ' jaar'],
+      ['Pensioendatum in tests', c.preJ + ' jaar (vóór AOW)'],
+      ['TOPAOW maximum per jaar', eur(cfg.topaow.maxPerJaar)],
+      ['TOPAOW ondergrens OP', eur(cfg.topaow.ondergrensOP)],
+      ['TOPAOW inkoopfactor', fmt(cfg.topaow.inkoopfactor)],
+      ['TOPHL maximum (van OP na TOPAOW)', pctFrac(cfg.tophl.maxPctOP)],
+      ['TOPHL inkoopfactor', fmt(cfg.tophl.inkoopfactor)],
+      ['Partnerpensioen min / standaard / max', fmt(cfg.partnerpensioen.minPct) + '% / ' + fmt(cfg.partnerpensioen.standaardPct) + '% / ' + fmt(cfg.partnerpensioen.maxPct) + '%'],
+      ['Partnerpensioen inkoopfactor', fmt(cfg.partnerpensioen.inkoopfactorNP)],
+      ['Overrendement na RTS', pctFrac(cfg.rendement.overrendementNaRTS)]
+    ];
+    document.getElementById('configlijst').innerHTML = items.map(function (it) {
+      return '<div><dt>' + esc(it[0]) + '</dt><dd>' + esc(it[1]) + '</dd></div>';
+    }).join('');
+  }
+
+  function toonResultaten(rows) {
+    var html = '', huidige = null;
+    rows.forEach(function (r) {
+      if (r.groep !== huidige) {
+        huidige = r.groep;
+        html += '<div class="groep">' + esc(r.groep) + '</div>';
+      }
+      var klasse = r.ok ? 'ok' : 'fout';
+      html += '<div class="rij">' +
+        '<div class="id" data-label="ID">' + esc(r.id) + '</div>' +
+        '<div data-label="Test"><div class="titel">' + esc(r.titel) + '</div><div class="uitleg">' + esc(r.uitleg) + '</div></div>' +
+        '<div data-label="Verwacht">' + esc(r.verwacht) + '</div>' +
+        '<div data-label="Gemeten">' + esc(r.gemeten) + '</div>' +
+        '<div class="resultaat"><span class="badge ' + klasse + '">' + (r.ok ? 'GESLAAGD' : 'MISLUKT') + '</span></div>' +
+        '</div>';
+    });
+    document.getElementById('tabel').innerHTML = html;
+  }
+
+  function init() {
+    var knop = document.getElementById('startknop');
+    var samenvatting = document.getElementById('samenvatting');
+    var tijd = document.getElementById('tijd');
+    var waarschuwing = document.getElementById('waarschuwing');
+
+    var c = null;
+    try { c = context(); }
+    catch (e) {
+      waarschuwing.textContent = 'De configuratie kon niet worden geladen: ' + e.message + '. Controleer of config.js en engine.js naast deze pagina staan.';
+      waarschuwing.className = 'waarschuwing zichtbaar fout-melding';
+      knop.disabled = true;
+      return;
+    }
+    toonConfig(c);
+
+    var limiet = c.aowJ * 12 - (c.calc - c.birth);
+    if (c.preJ >= c.aowJ || c.preJ * 12 <= (c.calc - c.birth) + 12 || limiet <= 12) {
+      waarschuwing.textContent = 'Let op: de pensioendatum in de tests ligt te dicht bij de calculatiedatum. Sommige tests zijn dan niet betekenisvol.';
+      waarschuwing.className = 'waarschuwing zichtbaar';
+    }
+
+    knop.addEventListener('click', function () {
+      knop.disabled = true;
+      samenvatting.textContent = 'Bezig...';
+      setTimeout(function () {
+        try {
+          var rows = runAll();
+          var aantalOk = rows.filter(function (r) { return r.ok; }).length;
+          toonResultaten(rows);
+          samenvatting.textContent = aantalOk + ' van ' + rows.length + ' geslaagd';
+          samenvatting.className = 'samenvatting ' + (aantalOk === rows.length ? 'ok' : 'fout');
+          tijd.textContent = 'Gedraaid op ' + new Date().toLocaleString('nl-NL');
+        } catch (e) {
+          samenvatting.textContent = 'Tests konden niet draaien: ' + e.message;
+          samenvatting.className = 'samenvatting fout';
+        } finally {
+          knop.disabled = false;
+        }
+      }, 10);
+    });
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

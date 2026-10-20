@@ -102,7 +102,7 @@ window.PLANNER_CONFIG = {
     inkoopfactor: 5
   },
 
-  // TOPHL: alleen mogelijk als TOPAOW op het maximum staat. Maximum als deel van het OP na uitruil (33%).
+  // TOPHL: alleen mogelijk als TOPAOW op het maximum staat. Maximum als deel van het resterende OP na TOPHL-inkoop (33%).
   // Het OP na de AOW-leeftijd daalt kapitaalneutraal met inkoopfactor x TOPHL / annuïteitsfactor.
   tophl: {
     maxPctOP: 0.33,

@@ -137,7 +137,7 @@
   // TOPAOW (T1, €/jaar, alleen tot de AOW-leeftijd): kost topaow.inkoopfactor x T1 kapitaal. OP_na = (K_OP - 5 x T1) / aOP.
   //   Maximum: min(topaow.maxPerJaar x werkfractie, (K_OP - ondergrensOP x aOP) / 5). De ondergrens geldt voor OP_na.
   // TOPHL (T2, €/jaar, alleen tot de AOW-leeftijd): alleen als T1 op het maximum staat.
-  //   T2 = tophlPct x OP_na, begrensd op min(tophl.maxPctOP x OP_na, (K_OP - 5 x T1) / 5). Kost 5 x T2 kapitaal.
+  //   T2 = tophlPct x OP_na, begrensd op min(tophl.maxPctOP x (OP_na - 5 x T2 / aOP), (K_OP - 5 x T1) / 5), dus T2 <= maxPctOP x OP_na / (1 + maxPctOP x 5 / aOP). Kost 5 x T2 kapitaal.
   //   Kapitaalneutraal: het OP na de AOW-leeftijd daalt met 5 x T2 / aOP.
   // Uitkering vóór de AOW-leeftijd: pre = OP_na + T1 + T2. Vanaf de AOW-leeftijd: post = OP_na - 5 x T2 / aOP.
   // opt = { partnerPct, topaow (€/jaar), tophlPct (0-0,33 van OP na uitruil), werkfractie (0-1, standaard 1) }.
@@ -167,8 +167,9 @@
 
     // Stap 3: TOPHL. Alleen als TOPAOW op het maximum staat.
     const tophlMogelijk = voorAOW && maxT1 > 0 && t1 >= maxT1 - 1e-9;
+    // Grens op het resterende OP na TOPHL-inkoop: T2 <= p x (OP_na - i x T2 / aOP), dus T2 <= p x OP_na / (1 + p x i / aOP).
     const maxT2 = tophlMogelijk
-      ? Math.max(0, Math.min(th.maxPctOP * opNa, (kOP - th.inkoopfactor * t1) / th.inkoopfactor))
+      ? Math.max(0, Math.min(th.maxPctOP * opNa / (1 + th.maxPctOP * th.inkoopfactor / aOP), (kOP - ta.inkoopfactor * t1) / th.inkoopfactor))
       : 0;
     const pctHL = Math.min(th.maxPctOP, Math.max(0, opt.tophlPct || 0));
     const t2 = tophlMogelijk ? Math.min(maxT2, pctHL * opNa) : 0;
