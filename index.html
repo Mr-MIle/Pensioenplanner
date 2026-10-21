@@ -477,7 +477,8 @@
     <div class="legenda">
       <span class="staaf" style="--c: var(--accent)">Werkinkomen</span>
       <span class="staaf" style="--c: var(--warm)">Ouderdomspensioen</span>
-      <span class="staaf" style="--c: var(--topaow)">Extra pensioen (TOPAOW en TOPHL)</span>
+      <span class="staaf" style="--c: var(--topaow)">AOW-overbrugging (TOPAOW)</span>
+      <span class="staaf" style="--c: var(--tophl)">Tijdelijk hoger pensioen (TOPHL)</span>
       <span class="staaf" style="--c: var(--muted)">AOW</span>
       <span class="staaf grens" hidden style="--c: var(--warn-bg)">Lager inkomen na het hoogste punt (minder dan 70%)</span>
       <span class="stippel grens" hidden style="--c: var(--fg)">70% van het hoogste inkomen</span>
@@ -1283,8 +1284,8 @@
         body += '<rect x="' + sx.toFixed(2) + '" y="' + pt + '" width="' + slot.toFixed(2) + '" height="' + (H - pt - pb) + '" fill="var(--warn-bg)"/>';
       }
       var acc = 0;
-      [['w', 'var(--accent)', 'werkinkomen'], ['op', 'var(--warm)', 'ouderdomspensioen'], ['tx', 'var(--topaow)', 'extra pensioen vóór de AOW'], ['a', 'var(--muted)', 'AOW']].forEach(function (d) {
-        var v = d[0] === 'tx' ? s.t1 + s.t2 : s[d[0]];
+      [['w', 'var(--accent)', 'werkinkomen'], ['op', 'var(--warm)', 'ouderdomspensioen'], ['t1', 'var(--topaow)', 'AOW-overbrugging (TOPAOW)'], ['t2', 'var(--tophl)', 'tijdelijk hoger pensioen (TOPHL)'], ['a', 'var(--muted)', 'AOW']].forEach(function (d) {
+        var v = s[d[0]];
         if (v <= 0) return;
         var ya = y(acc), yb = y(acc + v);
         body += '<rect x="' + (sx + (slot - bw) / 2).toFixed(2) + '" y="' + yb.toFixed(2) + '" width="' + bw.toFixed(2) + '" height="' + (ya - yb).toFixed(2) +
