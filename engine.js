@@ -4,8 +4,9 @@
   Het overrendement is het vaste rendement NA RTS-correctie. Er is geen beschermingsrendement.
   Premie = (min(salaris, maximum) x loonindex - franchise x prijsindex) x parttimepercentage x premiepercentage / 12,
   bijgeschreven aan het eind van de maand. Die premie levert pas vanaf de volgende maand rendement op.
-  Uitkering: ouderdomspensioen per jaar = kapitaal / annuiteitsdeler. Met TOPAOW en TOPHL wordt het
-  bedrag vóór de AOW-leeftijd verhoogd; na de AOW-leeftijd daalt het OP bij TOPHL kapitaalneutraal.
+  Uitkering: ouderdomspensioen per jaar = kapitaal / annuiteitsdeler. TOPAOW (AOW-overbrugging) loopt tot de AOW-leeftijd.
+  TOPHL loopt van de pensioendatum tot een gekozen eerste van de maand, uiterlijk 10 jaar na de AOW-leeftijd.
+  Na het einde van TOPHL daalt het levenslange OP kapitaalneutraal.
 */
 (function (global) {
   'use strict';
@@ -131,16 +132,18 @@
     };
   }
 
-  // Jaarlijkse uitkeringen met TOPAOW en TOPHL.
+  // Jaarlijkse uitkeringen met TOPAOW (AOW-overbrugging) en TOPHL.
   // Partnerpensioen (NP): percentage v van het ouderdomspensioen (OP) vóór uitruil. OP_voor = K / (aOP + v x inkoopfactorNP).
   // K_OP = OP_voor x aOP is het kapitaal dat voor het ouderdomspensioen overblijft.
-  // TOPAOW (T1, €/jaar, alleen tot de AOW-leeftijd): kost topaow.inkoopfactor x T1 kapitaal. OP_na = (K_OP - 5 x T1) / aOP.
+  // TOPAOW (T1, €/jaar, alleen vóór de AOW-leeftijd): kost topaow.inkoopfactor x T1 kapitaal. OP_na = (K_OP - 5 x T1) / aOP.
   //   Maximum: min(topaow.maxPerJaar x werkfractie, (K_OP - ondergrensOP x aOP) / 5). De ondergrens geldt voor OP_na.
-  // TOPHL (T2, €/jaar, alleen tot de AOW-leeftijd): alleen als T1 op het maximum staat.
-  //   T2 = tophlPct x OP_na, begrensd op min(tophl.maxPctOP x (OP_na - 5 x T2 / aOP), (K_OP - 5 x T1) / 5), dus T2 <= maxPctOP x OP_na / (1 + maxPctOP x 5 / aOP). Kost 5 x T2 kapitaal.
-  //   Kapitaalneutraal: het OP na de AOW-leeftijd daalt met 5 x T2 / aOP.
-  // Uitkering vóór de AOW-leeftijd: pre = OP_na + T1 + T2. Vanaf de AOW-leeftijd: post = OP_na - 5 x T2 / aOP.
-  // opt = { partnerPct, topaow (€/jaar), tophlPct (0-0,33 van OP na uitruil), werkfractie (0-1, standaard 1) }.
+  // TOPHL (T2, €/jaar): loopt van de pensioendatum tot eindM (leeftijd in maanden, eerste van de maand).
+  //   Standaard eindM = AOW-leeftijd als de pensioendatum ervoor ligt, anders uiterlijk 10 jaar na de AOW-leeftijd.
+  //   Bereik eindM: van pensioendatum + 1 maand tot AOW-leeftijd + tophl.jarenNaAOW jaar.
+  //   T2 = tophlPct x OP_na, begrensd op tophl.maxPctOP x OP_na (de hoogste uitkering = levenslang OP + TOPHL blijft onder 133%).
+  //   T2 kost 5 x T2 kapitaal. Na het einde van TOPHL daalt het levenslange OP met R = 5 x T2 / aOP (kapitaalneutraal).
+  // Uitkering op een leeftijd (zie jaarlijkseUitkering): OP_na + T1 (vóór AOW) + T2 (vóór eindM) - R (vanaf eindM).
+  // opt = { partnerPct, topaow (€/jaar), tophlPct (0-0,33 van OP na uitruil), tophlEindMaanden (leeftijd in maanden, optioneel), werkfractie (0-1, standaard 1) }.
   function uitkeringen(cfg, sim, opt, pensioenLeeftijdJaar) {
     const reg = cfg.pensioenreglement;
     const pp = cfg.partnerpensioen;
@@ -155,47 +158,67 @@
     const partner = v * opVoor;
     const kOP = opVoor * aOP;
 
-    // Stap 2: TOPAOW. Alleen als de pensioendatum vóór de AOW-leeftijd ligt.
-    const nPre = Math.max(0, reg.aowLeeftijdMaanden - pensioenLeeftijdJaar * 12);
-    const voorAOW = nPre > 0;
+    // Stap 2: TOPAOW (AOW-overbrugging). Alleen als de pensioendatum vóór de AOW-leeftijd ligt.
+    const aowM = reg.aowLeeftijdMaanden;
+    const pensM = Math.round(pensioenLeeftijdJaar * 12);
+    const nPre = Math.max(0, aowM - pensM);
+    const voorAow = nPre > 0;
     const werkfractie = opt.werkfractie !== undefined ? opt.werkfractie : 1;
-    const maxT1 = voorAOW
+    const maxT1 = voorAow
       ? Math.max(0, Math.min(ta.maxPerJaar * werkfractie, (kOP - ta.ondergrensOP * aOP) / ta.inkoopfactor))
       : 0;
     const t1 = Math.min(maxT1, Math.max(0, opt.topaow || 0));
     const opNa = (kOP - ta.inkoopfactor * t1) / aOP;
 
-    // Stap 3: TOPHL. Alleen als TOPAOW op het maximum staat.
-    const tophlMogelijk = voorAOW && maxT1 > 0 && t1 >= maxT1 - 1e-9;
-    // Grens op het resterende OP na TOPHL-inkoop: T2 <= p x (OP_na - i x T2 / aOP), dus T2 <= p x OP_na / (1 + p x i / aOP).
+    // Stap 3: TOPHL. Loopt van de pensioendatum tot een eerste van de maand, uiterlijk 10 jaar na de AOW-leeftijd.
+    const eindMax = aowM + (th.jarenNaAOW || 10) * 12;
+    const eindMin = pensM + 1;
+    const tophlMogelijk = eindMin <= eindMax;
+    const eindStandaard = voorAow ? aowM : eindMax;
+    const gekozen = opt.tophlEindMaanden !== undefined && opt.tophlEindMaanden !== null ? opt.tophlEindMaanden : eindStandaard;
+    const eindM = tophlMogelijk ? Math.min(eindMax, Math.max(eindMin, Math.round(gekozen))) : 0;
     const maxT2 = tophlMogelijk
-      ? Math.max(0, Math.min(th.maxPctOP * opNa / (1 + th.maxPctOP * th.inkoopfactor / aOP), (kOP - ta.inkoopfactor * t1) / th.inkoopfactor))
+      ? Math.max(0, Math.min(th.maxPctOP * opNa, (kOP - ta.inkoopfactor * t1) / th.inkoopfactor))
       : 0;
     const pctHL = Math.min(th.maxPctOP, Math.max(0, opt.tophlPct || 0));
     const t2 = tophlMogelijk ? Math.min(maxT2, pctHL * opNa) : 0;
-    const opPost = opNa - th.inkoopfactor * t2 / aOP;
+    const R = th.inkoopfactor * t2 / aOP;
+    const opPost = opNa - R;
 
-    const pre = opNa + t1 + t2;
-    const post = opPost;
-
-    return {
+    const u = {
       standaard: opVoor,
       opNa: opNa,
-      pre: pre,
-      post: post,
+      pre: opNa + t1 + t2,
+      post: opPost,
       partner: partner,
       t1: t1,
       t2: t2,
+      R: R,
+      aowM: aowM,
+      eindM: eindM,
+      eindMin: eindMin,
+      eindMax: eindMax,
+      eindStandaard: tophlMogelijk ? eindStandaard : 0,
       maxT1: maxT1,
       maxT2: maxT2,
       tophlMogelijk: tophlMogelijk,
-      preReeel: pre / sim.inflIdx,
-      postReeel: post / sim.inflIdx,
-      partnerReeel: partner / sim.inflIdx,
-      deelJaar: sim.deelJaar,
-      deelReeel: sim.deelJaar / sim.inflIdx,
+      voorAow: voorAow,
       nPre: nPre
     };
+    u.preReeel = u.pre / sim.inflIdx;
+    u.postReeel = u.post / sim.inflIdx;
+    u.partnerReeel = partner / sim.inflIdx;
+    u.deelJaar = sim.deelJaar;
+    u.deelReeel = sim.deelJaar / sim.inflIdx;
+    return u;
+  }
+
+  // Jaarlijkse uitkering (levenslang OP + TOPAOW + TOPHL) op een leeftijd in maanden, vóór het deeltijdpensioen.
+  function jaarlijkseUitkering(u, ageM) {
+    return u.opNa
+      + (ageM < u.aowM ? u.t1 : 0)
+      + (ageM < u.eindM ? u.t2 : 0)
+      - (ageM >= u.eindM ? u.R : 0);
   }
 
   // Maandelijkse uitkeringsreeks van de pensioendatum tot de eindleeftijd.
@@ -227,7 +250,7 @@
           fase: 'deeltijd'
         });
       } else {
-        const jaarlijks = i < aowIdx ? u.pre : u.post;
+        const jaarlijks = jaarlijkseUitkering(u, i - birth);
         const nominaal = jaarlijks / 12 + (deel ? sim.deelJaar / 12 : 0);
         punten.push({
           leeftijd: (i - birth) / 12,
@@ -284,6 +307,7 @@
     delerVoor: delerVoor,
     simuleer: simuleer,
     uitkeringen: uitkeringen,
+    jaarlijkseUitkering: jaarlijkseUitkering,
     uitkeringsreeks: uitkeringsreeks,
     scenarioMarge: scenarioMarge,
     nettoJaar: nettoJaar

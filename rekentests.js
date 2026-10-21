@@ -18,11 +18,6 @@ const results = [];
 function check(name, ok, detail) { results.push((ok ? 'PASS ' : 'FAIL ') + name + (detail !== undefined ? '  [' + detail + ']' : '')); }
 const near = (a, b, tol) => Math.abs(a - b) <= (tol === undefined ? 1e-6 * Math.max(1, Math.abs(b)) : tol);
 
-// Verwachte TOPHL-grens volgens het reglement: T2 <= p x (OP_na - i x T2 / aOP), met kapitaalgrens (K_OP - 5 x T1) / i.
-function tophlMaxVerwacht(kOP, opNa, t1, aOP) {
-  return Math.max(0, Math.min(th.maxPctOP * opNa / (1 + th.maxPctOP * th.inkoopfactor / aOP), (kOP - ta.inkoopfactor * t1) / th.inkoopfactor));
-}
-
 // 1. Saldo per maand: begin + inleg + over - onttrokken == eind (ook bij deeltijd)
 function saldoOk(sim) {
   let worst = 0;
@@ -74,50 +69,84 @@ check('3g deeltijd 60% geeft 60% van maxPerJaar', near(uDeel.maxT1, ta.maxPerJaa
 const uKlein = E.uitkeringen(C, E.simuleer(C, { pensioenLeeftijdMaanden: pensJ * 12, rente, deeltijd: null, parttimepercentages: std, startkapitaal: 30000 }), { partnerPct: 0, topaow: 1e9 }, pensJ);
 check('3h kleine pot: OP na TOPAOW >= ondergrensOP (of T1 = 0)', uKlein.opNa >= ta.ondergrensOP - 1e-6 || uKlein.t1 === 0, uKlein.opNa.toFixed(2) + ' T1 ' + uKlein.t1.toFixed(2));
 
-// 3i: TOPHL alleen bij TOPAOW op maximum
+// 3i: TOPHL is los van de AOW-overbrugging: ook zonder TOPAOW-maximum mogelijk
 const uNietMax = E.uitkeringen(C, simH, { partnerPct: pp.standaardPct, topaow: 0, tophlPct: th.maxPctOP }, pensJ);
-check('3i TOPHL geblokkeerd zonder TOPAOW-maximum', uNietMax.t2 === 0 && uNietMax.tophlMogelijk === false);
+check('3i TOPHL onafhankelijk van TOPAOW-maximum', uNietMax.t2 > 0 && near(uNietMax.t2, th.maxPctOP * uNietMax.opNa, 1e-6), uNietMax.t2.toFixed(2));
 
-// 3j: TOPHL op maximum = p x OP na TOPAOW, gecorrigeerd voor het resterende OP na de TOPHL-inkoop
+// 3j: TOPHL-maximum = maxPctOP x OP na uitruil (levenslang OP + TOPHL blijft onder 133%)
 const uMaxHL = E.uitkeringen(C, simH, { partnerPct: pp.standaardPct, topaow: 1e9, tophlPct: th.maxPctOP }, pensJ);
+check('3j TOPHL-max = maxPctOP x OP na uitruil', near(uMaxHL.maxT2, th.maxPctOP * uMaxHL.opNa, 1e-6), uMaxHL.maxT2.toFixed(2));
 const kOPmax = uMaxHL.standaard * aOP62;
-const expT2 = tophlMaxVerwacht(kOPmax, uMaxHL.opNa, uMaxHL.t1, aOP62);
-check('3j TOPHL-max = p x OP_na / (1 + p x inkoopTOPHL / aOP)', near(uMaxHL.maxT2, expT2, 1e-6 * Math.max(1, expT2)), uMaxHL.maxT2.toFixed(2) + ' vs ' + expT2.toFixed(2));
 
 // 3k: kapitaalgrens: inkoop TOPHL + inkoop TOPAOW past binnen het kapitaal voor ruil
 check('3k TOPHL-inkoop + TOPAOW-inkoop <= K_OP', th.inkoopfactor * uMaxHL.t2 + ta.inkoopfactor * uMaxHL.t1 <= kOPmax + 1e-6);
 
-// 3l: kapitaalneutraal na AOW: post x aOP + inkoopTOPAOW x T1 + inkoopTOPHL x T2 = K_OP
-check('3l kapitaalneutraal na AOW', near(uMaxHL.post * aOP62 + ta.inkoopfactor * uMaxHL.t1 + th.inkoopfactor * uMaxHL.t2, kOPmax, 1e-4 * kOPmax),
+// 3l: kapitaalneutraal na het einde van TOPHL (standaard eind = AOW): post x aOP + inkoopTOPAOW x T1 + inkoopTOPHL x T2 = K_OP
+check('3l kapitaalneutraal na einde TOPHL', near(uMaxHL.post * aOP62 + ta.inkoopfactor * uMaxHL.t1 + th.inkoopfactor * uMaxHL.t2, kOPmax, 1e-4 * kOPmax),
   (uMaxHL.post * aOP62 + ta.inkoopfactor * uMaxHL.t1 + th.inkoopfactor * uMaxHL.t2 - kOPmax).toFixed(4));
 
-// 3m: pre = OP_na + T1 + T2
+// 3m: uitkering bij ingang = OP_na + T1 + T2
 check('3m pre = OP_na + T1 + T2', near(uMaxHL.pre, uMaxHL.opNa + uMaxHL.t1 + uMaxHL.t2, 1e-6));
 
-// 3n: vanaf de AOW-datum geen TOPAOW of TOPHL
+// 3n: vanaf de AOW-datum geen TOPAOW; TOPHL kan nog tot AOW + 10 jaar
 const uAOW = E.uitkeringen(C, simA, { partnerPct: pp.standaardPct, topaow: 1e9, tophlPct: th.maxPctOP }, aowM / 12);
-check('3n vanaf AOW geen TOPAOW/TOPHL', uAOW.t1 === 0 && uAOW.t2 === 0 && uAOW.pre === uAOW.post);
-check('3o pre = post = standaard op AOW', near(uAOW.pre, uAOW.standaard, 1e-6));
+check('3n vanaf AOW geen TOPAOW', uAOW.t1 === 0);
+check('3n vanaf AOW TOPHL tot AOW + 10 jaar', uAOW.eindM === aowM + th.jarenNaAOW * 12 && near(uAOW.t2, th.maxPctOP * uAOW.opNa, 1e-6), uAOW.eindM / 12);
 
-// 3p: invariant: TOPHL is nooit meer dan p van het resterende OP na de inkoop
-check('3p TOPHL <= p x resterend OP na inkoop', uMaxHL.t2 <= th.maxPctOP * (uMaxHL.opNa - th.inkoopfactor * uMaxHL.t2 / aOP62) + 1e-6,
-  uMaxHL.t2.toFixed(2) + ' <= ' + (th.maxPctOP * (uMaxHL.opNa - th.inkoopfactor * uMaxHL.t2 / aOP62)).toFixed(2));
+// 3o: op AOW zonder TOPHL: uitkering vóór = na = standaard
+const uAOW0 = E.uitkeringen(C, simA, { partnerPct: pp.standaardPct, topaow: 1e9, tophlPct: 0 }, aowM / 12);
+check('3o op AOW zonder TOPHL: pre = post = standaard', near(uAOW0.pre, uAOW0.standaard, 1e-6) && near(uAOW0.post, uAOW0.standaard, 1e-6));
 
-// 3q, 3r: TOPHL 0% geeft geen TOPHL; 10% geeft 10% van OP na TOPAOW (zolang onder het maximum)
+// 3p: TOPHL is nooit meer dan maxPctOP van het OP na uitruil
+check('3p TOPHL <= maxPctOP x OP na uitruil', uMaxHL.t2 <= th.maxPctOP * uMaxHL.opNa + 1e-6);
+
+// 3q, 3r: TOPHL 0% geeft geen TOPHL; 10% geeft 10% van OP na TOPAOW
 const uP0 = E.uitkeringen(C, simH, { partnerPct: pp.standaardPct, topaow: 1e9, tophlPct: 0 }, pensJ);
 check('3q TOPHL 0% geeft T2 = 0', uP0.t2 === 0 && uP0.pre === uP0.opNa + uP0.t1);
 const uP10 = E.uitkeringen(C, simH, { partnerPct: pp.standaardPct, topaow: 1e9, tophlPct: 0.10 }, pensJ);
 check('3r TOPHL 10% = 10% van OP na TOPAOW', near(uP10.t2, 0.10 * uP10.opNa, 1e-6), uP10.t2.toFixed(2));
 
-// 3s: TOPHL boven het maximum wordt begrensd op de resterend-OP-grens
+// 3s: TOPHL boven het maximum wordt begrensd op maxPctOP
 const uP50 = E.uitkeringen(C, simH, { partnerPct: pp.standaardPct, topaow: 1e9, tophlPct: 0.5 }, pensJ);
-const kOP50 = uP50.standaard * aOP62;
-check('3s TOPHL boven maximum begrensd op resterend-OP-grens', near(uP50.t2, tophlMaxVerwacht(kOP50, uP50.opNa, uP50.t1, aOP62), 1e-6));
-check('3t TOPHL op maximum: post = OP_na - inkoopTOPHL x T2 / aOP', near(uP50.post, uP50.opNa - th.inkoopfactor * uP50.t2 / aOP62, 1e-6));
+check('3s TOPHL boven maximum begrensd op maxPctOP', near(uP50.t2, th.maxPctOP * uP50.opNa, 1e-6), uP50.t2.toFixed(2));
+check('3t post = OP_na - inkoopTOPHL x T2 / aOP', near(uP50.post, uP50.opNa - th.inkoopfactor * uP50.t2 / aOP62, 1e-6));
 
-// 3u: TOPHL geblokkeerd als TOPAOW niet op maximum
+// 3u: TOPHL ook mogelijk bij een TOPAOW onder het maximum
 const uP10geen = E.uitkeringen(C, simH, { partnerPct: pp.standaardPct, topaow: 5000, tophlPct: 0.10 }, pensJ);
-check('3u TOPHL geblokkeerd als TOPAOW niet op maximum', uP10geen.t2 === 0);
+check('3u TOPHL mogelijk bij TOPAOW onder maximum', uP10geen.t2 > 0 && near(uP10geen.t2, 0.10 * uP10geen.opNa, 1e-6));
+
+// 15. TOPHL-einddatum
+const tMax = aowM + th.jarenNaAOW * 12;
+const c70 = E.simuleer(C, { pensioenLeeftijdMaanden: 70 * 12, rente, deeltijd: null, parttimepercentages: std, startkapitaal: 80000 });
+const c78 = E.simuleer(C, { pensioenLeeftijdMaanden: 78 * 12, rente, deeltijd: null, parttimepercentages: std, startkapitaal: 80000 });
+const h = { partnerPct: pp.standaardPct, topaow: 1e9, tophlPct: 0.2 };
+const e1 = E.uitkeringen(C, simH, h, pensJ);
+check('15a pensioen vóór AOW: standaard einde = AOW-datum', e1.eindM === aowM && near(e1.t2, 0.2 * e1.opNa, 1e-6), e1.eindM / 12);
+const e2 = E.uitkeringen(C, simA, h, aowM / 12);
+check('15b pensioen op AOW: standaard einde = AOW + 10 jaar', e2.eindM === tMax, e2.eindM / 12);
+const e3 = E.uitkeringen(C, c70, h, 70);
+check('15c pensioen na AOW: standaard einde = AOW + 10 jaar', e3.eindM === tMax && e3.t1 === 0);
+const k1 = E.uitkeringen(C, simH, { ...h, tophlEindMaanden: 70 * 12 }, pensJ);
+check('15d gekozen einde binnen bereik wordt gebruikt', k1.eindM === 70 * 12);
+const k2 = E.uitkeringen(C, simH, { ...h, tophlEindMaanden: pensJ * 12 - 24 }, pensJ);
+check('15e einde vóór pensioendatum wordt begrensd op pensioendatum + 1 maand', k2.eindM === pensJ * 12 + 1, k2.eindM);
+const k3 = E.uitkeringen(C, simH, { ...h, tophlEindMaanden: tMax + 60 }, pensJ);
+check('15f einde na AOW + 10 jaar wordt begrensd op AOW + 10 jaar', k3.eindM === tMax);
+const k4 = E.uitkeringen(C, c70, { ...h, tophlEindMaanden: 72 * 12 }, 70);
+check('15g pensioen na AOW, einde 72 jaar gekozen', k4.eindM === 72 * 12 && k4.t2 > 0);
+const k5 = E.uitkeringen(C, c78, h, 78);
+check('15h pensioen na AOW + 10 jaar: geen TOPHL meer mogelijk', k5.tophlMogelijk === false && k5.t2 === 0);
+check('15i jaarlijkse uitkering bij ingang = pre', near(E.jaarlijkseUitkering(e1, pensJ * 12), e1.pre, 1e-6));
+check('15j jaarlijkse uitkering bij AOW (einde = AOW) = post', near(E.jaarlijkseUitkering(e1, aowM), e1.post, 1e-6));
+const tussen = E.uitkeringen(C, simH, { ...h, tophlEindMaanden: 65 * 12 }, pensJ);
+check('15k TOPHL eindigt vóór AOW: tussen einde en AOW = OP_na - R + T1',
+  near(E.jaarlijkseUitkering(tussen, 66 * 12), tussen.opNa - tussen.R + tussen.t1, 1e-6), E.jaarlijkseUitkering(tussen, 66 * 12).toFixed(2));
+const na = E.uitkeringen(C, simH, { ...h, tophlEindMaanden: aowM + 60 }, pensJ);
+check('15l TOPHL eindigt na AOW: op AOW = OP_na + T2 (geen TOPAOW)', near(E.jaarlijkseUitkering(na, aowM), na.opNa + na.t2, 1e-6));
+check('15m 133%-grens: OP na uitruil + TOPHL <= 133% van levenslang OP', na.opNa + na.t2 <= 1.33 * na.opNa + 1e-6);
+const aOP70 = E.delerVoor(70, C.annuiteitsdelers);
+const p70 = E.uitkeringen(C, c70, { partnerPct: pp.standaardPct, topaow: 1e9, tophlPct: th.maxPctOP }, 70);
+check('15n kapitaalneutraal bij einde AOW + 10 jaar', near(p70.post * aOP70 + th.inkoopfactor * p70.t2, p70.standaard * aOP70, 1e-6 * p70.standaard * aOP70));
 
 // 4. Partnerpensioen: OP x annuiteit + NP x inkoopfactorNP = kapitaal; NP = percentage x OP
 const aOP67 = E.delerVoor(aowM / 12, C.annuiteitsdelers);

@@ -378,26 +378,43 @@
         </div>
       </div>
 
-      <!-- Stap 4 -->
+      <!-- Stap 4: AOW-overbrugging (TOPAOW) -->
       <div class="stap" data-stap="4">
         <button class="stap-kop" type="button" aria-expanded="false" aria-controls="s4">
           <span class="nummer">5</span>
-          <span class="stap-titel">Wilt u eerder extra inkomen, vóór de AOW?<span class="stap-keuze" id="k4"></span></span>
+          <span class="stap-titel">Wilt u een AOW-overbrugging?<span class="stap-keuze" id="k4"></span></span>
           <span class="pijl" aria-hidden="true">▾</span>
         </button>
         <div class="stap-body" id="s4" hidden>
-          <p class="muted" style="margin: 0">Met TOPAOW krijgt u vóór de AOW-leeftijd een extra uitkering uit uw eigen kapitaal. Daarna is uw pensioen lager. TOPHL is een extra percentage bovenop TOPAOW, en kan alleen als TOPAOW op het maximum staat.</p>
+          <p class="muted" style="margin: 0">Tot uw AOW-leeftijd krijgt u geen AOW. Met de AOW-overbrugging (TOPAOW) ontvangt u tot die leeftijd extra pensioen. U betaalt dat zelf, uit uw pensioenvermogen. Het loopt tot de eerste van de maand waarin u de AOW-leeftijd bereikt. Daarna is uw levenslange pensioen lager.</p>
           <div class="sub" id="topaowSub">
-            <label for="topaow">Extra per jaar (TOPAOW): <strong id="topaowWaarde">€ 0</strong></label>
+            <label for="topaow">Extra per jaar (AOW-overbrugging): <strong id="topaowWaarde">€ 0</strong></label>
             <input id="topaow" type="range" min="0" max="0" step="1" value="0">
             <small class="muted" id="topaowMax"></small>
           </div>
+          <p class="melding" id="verdeelMelding" hidden>Uw pensioendatum valt op of na de AOW-leeftijd. Er is dan geen AOW-overbrugging.</p>
+        </div>
+      </div>
+
+      <!-- Stap 5: TOPHL, met zelf gekozen einddatum -->
+      <div class="stap" data-stap="5">
+        <button class="stap-kop" type="button" aria-expanded="false" aria-controls="s5">
+          <span class="nummer">6</span>
+          <span class="stap-titel">Wilt u tijdelijk extra pensioen, tot een datum die u kiest?<span class="stap-keuze" id="k5"></span></span>
+          <span class="pijl" aria-hidden="true">▾</span>
+        </button>
+        <div class="stap-body" id="s5" hidden>
+          <p class="muted" style="margin: 0">Met TOPHL krijgt u tijdelijk een hogere uitkering, uit een deel van uw levenslange ouderdomspensioen. Uw hoogste uitkering mag nooit meer zijn dan 133% van uw levenslange ouderdomspensioen. Na het einde van TOPHL is uw levenslange pensioen lager.</p>
           <div class="sub" id="tophlSub">
             <label for="tophl">Extra percentage (TOPHL): <strong id="tophlWaarde">0%</strong></label>
             <input id="tophl" type="range" min="0" max="33" step="1" value="0">
             <small class="muted" id="tophlMax"></small>
           </div>
-          <p class="melding" id="verdeelMelding" hidden>Uw pensioendatum valt op of na de AOW-leeftijd. TOPAOW en TOPHL zijn dan niet van toepassing.</p>
+          <div class="sub" id="tophlEindSub">
+            <label for="tophlEind">Tot wanneer: <strong id="tophlEindWaarde"></strong></label>
+            <input id="tophlEind" type="range" min="0" max="0" step="1" value="0">
+            <small class="muted" id="tophlEindUitleg"></small>
+          </div>
         </div>
       </div>
     </section>
@@ -460,7 +477,7 @@
     <div class="legenda">
       <span class="staaf" style="--c: var(--accent)">Werkinkomen</span>
       <span class="staaf" style="--c: var(--warm)">Ouderdomspensioen</span>
-      <span class="staaf" style="--c: var(--topaow)">Extra pensioen vóór de AOW</span>
+      <span class="staaf" style="--c: var(--topaow)">Extra pensioen (TOPAOW en TOPHL)</span>
       <span class="staaf" style="--c: var(--muted)">AOW</span>
       <span class="staaf grens" hidden style="--c: var(--warn-bg)">Lager inkomen na het hoogste punt (minder dan 70%)</span>
       <span class="stippel grens" hidden style="--c: var(--fg)">70% van het hoogste inkomen</span>
@@ -592,12 +609,25 @@
   var UITLEG = {
     deel: 'Bij deeltijdpensioen gaat het gekozen percentage van uw kapitaal op de ingangsdatum in één keer naar uitkering. Het overige kapitaal blijft staan en groeit door. Uw premie daalt met het percentage dat u met pensioen gaat.',
     partner: 'Het partnerpensioen is een percentage van uw ouderdomspensioen, dat op de pensioendatum wordt ingekocht. Hoe hoger het percentage, hoe lager uw eigen ouderdomspensioen. Het bereik is 0% tot 70%.',
-    topaow: 'TOPAOW is extra pensioen vóór de AOW-leeftijd, betaald uit uw eigen kapitaal. Het maximum per jaar hangt af van uw situatie. Daarna is uw ouderdomspensioen lager, en dat geldt levenslang.',
-    tophl: 'TOPHL is een percentage van het levenslange ouderdomspensioen na uitruil, tot 33%. U krijgt het vóór de AOW-leeftijd, en daarna is uw ouderdomspensioen lager. Alleen mogelijk als TOPAOW op het maximum staat.'
+    topaow: 'De AOW-overbrugging (TOPAOW) is extra pensioen tot uw AOW-leeftijd. U betaalt dat zelf uit uw pensioenvermogen, tot maximaal 20.000 euro bruto per jaar en niet meer dan uw situatie toelaat. Het stopt op de eerste van de maand waarin u de AOW-leeftijd bereikt. Daarna is uw levenslange pensioen lager, omdat u dit eerder heeft ontvangen.',
+    tophl: 'TOPHL is tijdelijk extra pensioen uit een deel van uw levenslange ouderdomspensioen, tot 33%. U kiest zelf tot wanneer het loopt: niet eerder dan de pensioendatum en uiterlijk 10 jaar na de AOW-leeftijd. Uw hoogste uitkering, levenslang pensioen plus TOPHL, mag nooit hoger zijn dan 133% van uw levenslange ouderdomspensioen. Na het einde is uw levenslange pensioen lager.'
   };
 
   var state = {};
   var huidigDeel = 0;
+  // Einddatum van TOPHL: standaard volgt de regel; zodra de deelnemer zelf schuift, blijft die keuze staan.
+  var tophlEindHandmatig = false;
+  document.addEventListener('input', function (e) {
+    if (e.target && e.target.id === 'tophlEind') tophlEindHandmatig = true;
+  }, true);
+  function leeftijdTekst(m) {
+    var j = Math.floor(m / 12), r = m % 12;
+    return j + ' jaar' + (r ? ' en ' + r + (r === 1 ? ' maand' : ' maanden') : '');
+  }
+  // Tekst voor een einddatum van TOPHL, als leeftijd in maanden. birthIdx is de geboortemaand als index.
+  function eindTekst(birthIdx, m) {
+    return E.maandLabel(birthIdx + m) + ', op ' + leeftijdTekst(m);
+  }
   var REEEL = false;
   var wijzigd = false, laatsteNom = null, vorigeNom = null;   // voor de stippellijn 'vorige keuze'   // één schakelaar voor alle bedragen: false = nominaal, true = reëel (euro's van vandaag)
   var laatsteBerekening = null;   // uitkomsten van de laatste render, voor de inkomenstijdlijn   // index van de gekozen deelnemer, voor de link naar bij-en-afschrijvingen
@@ -653,6 +683,7 @@
     $('partnerPct').value = C.partnerpensioen.standaardPct;
     $('topaow').value = 0;
     $('tophl').value = 0;
+    tophlEindHandmatig = false;
     var std = C.pensioenreglement.standaardPensioenleeftijd;
     $('leeftijd').value = $('leeftijd').querySelector('option[value="' + std + '"]') ? std : $('leeftijd').options[0].value;
     $('deelPct').value = 40;
@@ -911,10 +942,17 @@
     var sim = E.simuleer(C, { pensioenLeeftijdMaanden: pensMaanden, rente: rente, deeltijd: deel, parttimepercentages: wl, startkapitaal: sk });
     var simLo = E.simuleer(C, { pensioenLeeftijdMaanden: pensMaanden, rente: rente - marge, deeltijd: deel, parttimepercentages: wl, startkapitaal: sk });
     var simHi = E.simuleer(C, { pensioenLeeftijdMaanden: pensMaanden, rente: rente + marge, deeltijd: deel, parttimepercentages: wl, startkapitaal: sk });
-    // TOPAOW en TOPHL: alleen vóór de AOW-leeftijd. De werkfractie op de pensioendatum bepaalt het TOPAOW-maximum.
+    // AOW-overbrugging (TOPAOW): alleen vóór de AOW-leeftijd. De werkfractie op de pensioendatum bepaalt het maximum.
+    // TOPHL: van de pensioendatum tot een gekozen eerste van de maand, uiterlijk 10 jaar na de AOW-leeftijd.
+    var aowM = C.pensioenreglement.aowLeeftijdMaanden;
+    var eindMaxM = aowM + C.tophl.jarenNaAOW * 12;
+    var eindMinM = pensMaanden + 1;
+    var tophlMogelijk = eindMinM <= eindMaxM;
+    var eindStdM = voorAow ? aowM : eindMaxM;
     $('topaowSub').hidden = !voorAow;
-    $('tophlSub').hidden = !voorAow;
     $('verdeelMelding').hidden = voorAow;
+    $('tophlSub').hidden = !tophlMogelijk;
+    $('tophlEindSub').hidden = !tophlMogelijk;
     var werkfractie = sim.rows.length ? sim.rows[sim.rows.length - 1].werk : 1;
     var maxT1 = E.uitkeringen(C, sim, { partnerPct: partnerPct, topaow: Infinity, werkfractie: werkfractie }, jaar).maxT1;
     var maxHeel = Math.floor(maxT1);
@@ -923,27 +961,44 @@
     slT1.disabled = maxHeel <= 0;
     if (Number(slT1.value) > maxHeel) slT1.value = maxHeel;
     var sl1 = Math.max(0, Number(slT1.value) || 0);
-    // Op de schuifmaximum-stand gebruikt de rekenkern het exacte maximum, zodat TOPHL dan beschikbaar is.
-    var opMax = maxHeel > 0 && sl1 >= maxHeel;
-    var topT1 = opMax ? maxT1 : sl1;
+    // Op de schuifmaximum-stand gebruikt de rekenkern het exacte maximum.
+    var topT1 = maxHeel > 0 && sl1 >= maxHeel ? maxT1 : sl1;
     var slT2 = $('tophl');
-    slT2.disabled = !opMax;
-    if (!opMax) slT2.value = 0;
+    slT2.disabled = !tophlMogelijk;
+    if (!tophlMogelijk) slT2.value = 0;
     var pctHL = Math.max(0, Number(slT2.value) || 0) / 100;
-    var tOpt = { partnerPct: partnerPct, topaow: topT1, tophlPct: pctHL, werkfractie: werkfractie };
+    var slE = $('tophlEind');
+    if (tophlMogelijk) {
+      slE.min = eindMinM;
+      slE.max = eindMaxM;
+      if (!tophlEindHandmatig) slE.value = eindStdM;
+      else slE.value = Math.min(eindMaxM, Math.max(eindMinM, Number(slE.value)));
+    }
+    slE.disabled = !tophlMogelijk;
+    var eindKeuze = tophlMogelijk ? Number(slE.value) : null;
+    var tOpt = { partnerPct: partnerPct, topaow: topT1, tophlPct: pctHL, tophlEindMaanden: eindKeuze, werkfractie: werkfractie };
 
     var u = E.uitkeringen(C, sim, tOpt, jaar);
     var lo = E.uitkeringen(C, simLo, tOpt, jaar);
     var hi = E.uitkeringen(C, simHi, tOpt, jaar);
 
-    $('topaowWaarde').textContent = eur0.format(opMax ? maxHeel : sl1) + ' per jaar';
+    $('topaowWaarde').textContent = eur0.format(maxHeel > 0 && sl1 >= maxHeel ? maxHeel : sl1) + ' per jaar';
     $('topaowMax').textContent = maxHeel > 0
       ? 'Maximaal ' + eur0.format(maxHeel) + ' per jaar voor uw situatie.'
-      : (voorAow ? 'Voor uw situatie is er geen ruimte voor TOPAOW.' : 'TOPAOW is alleen mogelijk vóór de AOW-leeftijd.');
+      : (voorAow ? 'Voor uw situatie is er geen ruimte voor de AOW-overbrugging.' : 'De AOW-overbrugging is alleen mogelijk vóór de AOW-leeftijd.');
     $('tophlWaarde').textContent = Math.round(pctHL * 100) + '%' + (u.t2 > 0 ? ' (' + eur0.format(u.t2) + ' per jaar)' : '');
-    $('tophlMax').textContent = !voorAow ? '' : (opMax
-      ? 'Maximaal ' + Math.round(C.tophl.maxPctOP * 100) + '% van het levenslange ouderdomspensioen na uitruil (' + eur0.format(C.tophl.maxPctOP * u.opNa) + ' per jaar).'
-      : 'TOPHL is pas mogelijk als TOPAOW op het maximum staat.');
+    $('tophlMax').textContent = !tophlMogelijk
+      ? 'TOPHL is niet meer mogelijk: uw pensioendatum ligt later dan 10 jaar na de AOW-leeftijd.'
+      : 'Maximaal 33% van het levenslange ouderdomspensioen na uitruil (' + eur0.format(C.tophl.maxPctOP * u.opNa) + ' per jaar). Samen met het levenslange pensioen nooit meer dan 133%.';
+    if (tophlMogelijk) {
+      $('tophlEindWaarde').textContent = eindTekst(birthIdx, eindKeuze);
+      var basisEind = 'U kiest zelf tot wanneer TOPHL loopt: niet eerder dan de pensioendatum en uiterlijk 10 jaar na de AOW-leeftijd.';
+      var standaardEind = voorAow ? 'Standaard: tot de AOW-leeftijd.' : 'Standaard: 10 jaar na de AOW-leeftijd.';
+      $('tophlEindUitleg').textContent = basisEind + (tophlEindHandmatig ? '' : ' ' + standaardEind);
+    } else {
+      $('tophlEindWaarde').textContent = '';
+      $('tophlEindUitleg').textContent = '';
+    }
     // Kapitaal van het gekozen scenario (basis, pessimistisch of optimistisch).
     var selSim = scenario === 'pess' ? simLo : (scenario === 'opt' ? simHi : sim);
     var pct2 = new Intl.NumberFormat('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
@@ -974,44 +1029,51 @@
     $('k1').textContent = start === 'aow' ? 'Op AOW-leeftijd, ' + AOW_LABEL : 'Op ' + jaar + ' jaar';
     $('k2').textContent = deelGeldig ? 'Deels: ' + $('deelPct').value + '% vanaf ' + Number($('leeftijd').value) + ' jaar' : 'Volledig met pensioen';
     $('k3').textContent = partnerPct > 0 ? 'Partnerpensioen ' + partnerPct + '% van het ouderdomspensioen' : 'Geen partnerpensioen';
-    $('k4').textContent = u.t1 > 0
-      ? 'TOPAOW ' + eur0.format(u.t1) + ' per jaar' + (u.t2 > 0 ? ', TOPHL ' + Math.round(pctHL * 100) + '%' : '')
-      : 'Geen TOPAOW of TOPHL';
+    $('k4').textContent = u.t1 > 0 ? 'AOW-overbrugging ' + eur0.format(u.t1) + ' per jaar' : 'Geen AOW-overbrugging';
+    $('k5').textContent = u.t2 > 0 ? 'TOPHL ' + Math.round(pctHL * 100) + '% tot ' + E.maandLabel(birthIdx + eindKeuze) : 'Geen TOPHL';
 
     // Resultaatpaneel
     // Overzicht: totaal tot de AOW-leeftijd (levenslang OP + tijdelijk), totaal vanaf de AOW-leeftijd (levenslang OP) en partnerpensioen.
     var basisNu = $('basis').value;
-    var opVoorJaar = u.opNa + deelJaar;      // levenslang OP vóór de AOW, incl. deeltijdpensioen
-    var opNaJaar = u.post + deelJaar;        // levenslang OP vanaf de AOW
-    var tijdJaar = u.t1 + u.t2;              // TOPAOW + TOPHL, alleen tot de AOW
+    var bedragPens = u.pre;                                  // jaarbedrag op de pensioendatum
+    var bedragAow = E.jaarlijkseUitkering(u, aowM);          // jaarbedrag op de AOW-leeftijd
+    var bedragNa = voorAow ? bedragAow : u.post;            // levenslang bedrag na de fase met TOPAOW en TOPHL
+    var eindTxt = u.t2 > 0 ? eindTekst(birthIdx, eindKeuze) : '';
+    var tussenJaar = u.t2 > 0 && voorAow && eindKeuze < aowM ? E.jaarlijkseUitkering(u, eindKeuze) : null;
     var aowJaar = C.aowBrutoMaand * 12;
     $('nettoUitleg').hidden = basisNu !== 'netto';
     if (deel) {
-      // Deeltijd: tot de AOW-leeftijd alleen het deeltijdpensioen; vanaf de AOW-leeftijd 100% gepensioneerd.
       $('rVoorBlok').hidden = false;
       $('rVoorLabel').textContent = 'Deeltijdpensioen, vanaf ' + E.maandLabel(deel.idx) + ' tot de AOW-leeftijd';
       $('rVoor').textContent = eur0.format(maand(deelJaar, gekozenJaar));
-      $('rVoorSub').textContent = basisNu + ' per maand. Uw premie daalt met ' + Math.round(deel.pct * 100) + '%.';
+      $('rVoorSub').textContent = basisNu + ' per maand. Uw premie daalt met ' + Math.round(deel.pct * 100) + '%.' +
+        (u.t2 > 0 ? ' TOPHL loopt tot ' + eindTxt + '.' : '');
       $('rVoorDetail').innerHTML = '';
       $('rNaLabel').textContent = 'Vanaf de AOW-leeftijd (' + AOW_LABEL + '): 100% gepensioneerd';
-      $('rNa').textContent = eur0.format(maand(opNaJaar, AOW_JAREN));
+      $('rNa').textContent = eur0.format(maand(u.post + deelJaar, AOW_JAREN));
       $('rNaSub').innerHTML = basisNu + ' per maand, levenslang' +
         '<div class="uitsplitsing"><div>Ouderdomspensioen: <strong>' + eur0.format(maand(u.post, AOW_JAREN)) + '</strong></div>' +
         '<div>Deeltijdpensioen: <strong>' + eur0.format(maand(deelJaar, gekozenJaar)) + '</strong></div></div>' +
-        'Inclusief AOW: <strong>' + eur0.format(maand(opNaJaar + aowJaar, AOW_JAREN)) + '</strong> ' + basisNu + ' per maand';
+        'Inclusief AOW: <strong>' + eur0.format(maand(u.post + deelJaar + aowJaar, AOW_JAREN)) + '</strong> ' + basisNu + ' per maand';
     } else {
-      $('rVoorBlok').hidden = !voorAow;
-      $('rVoorLabel').textContent = 'Totaal tot de AOW-leeftijd, vanaf ' + pensLabel;
-      $('rVoor').textContent = eur0.format(maand(opVoorJaar + tijdJaar, gekozenJaar));
-      $('rVoorSub').textContent = basisNu + ' per maand';
-      $('rVoorDetail').innerHTML = '<div>Levenslang OP: <strong>' + eur0.format(maand(opVoorJaar, gekozenJaar)) + '</strong></div>' +
-        (tijdJaar > 0
-          ? '<div>Tijdelijk (' + (u.t1 > 0 ? 'TOPAOW' : '') + (u.t1 > 0 && u.t2 > 0 ? ' en ' : '') + (u.t2 > 0 ? 'TOPHL' : '') + '): <strong>' + eur0.format(maand(tijdJaar, gekozenJaar)) + '</strong></div>'
-          : '<div>Tijdelijk: geen TOPAOW of TOPHL gekozen</div>');
-      $('rNaLabel').textContent = voorAow ? 'Vanaf de AOW-leeftijd (' + AOW_LABEL + ')' : (deelGeldig ? 'Volledig pensioen vanaf de AOW-leeftijd' : 'Vanaf ' + pensLabel);
-      $('rNa').textContent = eur0.format(maand(opNaJaar, AOW_JAREN));
-      $('rNaSub').innerHTML = basisNu + ' per maand, levenslang' + (u.t2 > 0 ? ' (door TOPHL lager)' : '') +
-        '<br>Inclusief AOW: <strong>' + eur0.format(maand(opNaJaar + aowJaar, AOW_JAREN)) + '</strong> ' + basisNu + ' per maand';
+      $('rVoorBlok').hidden = !(voorAow || u.t2 > 0);
+      $('rVoorLabel').textContent = voorAow
+        ? 'Totaal vanaf ' + pensLabel + ', tot de AOW-leeftijd'
+        : 'Vanaf ' + pensLabel + (u.t2 > 0 ? ', tijdelijk met TOPHL' : '');
+      $('rVoor').textContent = eur0.format(maand(bedragPens, gekozenJaar));
+      $('rVoorSub').textContent = basisNu + ' per maand' + (u.t2 > 0 ? '. TOPHL loopt tot ' + eindTxt + '.' : '');
+      var detail = '<div>Levenslang OP: <strong>' + eur0.format(maand(u.opNa, gekozenJaar)) + '</strong></div>';
+      if (u.t1 > 0) detail += '<div>AOW-overbrugging tot de AOW-leeftijd: <strong>' + eur0.format(maand(u.t1, gekozenJaar)) + '</strong></div>';
+      if (u.t2 > 0) detail += '<div>TOPHL tot ' + eindTxt + ': <strong>' + eur0.format(maand(u.t2, gekozenJaar)) + '</strong></div>';
+      $('rVoorDetail').innerHTML = detail;
+      if (voorAow) $('rNaLabel').textContent = 'Vanaf de AOW-leeftijd (' + AOW_LABEL + ')';
+      else if (u.t2 > 0) $('rNaLabel').textContent = 'Vanaf ' + E.maandLabel(birthIdx + eindKeuze) + ', na TOPHL';
+      else $('rNaLabel').textContent = 'Vanaf ' + pensLabel;
+      $('rNa').textContent = eur0.format(maand(bedragNa, AOW_JAREN));
+      var naSub = basisNu + ' per maand, levenslang';
+      if (u.t2 > 0 && eindKeuze > aowM) naSub += ' (TOPHL loopt nog tot ' + eindTxt + ')';
+      if (tussenJaar !== null) naSub += '<br>Na het einde van TOPHL en tot de AOW-leeftijd: <strong>' + eur0.format(maand(tussenJaar, AOW_JAREN)) + '</strong> ' + basisNu + ' per maand';
+      $('rNaSub').innerHTML = naSub + '<br>Inclusief AOW: <strong>' + eur0.format(maand(bedragNa + aowJaar, AOW_JAREN)) + '</strong> ' + basisNu + ' per maand';
     }
 
     $('rDeel').textContent = deel ? 'Deeltijdpensioen vanaf ' + E.maandLabel(deel.idx) + ': ' + eur0.format(maand(deelJaar, gekozenJaar)) + ' per maand (levenslang OP).' : '';
@@ -1083,7 +1145,6 @@
     var lhk = $('lhk').checked;
     var rowMap = {};
     o.sim.rows.forEach(function (r, k) { rowMap[calcIdx + k] = r; });
-    var opVoor = o.u.pre - o.u.t1 - o.u.t2;   // ouderdomspensioen vóór de AOW, zonder TOPAOW en TOPHL
 
     var jaren = {};
     for (var i = calcIdx; i < eindIdx; i++) {
@@ -1093,8 +1154,12 @@
       if (i < o.pensIdx && row) g.w += salaris * Math.pow(1 + li, Math.floor(i / 12) - j0) / 12 * row.werk;
       if (o.deelIdx !== null && i >= o.deelIdx) g.op += o.deelJaar / 12;
       if (i >= o.pensIdx) {
-        if (i < aowIdx) { g.op += opVoor / 12; g.t1 += o.u.t1 / 12; g.t2 += o.u.t2 / 12; }
-        else g.op += o.u.post / 12;
+        var ageM = i - o.birth;
+        var t1m = ageM < o.u.aowM ? o.u.t1 : 0;
+        var t2m = ageM < o.u.eindM ? o.u.t2 : 0;
+        g.t1 += t1m / 12;
+        g.t2 += t2m / 12;
+        g.op += (E.jaarlijkseUitkering(o.u, ageM) - t1m - t2m) / 12;
       }
       if (i >= aowIdx) g.a += C.aowBrutoMaand;
       g.n++;
@@ -1323,7 +1388,8 @@
       parttime: parttimeLijst().map(function (r) { return { vanaf: r.vanaf, percentage: r.percentage }; }),
       partnerPct: Number($('partnerPct').value),
       topaow: Number($('topaow').value),
-      tophl: Number($('tophl').value)
+      tophl: Number($('tophl').value),
+      tophlEind: tophlEindHandmatig ? Number($('tophlEind').value) : null
     };
   }
 
@@ -1347,15 +1413,16 @@
     var sl1 = voorAow && maxHeel > 0 ? Math.min(Math.max(0, Number(p.topaow) || 0), maxHeel) : 0;
     var opMax = maxHeel > 0 && sl1 >= maxHeel;
     var t1 = opMax ? maxT1 : sl1;
-    var hl = opMax ? Math.max(0, Number(p.tophl) || 0) / 100 : 0;
-    var u = E.uitkeringen(C, sim, { partnerPct: partnerPct, topaow: t1, tophlPct: hl, werkfractie: werk }, jaar);
+    var hl = Math.max(0, Number(p.tophl) || 0) / 100;
+    var eindM = p.tophlEind !== null && p.tophlEind !== undefined ? Number(p.tophlEind) : undefined;
+    var u = E.uitkeringen(C, sim, { partnerPct: partnerPct, topaow: t1, tophlPct: hl, tophlEindMaanden: eindM, werkfractie: werk }, jaar);
     var serie = jaarSerie({ sim: sim, u: u, pensIdx: pensIdx, birth: birthIdx, deelIdx: deel ? deel.idx : null, deelJaar: u.deelJaar });
     return {
       naam: p.naam,
       pensLabel: E.maandLabel(pensIdx),
       pensJaar: jaar,
       pl: maand(u.pre),
-      na: maand(u.post),
+      na: maand(voorAow ? E.jaarlijkseUitkering(u, C.pensioenreglement.aowLeeftijdMaanden) : u.post),
       t1: u.t1,
       t2: u.t2,
       pctHL: hl,
@@ -1378,6 +1445,9 @@
     $('topaow').max = 100000;
     $('topaow').value = p.topaow;
     $('tophl').value = p.tophl;
+    tophlEindHandmatig = p.tophlEind !== null && p.tophlEind !== undefined;
+    $('tophlEind').max = 100000;
+    if (tophlEindHandmatig) $('tophlEind').value = p.tophlEind;
     renderWerk();
     render();
   }
@@ -1623,9 +1693,9 @@
       "U kunt op de gekozen pensioendatum gedeeltelijk met pensioen gaan. Dat kan in stappen van 10%.",
       "Het is gebruikelijk dat u voor het deel dat u pensioneert ook stopt met werken, maar dat is niet verplicht. In deze planner rekenen wij wel met stoppen met werken bij de verdere opbouw van uw pensioen na het deeltijdpensioen."
     ] },
-    { kop: "Hoog/laag", alinea: [
-      "U kunt ervoor kiezen om voorafgaand aan uw AOW-uitkering tijdelijk een hogere uitkering te krijgen. Die verhoging wordt betaald uit uw eigen pensioenvermogen. Na de AOW-uitkering is uw uitkering dan lager.",
-      "De wet kent twee soorten: het AOW-overbruggingspensioen, maximaal 20.000 per jaar, en het hoog/laag-pensioen, maximaal 33% van het ouderdomspensioen. Het hoog/laag-pensioen kan alleen als er na het AOW-overbruggingspensioen nog pensioenvermogen over is."
+    { kop: "AOW-overbrugging en TOPHL", alinea: [
+      "Met de AOW-overbrugging (TOPAOW) krijgt u vóór de AOW-leeftijd extra pensioen, tot maximaal 20.000 euro bruto per jaar. U betaalt dat zelf uit uw pensioenvermogen. Het stopt op de eerste van de maand waarin u de AOW-leeftijd bereikt.",
+      "Met TOPHL krijgt u tijdelijk een hogere uitkering, tot 33% van uw levenslange ouderdomspensioen. U kiest zelf tot wanneer het loopt: niet eerder dan de pensioendatum en uiterlijk 10 jaar na de AOW-leeftijd. Standaard loopt het tot de AOW-leeftijd als u vóór de AOW met pensioen gaat. Uw hoogste uitkering mag nooit meer zijn dan 133% van uw levenslange ouderdomspensioen."
     ] },
     { kop: "Let op: aannames", alinea: [
       "Alles in deze planner gaat uit van aannames over de ontwikkeling van uw pensioenvermogen. De werkelijke ontwikkeling, en dus uw uitkering, kan hier sterk van afwijken.",

@@ -156,10 +156,9 @@ button:disabled { opacity: 0.6; cursor: wait; }
       return Math.max(0, Math.min(ta.maxPerJaar * (wf === undefined ? 1 : wf), (u.standaard - ta.ondergrensOP) * aOP / ta.inkoopfactor));
     }
 
-    // Maximum TOPHL uit het resterend-OP-criterium (zelfde regel als HL-02).
+    // Maximum TOPHL: 33% van het levenslange OP na uitruil (levenslang OP + TOPHL blijft onder 133%), begrensd op het kapitaal.
     function hlMax(kOP, opNa, t1) {
-      return Math.max(0, Math.min(th.maxPctOP * opNa / (1 + th.maxPctOP * th.inkoopfactor / aOP),
-                                  (kOP - ta.inkoopfactor * t1) / th.inkoopfactor));
+      return Math.max(0, Math.min(th.maxPctOP * opNa, (kOP - ta.inkoopfactor * t1) / th.inkoopfactor));
     }
     // Vaste kapitaalwaarde als simulatie-object, zodat een scenario precies dat kapitaal krijgt.
     function fake(k) { return { kapitaal: k, deelJaar: 0, inflIdx: 1 }; }
@@ -236,32 +235,30 @@ button:disabled { opacity: 0.6; cursor: wait; }
           return { verwacht: eur(exp) + ' (plafond ' + eur(ta.maxPerJaar * 0.6) + ')', gemeten: eur(u.maxT1), ok: near(u.maxT1, exp) };
         } },
       { id: 'TA-05', groep: 'TOPAOW', titel: 'Geen TOPAOW vanaf de AOW-datum',
-        uitleg: 'Op of na de AOW-datum is TOPAOW en TOPHL niet mogelijk.',
+        uitleg: 'Op of na de AOW-datum is TOPAOW niet mogelijk. TOPHL wel, tot uiterlijk 10 jaar na de AOW-datum.',
         run: function () {
           var u = uitAOW({ partnerPct: std, topaow: 1e9, tophlPct: th.maxPctOP });
-          return { verwacht: 'TOPAOW 0 en TOPHL 0',
+          return { verwacht: 'TOPAOW 0 en TOPHL ' + eur(th.maxPctOP * u.opNa),
                    gemeten: 'TOPAOW ' + eur(u.t1) + ', TOPHL ' + eur(u.t2),
-                   ok: u.t1 === 0 && u.t2 === 0 && near(u.pre, u.post) };
+                   ok: u.t1 === 0 && near(u.t2, th.maxPctOP * u.opNa, 1e-6) && u.eindM === cfg.pensioenreglement.aowLeeftijdMaanden + th.jarenNaAOW * 12 };
         } },
 
       // TOPHL (5)
-      { id: 'HL-01', groep: 'TOPHL', titel: 'TOPHL geblokkeerd zonder TOPAOW-maximum',
-        uitleg: 'Zonder TOPAOW op maximum is TOPHL 0.',
+      { id: 'HL-01', groep: 'TOPHL', titel: 'TOPHL los van de AOW-overbrugging',
+        uitleg: 'TOPHL is ook mogelijk zonder TOPAOW op maximum.',
         run: function () {
           var u = uit({ partnerPct: std, topaow: 0, tophlPct: th.maxPctOP });
-          return { verwacht: eur(0), gemeten: eur(u.t2), ok: u.t2 === 0 };
+          return { verwacht: eur(th.maxPctOP * u.opNa), gemeten: eur(u.t2), ok: near(u.t2, th.maxPctOP * u.opNa, 1e-6) };
         } },
       { id: 'HL-02', groep: 'TOPHL', titel: 'TOPHL begrensd op 33% van resterend OP',
-        uitleg: 'TOPHL is nooit meer dan tophl.maxPctOP van het OP dat na de TOPHL-inkoop overblijft.',
+        uitleg: 'TOPHL is nooit meer dan tophl.maxPctOP van het levenslange OP na uitruil (levenslang OP + TOPHL onder 133%).',
         run: function () {
           var u = uit({ partnerPct: std, topaow: 1e9, tophlPct: th.maxPctOP + 0.5 });
           var kOP = u.standaard * aOP;
-          var exp = Math.max(0, Math.min(th.maxPctOP * u.opNa / (1 + th.maxPctOP * th.inkoopfactor / aOP),
-                                         (kOP - ta.inkoopfactor * u.t1) / th.inkoopfactor));
-          var resterend = u.opNa - th.inkoopfactor * u.t2 / aOP;
-          return { verwacht: eur(exp) + ' (max ' + pctFrac(th.maxPctOP) + ' van resterend OP)',
-                   gemeten: eur(u.t2) + ' (resterend OP ' + eur(resterend) + ')',
-                   ok: near(u.t2, exp) && u.t2 <= th.maxPctOP * resterend + 0.01 };
+          var exp = hlMax(kOP, u.opNa, u.t1);
+          return { verwacht: eur(exp) + ' (max ' + pctFrac(th.maxPctOP) + ' van levenslang OP na uitruil)',
+                   gemeten: eur(u.t2) + ' (OP na uitruil ' + eur(u.opNa) + ')',
+                   ok: near(u.t2, exp) && u.t2 <= th.maxPctOP * u.opNa + 0.01 };
         } },
       { id: 'HL-03', groep: 'TOPHL', titel: '0% TOPHL geeft geen TOPHL',
         uitleg: 'Een keuze van 0% levert geen inkoop op.',
@@ -375,15 +372,15 @@ button:disabled { opacity: 0.6; cursor: wait; }
                    ok: inkoopOk && bedragenOk && partnerOk };
         } },
       { id: 'CFG-02', groep: 'Deelnemers en config', titel: 'Randgeval: TOPAOW-maximum 0',
-        uitleg: 'Testinvoer: maxPerJaar op 0. TOPAOW en TOPHL moeten 0 zijn, zonder rekenfouten.',
+        uitleg: 'Testinvoer: maxPerJaar op 0. TOPAOW moet 0 zijn en TOPHL moet zonder rekenfouten doorlopen.',
         run: function () {
           var k = JSON.parse(JSON.stringify(cfg));
           k.topaow.maxPerJaar = 0;
           var u = E.uitkeringen(k, c.simPre, { partnerPct: std, topaow: 1e9, tophlPct: th.maxPctOP }, c.preJ);
           var finite = [u.pre, u.post, u.standaard, u.partner].every(isFinite);
-          return { verwacht: 'TOPAOW 0, TOPHL 0 en geen NaN',
+          return { verwacht: 'TOPAOW 0, TOPHL ' + eur(th.maxPctOP * u.opNa) + ' en geen NaN',
                    gemeten: 'TOPAOW ' + eur(u.t1) + ', TOPHL ' + eur(u.t2) + (finite ? ', geen NaN' : ', NaN gevonden'),
-                   ok: u.t1 === 0 && u.t2 === 0 && finite };
+                   ok: u.t1 === 0 && near(u.t2, th.maxPctOP * u.opNa, 1e-6) && finite };
         } },
 
       // Combinaties en grenzen (3)

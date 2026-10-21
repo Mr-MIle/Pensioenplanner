@@ -102,11 +102,15 @@ window.PLANNER_CONFIG = {
     inkoopfactor: 5
   },
 
-  // TOPHL: alleen mogelijk als TOPAOW op het maximum staat. Maximum als deel van het resterende OP na TOPHL-inkoop (33%).
-  // Het OP na de AOW-leeftijd daalt kapitaalneutraal met inkoopfactor x TOPHL / annuïteitsfactor.
+  // TOPHL: tijdelijk extra pensioen van de pensioendatum tot een eerste van de maand, gekozen door de deelnemer.
+  // Standaard eindigt het op de AOW-leeftijd als de pensioendatum ervoor ligt. Anders kiest de deelnemer een einde
+  // tot uiterlijk jarenNaAOW jaar na de AOW-leeftijd. Maximum: 33% van het levenslange OP na uitruil, zodat het
+  // levenslange OP plus TOPHL niet hoger wordt dan 133% van het levenslange OP.
+  // Na het einde van TOPHL daalt het levenslange OP kapitaalneutraal met inkoopfactor x TOPHL / annuïteitsfactor.
   tophl: {
     maxPctOP: 0.33,
-    inkoopfactor: 5
+    inkoopfactor: 5,
+    jarenNaAOW: 10
   },
 
   // Partnerpensioen (NP): het percentage van het ouderdomspensioen (OP) vóór TOPAOW/TOPHL dat op de pensioendatum wordt ingekocht.
