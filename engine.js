@@ -6,7 +6,7 @@
   bijgeschreven aan het eind van de maand. Die premie levert pas vanaf de volgende maand rendement op.
   Uitkering: ouderdomspensioen per jaar = kapitaal / annuiteitsdeler. TOPAOW (AOW-overbrugging) loopt tot de AOW-leeftijd.
   TOPHL loopt van de pensioendatum tot een gekozen eerste van de maand, uiterlijk 10 jaar na de AOW-leeftijd.
-  Na het einde van TOPHL daalt het levenslange OP kapitaalneutraal.
+  Na het einde van TOPHL daalt het levenslange OP kapitaalneutraal. Hoe langer TOPHL loopt, hoe duurder het is.
 */
 (function (global) {
   'use strict';
@@ -141,7 +141,8 @@
   //   Standaard eindM = AOW-leeftijd als de pensioendatum ervoor ligt, anders uiterlijk 10 jaar na de AOW-leeftijd.
   //   Bereik eindM: van pensioendatum + 1 maand tot AOW-leeftijd + tophl.jarenNaAOW jaar.
   //   T2 = tophlPct x OP_na, begrensd op tophl.maxPctOP x OP_na (de hoogste uitkering = levenslang OP + TOPHL blijft onder 133%).
-  //   T2 kost 5 x T2 kapitaal. Na het einde van TOPHL daalt het levenslange OP met R = 5 x T2 / aOP (kapitaalneutraal).
+  //   Inkoopfactor TOPHL = tophl.inkoopfactorPerJaar x looptijd in jaren ((eindM - pensioendatum) / 12): langer is duurder.
+  //   T2 kost inkoopfactor x T2 kapitaal. Na het einde van TOPHL daalt het levenslange OP met R = inkoopfactor x T2 / aOP (kapitaalneutraal).
   // Uitkering op een leeftijd (zie jaarlijkseUitkering): OP_na + T1 (vóór AOW) + T2 (vóór eindM) - R (vanaf eindM).
   // opt = { partnerPct, topaow (€/jaar), tophlPct (0-0,33 van OP na uitruil), tophlEindMaanden (leeftijd in maanden, optioneel), werkfractie (0-1, standaard 1) }.
   function uitkeringen(cfg, sim, opt, pensioenLeeftijdJaar) {
@@ -177,12 +178,15 @@
     const eindStandaard = voorAow ? aowM : eindMax;
     const gekozen = opt.tophlEindMaanden !== undefined && opt.tophlEindMaanden !== null ? opt.tophlEindMaanden : eindStandaard;
     const eindM = tophlMogelijk ? Math.min(eindMax, Math.max(eindMin, Math.round(gekozen))) : 0;
-    const maxT2 = tophlMogelijk
-      ? Math.max(0, Math.min(th.maxPctOP * opNa, (kOP - ta.inkoopfactor * t1) / th.inkoopfactor))
+    // Looptijd in jaren bepaalt de inkoopfactor: hoe langer TOPHL loopt, hoe duurder.
+    const looptijdHL = tophlMogelijk ? (eindM - pensM) / 12 : 0;
+    const inkoopHL = th.inkoopfactorPerJaar * looptijdHL;
+    const maxT2 = tophlMogelijk && inkoopHL > 0
+      ? Math.max(0, Math.min(th.maxPctOP * opNa, (kOP - ta.inkoopfactor * t1) / inkoopHL))
       : 0;
     const pctHL = Math.min(th.maxPctOP, Math.max(0, opt.tophlPct || 0));
     const t2 = tophlMogelijk ? Math.min(maxT2, pctHL * opNa) : 0;
-    const R = th.inkoopfactor * t2 / aOP;
+    const R = inkoopHL * t2 / aOP;
     const opPost = opNa - R;
 
     const u = {
@@ -194,6 +198,8 @@
       t1: t1,
       t2: t2,
       R: R,
+      looptijdHL: looptijdHL,
+      inkoopHL: inkoopHL,
       aowM: aowM,
       eindM: eindM,
       eindMin: eindMin,

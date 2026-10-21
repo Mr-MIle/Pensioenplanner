@@ -17,6 +17,8 @@ const std = C.parttimepercentages.map(r => ({ vanaf: r.vanaf, percentage: r.perc
 const results = [];
 function check(name, ok, detail) { results.push((ok ? 'PASS ' : 'FAIL ') + name + (detail !== undefined ? '  [' + detail + ']' : '')); }
 const near = (a, b, tol) => Math.abs(a - b) <= (tol === undefined ? 1e-6 * Math.max(1, Math.abs(b)) : tol);
+// Verwachte TOPHL-inkoopfactor uit de regel: inkoopfactorPerJaar x looptijd in jaren (pensioendatum tot einde).
+const hlF = (u, pensJaar) => C.tophl.inkoopfactorPerJaar * (u.eindM - Math.round(pensJaar * 12)) / 12;
 
 // 1. Saldo per maand: begin + inleg + over - onttrokken == eind (ook bij deeltijd)
 function saldoOk(sim) {
@@ -79,11 +81,11 @@ check('3j TOPHL-max = maxPctOP x OP na uitruil', near(uMaxHL.maxT2, th.maxPctOP 
 const kOPmax = uMaxHL.standaard * aOP62;
 
 // 3k: kapitaalgrens: inkoop TOPHL + inkoop TOPAOW past binnen het kapitaal voor ruil
-check('3k TOPHL-inkoop + TOPAOW-inkoop <= K_OP', th.inkoopfactor * uMaxHL.t2 + ta.inkoopfactor * uMaxHL.t1 <= kOPmax + 1e-6);
+check('3k TOPHL-inkoop + TOPAOW-inkoop <= K_OP', hlF(uMaxHL, pensJ) * uMaxHL.t2 + ta.inkoopfactor * uMaxHL.t1 <= kOPmax + 1e-6);
 
 // 3l: kapitaalneutraal na het einde van TOPHL (standaard eind = AOW): post x aOP + inkoopTOPAOW x T1 + inkoopTOPHL x T2 = K_OP
-check('3l kapitaalneutraal na einde TOPHL', near(uMaxHL.post * aOP62 + ta.inkoopfactor * uMaxHL.t1 + th.inkoopfactor * uMaxHL.t2, kOPmax, 1e-4 * kOPmax),
-  (uMaxHL.post * aOP62 + ta.inkoopfactor * uMaxHL.t1 + th.inkoopfactor * uMaxHL.t2 - kOPmax).toFixed(4));
+check('3l kapitaalneutraal na einde TOPHL', near(uMaxHL.post * aOP62 + ta.inkoopfactor * uMaxHL.t1 + hlF(uMaxHL, pensJ) * uMaxHL.t2, kOPmax, 1e-4 * kOPmax),
+  (uMaxHL.post * aOP62 + ta.inkoopfactor * uMaxHL.t1 + hlF(uMaxHL, pensJ) * uMaxHL.t2 - kOPmax).toFixed(4));
 
 // 3m: uitkering bij ingang = OP_na + T1 + T2
 check('3m pre = OP_na + T1 + T2', near(uMaxHL.pre, uMaxHL.opNa + uMaxHL.t1 + uMaxHL.t2, 1e-6));
@@ -109,7 +111,7 @@ check('3r TOPHL 10% = 10% van OP na TOPAOW', near(uP10.t2, 0.10 * uP10.opNa, 1e-
 // 3s: TOPHL boven het maximum wordt begrensd op maxPctOP
 const uP50 = E.uitkeringen(C, simH, { partnerPct: pp.standaardPct, topaow: 1e9, tophlPct: 0.5 }, pensJ);
 check('3s TOPHL boven maximum begrensd op maxPctOP', near(uP50.t2, th.maxPctOP * uP50.opNa, 1e-6), uP50.t2.toFixed(2));
-check('3t post = OP_na - inkoopTOPHL x T2 / aOP', near(uP50.post, uP50.opNa - th.inkoopfactor * uP50.t2 / aOP62, 1e-6));
+check('3t post = OP_na - inkoopTOPHL x T2 / aOP', near(uP50.post, uP50.opNa - hlF(uP50, pensJ) * uP50.t2 / aOP62, 1e-6));
 
 // 3u: TOPHL ook mogelijk bij een TOPAOW onder het maximum
 const uP10geen = E.uitkeringen(C, simH, { partnerPct: pp.standaardPct, topaow: 5000, tophlPct: 0.10 }, pensJ);
@@ -146,7 +148,32 @@ check('15l TOPHL eindigt na AOW: op AOW = OP_na + T2 (geen TOPAOW)', near(E.jaar
 check('15m 133%-grens: OP na uitruil + TOPHL <= 133% van levenslang OP', na.opNa + na.t2 <= 1.33 * na.opNa + 1e-6);
 const aOP70 = E.delerVoor(70, C.annuiteitsdelers);
 const p70 = E.uitkeringen(C, c70, { partnerPct: pp.standaardPct, topaow: 1e9, tophlPct: th.maxPctOP }, 70);
-check('15n kapitaalneutraal bij einde AOW + 10 jaar', near(p70.post * aOP70 + th.inkoopfactor * p70.t2, p70.standaard * aOP70, 1e-6 * p70.standaard * aOP70));
+check('15n kapitaalneutraal bij einde AOW + 10 jaar', near(p70.post * aOP70 + hlF(p70, 70) * p70.t2, p70.standaard * aOP70, 1e-6 * p70.standaard * aOP70));
+
+// 16. TOPHL-inkoopfactor hangt af van de looptijd: inkoopfactorPerJaar x looptijd in jaren. Langer is duurder.
+const hl = { partnerPct: pp.standaardPct, topaow: 0, tophlPct: 0.2 };
+const l5 = E.uitkeringen(C, simH, { ...hl, tophlEindMaanden: pensJ * 12 + 60 }, pensJ);
+check('16a looptijd 5 jaar: inkoopfactor = 5 x inkoopfactorPerJaar', near(l5.inkoopHL, 5 * th.inkoopfactorPerJaar) && near(l5.looptijdHL, 5), l5.inkoopHL);
+check('16b R = inkoopfactor x T2 / aOP', near(l5.R, 5 * th.inkoopfactorPerJaar * l5.t2 / aOP62, 1e-6));
+const eindes = [pensJ * 12 + 12, aowM, 72 * 12, aowM + th.jarenNaAOW * 12];
+const reeksR = eindes.map(m => E.uitkeringen(C, simH, { ...hl, tophlEindMaanden: m }, pensJ));
+check('16c langere looptijd: zelfde TOPHL, hogere R en lager OP na einde',
+  reeksR.every((u, k) => k === 0 || (u.R > reeksR[k - 1].R && u.post < reeksR[k - 1].post && near(u.t2, reeksR[0].t2, 1e-6))),
+  reeksR.map(u => u.R.toFixed(0)).join(' < '));
+const l1 = E.uitkeringen(C, simH, { ...hl, tophlEindMaanden: pensJ * 12 + 1 }, pensJ);
+check('16d looptijd 1 maand: inkoopfactor = inkoopfactorPerJaar / 12', near(l1.inkoopHL, th.inkoopfactorPerJaar / 12), l1.inkoopHL.toFixed(4));
+const l72 = E.uitkeringen(C, simH, { partnerPct: pp.standaardPct, topaow: 1e9, tophlPct: th.maxPctOP, tophlEindMaanden: 72 * 12 }, pensJ);
+const kOP72 = l72.standaard * aOP62;
+check('16e kapitaalneutraal bij einde op 72 jaar (10 jaar looptijd)',
+  near(l72.post * aOP62 + ta.inkoopfactor * l72.t1 + hlF(l72, pensJ) * l72.t2, kOP72, 1e-6 * kOP72) && near(hlF(l72, pensJ), 10 * th.inkoopfactorPerJaar));
+const p623 = E.uitkeringen(C, simH, { ...hl, tophlEindMaanden: aowM }, pensJ + 0.25);
+check('16f pensioen op 62 j 3 m tot AOW: looptijd in hele maanden', near(p623.looptijdHL, (aowM - (pensJ * 12 + 3)) / 12), p623.looptijdHL);
+const C2 = JSON.parse(JSON.stringify(C)); C2.tophl.inkoopfactorPerJaar = th.inkoopfactorPerJaar * 2;
+const dubbel = E.uitkeringen(C2, simH, { ...hl, tophlEindMaanden: aowM }, pensJ);
+const enkel = E.uitkeringen(C, simH, { ...hl, tophlEindMaanden: aowM }, pensJ);
+check('16g dubbele inkoopfactorPerJaar geeft dubbele R', near(dubbel.R, 2 * enkel.R, 1e-6), dubbel.R.toFixed(2) + ' vs ' + enkel.R.toFixed(2));
+const langst = E.uitkeringen(C, simH, { partnerPct: pp.standaardPct, topaow: 1e9, tophlPct: th.maxPctOP, tophlEindMaanden: aowM + th.jarenNaAOW * 12 }, pensJ);
+check('16h langste looptijd en maximale TOPHL: OP na einde blijft > 0 en zonder NaN', langst.post > 0 && [langst.pre, langst.post, langst.R].every(isFinite), langst.post.toFixed(2));
 
 // 4. Partnerpensioen: OP x annuiteit + NP x inkoopfactorNP = kapitaal; NP = percentage x OP
 const aOP67 = E.delerVoor(aowM / 12, C.annuiteitsdelers);

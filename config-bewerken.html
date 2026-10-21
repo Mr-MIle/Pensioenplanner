@@ -137,7 +137,8 @@ td input[type="text"] { min-width: 90px; }
     ondergrensOP: 'Ondergrens OP na ruil (€/jaar)',
     inkoopfactor: 'Inkoopfactor',
     tophl: 'TOPHL',
-    maxPctOP: 'Maximum als deel van resterend OP (fractie)',
+    maxPctOP: 'Maximum als deel van OP na uitruil (fractie)',
+    inkoopfactorPerJaar: 'Inkoopfactor per jaar looptijd',
     partnerpensioen: 'Partnerpensioen',
     minPct: 'Minimum (%)', maxPct: 'Maximum (%)', standaardPct: 'Standaard (%)',
     inkoopfactorNP: 'Inkoopfactor partnerpensioen'
@@ -258,7 +259,7 @@ td input[type="text"] { min-width: 90px; }
     });
     if (!(cfg.standaardDeelnemer >= 0 && cfg.standaardDeelnemer < dl.length)) fouten.push('Standaard deelnemer verwijst naar een rij die niet bestaat.');
 
-    var inkoop = [['TOPAOW', cfg.topaow && cfg.topaow.inkoopfactor], ['TOPHL', cfg.tophl && cfg.tophl.inkoopfactor], ['Partnerpensioen', cfg.partnerpensioen && cfg.partnerpensioen.inkoopfactorNP]];
+    var inkoop = [['TOPAOW', cfg.topaow && cfg.topaow.inkoopfactor], ['TOPHL (per jaar looptijd)', cfg.tophl && cfg.tophl.inkoopfactorPerJaar], ['Partnerpensioen', cfg.partnerpensioen && cfg.partnerpensioen.inkoopfactorNP]];
     inkoop.forEach(function (x) { if (!(x[1] > 0)) fouten.push('Inkoopfactor ' + x[0] + ' moet groter dan 0 zijn.'); });
     if (cfg.topaow && (cfg.topaow.maxPerJaar < 0 || cfg.topaow.ondergrensOP < 0)) fouten.push('TOPAOW-bedragen mogen niet negatief zijn.');
     if (cfg.pensioenreglement && !(cfg.pensioenreglement.aowLeeftijdMaanden > 0)) fouten.push('AOW-leeftijd moet groter dan 0 zijn.');

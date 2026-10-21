@@ -70,7 +70,7 @@ button:disabled { opacity: 0.6; cursor: wait; }
     <a class="terugknop" href="config-bewerken.html">Configuratie bewerken &rarr;</a>
   </p>
   <h1>Testspecialisten: Pensioenplanner</h1>
-  <p class="intro">Deze pagina draait 29 tests tegen de huidige <code>engine.js</code>. Alle bedragen, grenzen en percentages worden uit <code>config.js</code> gelezen. In de tests staan alleen de testinvoer (zoals 40% deeltijd of 60% werkfractie) en de verwachte regel uit het reglement.</p>
+  <p class="intro">Deze pagina draait 38 tests tegen de huidige <code>engine.js</code>. Alle bedragen, grenzen en percentages worden uit <code>config.js</code> gelezen. In de tests staan alleen de testinvoer (zoals 40% deeltijd of 60% werkfractie) en de verwachte regel uit het reglement.</p>
 
   <div id="waarschuwing" class="waarschuwing"></div>
 
@@ -144,7 +144,7 @@ button:disabled { opacity: 0.6; cursor: wait; }
     return c;
   }
 
-  // ---------- de 20 tests ----------
+  // ---------- de tests ----------
   function defs(c) {
     var cfg = c.cfg, E = c.E, pp = cfg.partnerpensioen, ta = cfg.topaow, th = cfg.tophl;
     var std = pp.standaardPct;
@@ -156,9 +156,13 @@ button:disabled { opacity: 0.6; cursor: wait; }
       return Math.max(0, Math.min(ta.maxPerJaar * (wf === undefined ? 1 : wf), (u.standaard - ta.ondergrensOP) * aOP / ta.inkoopfactor));
     }
 
+    // Inkoopfactor TOPHL uit de regel: inkoopfactorPerJaar x looptijd in jaren (pensioendatum tot einde TOPHL). Langer is duurder.
+    function hlF(u, pensJ) {
+      return th.inkoopfactorPerJaar * (u.eindM - Math.round((pensJ === undefined ? c.preJ : pensJ) * 12)) / 12;
+    }
     // Maximum TOPHL: 33% van het levenslange OP na uitruil (levenslang OP + TOPHL blijft onder 133%), begrensd op het kapitaal.
-    function hlMax(kOP, opNa, t1) {
-      return Math.max(0, Math.min(th.maxPctOP * opNa, (kOP - ta.inkoopfactor * t1) / th.inkoopfactor));
+    function hlMax(kOP, opNa, t1, factor) {
+      return Math.max(0, Math.min(th.maxPctOP * opNa, (kOP - ta.inkoopfactor * t1) / factor));
     }
     // Vaste kapitaalwaarde als simulatie-object, zodat een scenario precies dat kapitaal krijgt.
     function fake(k) { return { kapitaal: k, deelJaar: 0, inflIdx: 1 }; }
@@ -250,12 +254,12 @@ button:disabled { opacity: 0.6; cursor: wait; }
           var u = uit({ partnerPct: std, topaow: 0, tophlPct: th.maxPctOP });
           return { verwacht: eur(th.maxPctOP * u.opNa), gemeten: eur(u.t2), ok: near(u.t2, th.maxPctOP * u.opNa, 1e-6) };
         } },
-      { id: 'HL-02', groep: 'TOPHL', titel: 'TOPHL begrensd op 33% van resterend OP',
+      { id: 'HL-02', groep: 'TOPHL', titel: 'TOPHL begrensd op 33% van OP na uitruil',
         uitleg: 'TOPHL is nooit meer dan tophl.maxPctOP van het levenslange OP na uitruil (levenslang OP + TOPHL onder 133%).',
         run: function () {
           var u = uit({ partnerPct: std, topaow: 1e9, tophlPct: th.maxPctOP + 0.5 });
           var kOP = u.standaard * aOP;
-          var exp = hlMax(kOP, u.opNa, u.t1);
+          var exp = hlMax(kOP, u.opNa, u.t1, hlF(u));
           return { verwacht: eur(exp) + ' (max ' + pctFrac(th.maxPctOP) + ' van levenslang OP na uitruil)',
                    gemeten: eur(u.t2) + ' (OP na uitruil ' + eur(u.opNa) + ')',
                    ok: near(u.t2, exp) && u.t2 <= th.maxPctOP * u.opNa + 0.01 };
@@ -267,11 +271,11 @@ button:disabled { opacity: 0.6; cursor: wait; }
           return { verwacht: eur(0), gemeten: eur(u.t2), ok: u.t2 === 0 && near(u.pre, u.opNa + u.t1) };
         } },
       { id: 'HL-04', groep: 'TOPHL', titel: 'Ruil is kapitaalneutraal',
-        uitleg: 'OP na ruil x aOP + inkoopTOPAOW x T1 + inkoopTOPHL x T2 = kapitaal voor ruil.',
+        uitleg: 'OP na ruil x aOP + inkoopTOPAOW x T1 + inkoopTOPHL x T2 = kapitaal voor ruil. De TOPHL-inkoopfactor is inkoopfactorPerJaar x looptijd.',
         run: function () {
           var u = uit({ partnerPct: std, topaow: 1e9, tophlPct: th.maxPctOP });
           var kOP = u.standaard * aOP;
-          var ident = u.post * aOP + ta.inkoopfactor * u.t1 + th.inkoopfactor * u.t2;
+          var ident = u.post * aOP + ta.inkoopfactor * u.t1 + hlF(u) * u.t2;
           return { verwacht: eur(kOP), gemeten: eur(ident), ok: near(ident, kOP) };
         } },
       { id: 'HL-05', groep: 'TOPHL', titel: 'Uitkering vóór AOW is som van de onderdelen',
@@ -280,6 +284,91 @@ button:disabled { opacity: 0.6; cursor: wait; }
           var u = uit({ partnerPct: std, topaow: 1e9, tophlPct: th.maxPctOP });
           var som = u.opNa + u.t1 + u.t2;
           return { verwacht: eur(som), gemeten: eur(u.pre), ok: near(u.pre, som) };
+        } },
+
+      // TOPHL: einddatum en looptijd (9)
+      { id: 'HL-06', groep: 'TOPHL: einddatum en looptijd', titel: 'Standaard einddatum TOPHL',
+        uitleg: 'Zonder eigen keuze: pensioen vóór de AOW-datum stopt TOPHL op de AOW-datum; pensioen op de AOW-datum loopt TOPHL tot jarenNaAOW jaar erna.',
+        run: function () {
+          var aowM = c.reg.aowLeeftijdMaanden, tMax = aowM + th.jarenNaAOW * 12;
+          var voor = uit({ partnerPct: std, tophlPct: 0.2 });
+          var op = uitAOW({ partnerPct: std, tophlPct: 0.2 });
+          return { verwacht: 'einde ' + fmt(aowM / 12) + ' jaar (vóór AOW) en ' + fmt(tMax / 12) + ' jaar (op AOW)',
+                   gemeten: 'einde ' + fmt(voor.eindM / 12) + ' jaar en ' + fmt(op.eindM / 12) + ' jaar',
+                   ok: voor.eindM === aowM && op.eindM === tMax };
+        } },
+      { id: 'HL-07', groep: 'TOPHL: einddatum en looptijd', titel: 'Gekozen einddatum buiten het bereik wordt begrensd',
+        uitleg: 'Testinvoer: einde 2 jaar vóór de pensioendatum en 5 jaar na de uiterste datum. Begrensd op pensioendatum + 1 maand en AOW + jarenNaAOW.',
+        run: function () {
+          var pensM = Math.round(c.preJ * 12), tMax = c.reg.aowLeeftijdMaanden + th.jarenNaAOW * 12;
+          var vroeg = uit({ partnerPct: std, tophlPct: 0.2, tophlEindMaanden: pensM - 24 });
+          var laat = uit({ partnerPct: std, tophlPct: 0.2, tophlEindMaanden: tMax + 60 });
+          return { verwacht: 'einde ' + (pensM + 1) + ' en ' + tMax + ' maanden',
+                   gemeten: 'einde ' + vroeg.eindM + ' en ' + laat.eindM + ' maanden',
+                   ok: vroeg.eindM === pensM + 1 && laat.eindM === tMax };
+        } },
+      { id: 'HL-08', groep: 'TOPHL: einddatum en looptijd', titel: 'Pensioen na de uiterste TOPHL-datum: geen TOPHL',
+        uitleg: 'Testinvoer: pensioendatum 1 jaar na AOW + jarenNaAOW. TOPHL is dan niet mogelijk.',
+        run: function () {
+          var pJ = c.aowJ + th.jarenNaAOW + 1;
+          var u = E.uitkeringen(cfg, fake(c.simAOW.kapitaal), { partnerPct: std, tophlPct: th.maxPctOP }, pJ);
+          return { verwacht: 'TOPHL niet mogelijk, € 0', gemeten: (u.tophlMogelijk ? 'mogelijk' : 'niet mogelijk') + ', ' + eur(u.t2),
+                   ok: u.tophlMogelijk === false && u.t2 === 0 };
+        } },
+      { id: 'LT-01', groep: 'TOPHL: einddatum en looptijd', titel: 'Inkoopfactor = factor per jaar x looptijd',
+        uitleg: 'Testinvoer: TOPHL 5 jaar. De inkoopfactor is 5 x inkoopfactorPerJaar en het OP na het einde daalt met inkoopfactor x TOPHL / aOP.',
+        run: function () {
+          var u = uit({ partnerPct: std, tophlPct: 0.2, tophlEindMaanden: Math.round(c.preJ * 12) + 60 });
+          var expF = 5 * th.inkoopfactorPerJaar, expR = expF * u.t2 / aOP;
+          return { verwacht: 'factor ' + fmt(expF) + ', daling ' + eur(expR),
+                   gemeten: 'factor ' + fmt(u.inkoopHL) + ', daling ' + eur(u.R),
+                   ok: near(u.inkoopHL, expF, 1e-9) && near(u.R, expR) };
+        } },
+      { id: 'LT-02', groep: 'TOPHL: einddatum en looptijd', titel: 'Langere looptijd is duurder',
+        uitleg: 'Zelfde TOPHL-bedrag, einde na 1 jaar, op de AOW-datum, 5 jaar erna en op de uiterste datum: elke langere looptijd geeft een grotere daling van het OP.',
+        run: function () {
+          var pensM = Math.round(c.preJ * 12), aowM = c.reg.aowLeeftijdMaanden;
+          var eindes = [pensM + 12, aowM, aowM + 60, aowM + th.jarenNaAOW * 12];
+          var us = eindes.map(function (m) { return uit({ partnerPct: std, tophlPct: 0.2, tophlEindMaanden: m }); });
+          var ok = us.every(function (u, k) { return k === 0 || (u.R > us[k - 1].R && near(u.t2, us[0].t2)); });
+          return { verwacht: 'daling stijgt met de looptijd, TOPHL gelijk (' + eur(us[0].t2) + ')',
+                   gemeten: 'daling ' + us.map(function (u) { return eur(u.R); }).join(' < '), ok: ok };
+        } },
+      { id: 'LT-03', groep: 'TOPHL: einddatum en looptijd', titel: 'Kapitaalneutraal bij een zelf gekozen einde',
+        uitleg: 'Testinvoer: TOPAOW en TOPHL op maximum, TOPHL tot 5 jaar na de AOW-datum. OP na einde x aOP + inkoop TOPAOW + inkoop TOPHL = kapitaal voor ruil.',
+        run: function () {
+          var u = uit({ partnerPct: std, topaow: 1e9, tophlPct: th.maxPctOP, tophlEindMaanden: c.reg.aowLeeftijdMaanden + 60 });
+          var kOP = u.standaard * aOP;
+          var ident = u.post * aOP + ta.inkoopfactor * u.t1 + hlF(u) * u.t2;
+          return { verwacht: eur(kOP) + ' (TOPHL-factor ' + fmt(hlF(u)) + ')', gemeten: eur(ident), ok: near(ident, kOP) };
+        } },
+      { id: 'LT-04', groep: 'TOPHL: einddatum en looptijd', titel: 'Pensioen op een gebroken leeftijd',
+        uitleg: 'Testinvoer: pensioen 3 maanden na een hele leeftijd, TOPHL tot de AOW-datum. De looptijd telt in hele maanden.',
+        run: function () {
+          var pJ = c.preJ + 0.25, aowM = c.reg.aowLeeftijdMaanden;
+          var u = E.uitkeringen(cfg, c.simPre, { partnerPct: std, tophlPct: 0.2, tophlEindMaanden: aowM }, pJ);
+          var exp = (aowM - Math.round(pJ * 12)) / 12;
+          return { verwacht: 'looptijd ' + fmt(exp) + ' jaar', gemeten: 'looptijd ' + fmt(u.looptijdHL) + ' jaar', ok: near(u.looptijdHL, exp, 1e-9) };
+        } },
+      { id: 'UIT-01', groep: 'TOPHL: einddatum en looptijd', titel: 'Uitkering per fase als TOPHL vóór de AOW stopt',
+        uitleg: 'Testinvoer: TOPAOW 5.000, TOPHL 20% tot 2 jaar na de pensioendatum. Bij ingang OP + TOPAOW + TOPHL, daarna OP - daling + TOPAOW, vanaf AOW alleen OP - daling.',
+        run: function () {
+          var pensM = Math.round(c.preJ * 12), aowM = c.reg.aowLeeftijdMaanden;
+          var u = uit({ partnerPct: std, topaow: 5000, tophlPct: 0.2, tophlEindMaanden: pensM + 24 });
+          var a = [u.opNa + u.t1 + u.t2, u.opNa - u.R + u.t1, u.opNa - u.R];
+          var g = [E.jaarlijkseUitkering(u, pensM), E.jaarlijkseUitkering(u, pensM + 24), E.jaarlijkseUitkering(u, aowM)];
+          return { verwacht: a.map(eur).join(' → '), gemeten: g.map(eur).join(' → '),
+                   ok: near(g[0], a[0]) && near(g[1], a[1]) && near(g[2], a[2]) && near(g[2], u.post) };
+        } },
+      { id: 'UIT-02', groep: 'TOPHL: einddatum en looptijd', titel: 'Uitkering per fase als TOPHL na de AOW doorloopt',
+        uitleg: 'Testinvoer: TOPAOW 5.000, TOPHL 20% tot 5 jaar na de AOW-datum. Op de AOW-datum vervalt TOPAOW maar loopt TOPHL nog; na het einde alleen OP - daling.',
+        run: function () {
+          var pensM = Math.round(c.preJ * 12), aowM = c.reg.aowLeeftijdMaanden;
+          var u = uit({ partnerPct: std, topaow: 5000, tophlPct: 0.2, tophlEindMaanden: aowM + 60 });
+          var a = [u.opNa + u.t1 + u.t2, u.opNa + u.t2, u.opNa - u.R];
+          var g = [E.jaarlijkseUitkering(u, pensM), E.jaarlijkseUitkering(u, aowM), E.jaarlijkseUitkering(u, aowM + 60)];
+          return { verwacht: a.map(eur).join(' → '), gemeten: g.map(eur).join(' → '),
+                   ok: near(g[0], a[0]) && near(g[1], a[1]) && near(g[2], a[2]) };
         } },
 
       // Opbouw en deeltijd (4)
@@ -363,7 +452,7 @@ button:disabled { opacity: 0.6; cursor: wait; }
       { id: 'CFG-01', groep: 'Deelnemers en config', titel: 'Config bevat geldige waarden',
         uitleg: 'Inkoopfactoren zijn groter dan 0, bedragen zijn niet negatief, en partnerpensioen is minPct <= standaardPct <= maxPct.',
         run: function () {
-          var f = [ta.inkoopfactor, th.inkoopfactor, pp.inkoopfactorNP];
+          var f = [ta.inkoopfactor, th.inkoopfactorPerJaar, pp.inkoopfactorNP];
           var inkoopOk = f.every(function (x) { return x > 0; });
           var bedragenOk = ta.maxPerJaar >= 0 && ta.ondergrensOP >= 0;
           var partnerOk = pp.minPct <= pp.standaardPct && pp.standaardPct <= pp.maxPct && pp.maxPct <= 100 && th.maxPctOP >= 0 && th.maxPctOP <= 1;
@@ -391,8 +480,8 @@ button:disabled { opacity: 0.6; cursor: wait; }
           var K = c.simPre.kapitaal;
           var kOP = u.standaard * aOP;
           var ident = kOP + u.partner * pp.inkoopfactorNP;
-          var ok = near(ident, K, 1e-6 * K) && near(u.t1, maxT1(u)) && near(u.t2, hlMax(kOP, u.opNa, u.t1));
-          return { verwacht: 'kapitaal ' + eur(K) + '; TOPAOW op max ' + eur(maxT1(u)) + '; TOPHL op max ' + eur(hlMax(kOP, u.opNa, u.t1)),
+          var ok = near(ident, K, 1e-6 * K) && near(u.t1, maxT1(u)) && near(u.t2, hlMax(kOP, u.opNa, u.t1, hlF(u)));
+          return { verwacht: 'kapitaal ' + eur(K) + '; TOPAOW op max ' + eur(maxT1(u)) + '; TOPHL op max ' + eur(hlMax(kOP, u.opNa, u.t1, hlF(u))),
                    gemeten: 'kapitaal ' + eur(ident) + '; TOPAOW ' + eur(u.t1) + '; TOPHL ' + eur(u.t2), ok: ok };
         } },
       { id: 'GRS-01', groep: 'Combinaties en grenzen', titel: 'Randkapitaal: OP na TOPAOW precies op de ondergrens',
@@ -454,16 +543,16 @@ button:disabled { opacity: 0.6; cursor: wait; }
                    gemeten: 'maximum ' + eur(tmax) + '; boven maximum ' + eur(boven.t1), ok: ok };
         } },
       { id: 'MON-02', groep: 'Monotonie', titel: 'TOPHL: hogere keuze geeft hogere uitkering tot de grens',
-        uitleg: 'Bij oplopende TOPHL (bij TOPAOW op maximum) stijgt de uitkering vóór AOW tot de resterend-OP-grens, en daarna blijft die vlak.',
+        uitleg: 'Bij oplopende TOPHL (zonder TOPAOW, want TOPHL staat daar los van) stijgt de uitkering bij ingang tot ' + pctFrac(th.maxPctOP) + ' van het OP na uitruil, en daarna blijft die vlak.',
         run: function () {
           var prevT2 = -1, prevPre = -1, ok = true, cap = null;
           for (var s = 0; s <= 10; s++) {
-            var u = E.uitkeringen(cfg, c.simPre, { partnerPct: std, topaow: 1e9, tophlPct: th.maxPctOP * s / 10 * 1.5 }, c.preJ);
+            var u = E.uitkeringen(cfg, c.simPre, { partnerPct: std, topaow: 0, tophlPct: th.maxPctOP * s / 10 * 1.5 }, c.preJ);
             if (u.t2 < prevT2 - 1e-9 || u.pre < prevPre - 1e-9) ok = false;
             prevT2 = u.t2; prevPre = u.pre; cap = u.t2;
           }
-          var kOP = E.uitkeringen(cfg, c.simPre, { partnerPct: std, topaow: 1e9 }, c.preJ);
-          var grens = hlMax(kOP.standaard * aOP, kOP.opNa, kOP.t1);
+          var kOP = E.uitkeringen(cfg, c.simPre, { partnerPct: std, topaow: 0, tophlPct: th.maxPctOP }, c.preJ);
+          var grens = hlMax(kOP.standaard * aOP, kOP.opNa, kOP.t1, hlF(kOP));
           ok = ok && near(cap, grens, 1e-6 * Math.max(1, grens));
           return { verwacht: 'TOPHL stijgt tot ' + eur(grens) + ' en blijft dan vlak',
                    gemeten: 'TOPHL bij hoogste keuze ' + eur(cap), ok: ok };
@@ -498,8 +587,9 @@ button:disabled { opacity: 0.6; cursor: wait; }
       ['TOPAOW maximum per jaar', eur(cfg.topaow.maxPerJaar)],
       ['TOPAOW ondergrens OP', eur(cfg.topaow.ondergrensOP)],
       ['TOPAOW inkoopfactor', fmt(cfg.topaow.inkoopfactor)],
-      ['TOPHL maximum (van OP na TOPAOW)', pctFrac(cfg.tophl.maxPctOP)],
-      ['TOPHL inkoopfactor', fmt(cfg.tophl.inkoopfactor)],
+      ['TOPHL maximum (van OP na uitruil)', pctFrac(cfg.tophl.maxPctOP)],
+      ['TOPHL inkoopfactor per jaar looptijd', fmt(cfg.tophl.inkoopfactorPerJaar)],
+      ['TOPHL uiterlijk tot', fmt(cfg.tophl.jarenNaAOW) + ' jaar na AOW'],
       ['Partnerpensioen min / standaard / max', fmt(cfg.partnerpensioen.minPct) + '% / ' + fmt(cfg.partnerpensioen.standaardPct) + '% / ' + fmt(cfg.partnerpensioen.maxPct) + '%'],
       ['Partnerpensioen inkoopfactor', fmt(cfg.partnerpensioen.inkoopfactorNP)],
       ['Overrendement na RTS', pctFrac(cfg.rendement.overrendementNaRTS)]

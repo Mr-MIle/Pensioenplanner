@@ -106,10 +106,13 @@ window.PLANNER_CONFIG = {
   // Standaard eindigt het op de AOW-leeftijd als de pensioendatum ervoor ligt. Anders kiest de deelnemer een einde
   // tot uiterlijk jarenNaAOW jaar na de AOW-leeftijd. Maximum: 33% van het levenslange OP na uitruil, zodat het
   // levenslange OP plus TOPHL niet hoger wordt dan 133% van het levenslange OP.
+  // inkoopfactorPerJaar: kapitaal per euro per jaar TOPHL, per jaar looptijd. Hoe langer TOPHL loopt, hoe duurder het is:
+  // inkoopfactor = inkoopfactorPerJaar x looptijd in jaren (van de pensioendatum tot het einde, in hele maanden / 12).
+  // Vereenvoudigd: geen rente of sterfte.
   // Na het einde van TOPHL daalt het levenslange OP kapitaalneutraal met inkoopfactor x TOPHL / annuïteitsfactor.
   tophl: {
     maxPctOP: 0.33,
-    inkoopfactor: 5,
+    inkoopfactorPerJaar: 1,
     jarenNaAOW: 10
   },
 
