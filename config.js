@@ -45,7 +45,7 @@ window.PLANNER_CONFIG = {
     maxPensioengevendSalaris: 137000, // voltijd maximum per jaar (€), geïndexeerd met loon-inflatie
     aowLeeftijdMaanden: 804,          // AOW-leeftijd in maanden (804 = 67 jaar)
     eindLeeftijd: 100,                // rekenkundige horizon van de uitkeringsreeks, jaren
-    grafiekEindLeeftijd: 77,          // laatste leeftijd op de X-as van de uitkeringsgrafiek (jaren)
+    grafiekEindLeeftijd: 80,          // laatste leeftijd op de X-as van de uitkeringsgrafiek (jaren); na het uiterste einde van TOPHL (AOW + 10 jaar)
     standaardPensioenleeftijd: 65,    // startwaarde in de planner (jaren)
   },
 
