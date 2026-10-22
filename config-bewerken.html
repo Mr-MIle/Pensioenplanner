@@ -120,7 +120,10 @@ td input[type="text"] { min-width: 90px; }
     parttimepercentages: 'Parttimepercentages (vanaf datum)',
     vanaf: 'Vanaf (jjjj-mm)', percentage: 'Percentage (%)',
     rendement: 'Rendement',
-    overrendementNaRTS: 'Overrendement na RTS (fractie per jaar)',
+    nominaalRendement: 'Nominaal rendement, vóór RTS (fractie per jaar)',
+    rts: 'Rentetermijnstructuur (RTS)',
+    peildatum: 'Peildatum (jjjj-mm-dd)', bron: 'Bron',
+    spotrates: 'Spotrates (looptijd in jaren → fractie)',
     loonInflatie: 'Loon-inflatie (fractie per jaar)',
     inflatiePrijs: 'Prijsinflatie (fractie per jaar)',
     yFactor: 'Y-factor bandbreedte',
@@ -146,7 +149,7 @@ td input[type="text"] { min-width: 90px; }
 
   // Waarden als fractie (0,20 = 20%): hiernaast tonen we het percentage.
   var FRACTIE = ['premiepercentage', 'maxSchokJong', 'maxSchokOud', 'ondergrensFractie', 'kapitaalAandeelJong', 'kapitaalAandeelOud',
-                 'pensioenAandeelJong', 'pensioenAandeelOud', 'overrendementNaRTS', 'loonInflatie', 'inflatiePrijs', 'maxPctOP'];
+                 'pensioenAandeelJong', 'pensioenAandeelOud', 'nominaalRendement', 'spotrate', 'loonInflatie', 'inflatiePrijs', 'maxPctOP'];
 
   // Lijsten met rijen: kolommen en het model voor een nieuwe rij.
   var TABELLEN = {
@@ -165,7 +168,7 @@ td input[type="text"] { min-width: 90px; }
   };
 
   var SECTIE_VOLGORDE = ['calculatiedatum', 'deelnemers', 'standaardDeelnemer', 'pensioenreglement', 'parttimepercentages', 'rendement',
-                         'toedeelschaal', 'topaow', 'tophl', 'partnerpensioen', 'annuiteitsdelers', 'aowBrutoMaand', 'belasting', 'stabiliteit'];
+                         'rts', 'toedeelschaal', 'topaow', 'tophl', 'partnerpensioen', 'annuiteitsdelers', 'aowBrutoMaand', 'belasting', 'stabiliteit'];
   var OVERSLAAN = ['deelnemer'];
 
   // ---------- hulpfuncties ----------
@@ -222,6 +225,11 @@ td input[type="text"] { min-width: 90px; }
         return '<fieldset><legend>' + esc(LABELS[k]) + '</legend><div class="grid">' +
                Object.keys(v).map(function (a) { return veld(pk.concat([a]), v[a], a, 'Leeftijd ' + a); }).join('') + '</div></fieldset>';
       }
+      // Spotrates: één veld per looptijd, met het percentage ernaast.
+      if (k === 'spotrates' && isObj(v)) {
+        return '<fieldset><legend>' + esc(LABELS[k]) + '</legend><div class="grid">' +
+               Object.keys(v).map(function (a) { return veld(pk.concat([a]), v[a], 'spotrate', 'Looptijd ' + a + ' jaar'); }).join('') + '</div></fieldset>';
+      }
       if (isObj(v)) return '<fieldset><legend>' + esc(LABELS[k] || k) + '</legend><div class="grid">' + kinderen(v, pk) + '</div></fieldset>';
       return veld(pk, v, k);
     }).join('');
@@ -263,6 +271,14 @@ td input[type="text"] { min-width: 90px; }
     inkoop.forEach(function (x) { if (!(x[1] > 0)) fouten.push('Inkoopfactor ' + x[0] + ' moet groter dan 0 zijn.'); });
     if (cfg.topaow && (cfg.topaow.maxPerJaar < 0 || cfg.topaow.ondergrensOP < 0)) fouten.push('TOPAOW-bedragen mogen niet negatief zijn.');
     if (cfg.pensioenreglement && !(cfg.pensioenreglement.aowLeeftijdMaanden > 0)) fouten.push('AOW-leeftijd moet groter dan 0 zijn.');
+    var sp = cfg.rts && cfg.rts.spotrates;
+    if (!isObj(sp) || !Object.keys(sp).length) fouten.push('De RTS moet minstens één spotrate bevatten.');
+    else {
+      var lt = Object.keys(sp).map(Number).sort(function (a, b) { return a - b; });
+      if (lt.some(function (x, i) { return i > 0 && x !== lt[i - 1] + 1; })) fouten.push('De looptijden in de RTS moeten aaneengesloten zijn (1, 2, 3, ...).');
+      if (lt.some(function (x) { return Math.abs(sp[x]) > 0.2; })) waarschuwingen.push('Een spotrate is groter dan 20%. Spotrates zijn fracties: 3,4% = 0,034.');
+    }
+    if (cfg.rendement && Math.abs(cfg.rendement.nominaalRendement) > 0.3) waarschuwingen.push('Het nominale rendement is een fractie: 5,2% = 0,052.');
 
     var pp = cfg.partnerpensioen;
     if (pp && !(pp.minPct <= pp.standaardPct && pp.standaardPct <= pp.maxPct && pp.maxPct <= 100 && pp.minPct >= 0)) {

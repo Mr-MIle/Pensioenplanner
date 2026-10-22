@@ -578,7 +578,7 @@
     <p>Dit is een proof of concept met fictieve data. De getallen zijn dus niet bedoeld als advies of als officiële berekening.</p>
     <details class="uitleg">
       <summary>Hoe rekenen wij?</summary>
-      <p><strong>Kapitaal.</strong> Elke maand wordt uw premie bijgeschreven. Het kapitaal groeit met een vast overrendement van 2% per jaar, na de correctie voor de rentetermijnstructuur (RTS). Er is geen beschermingsrendement: bij tegenvallende beurzen kan het kapitaal ook dalen.</p>
+      <p><strong>Kapitaal.</strong> Elke maand wordt uw premie bijgeschreven. Het kapitaal groeit met een overrendement: een vast nominaal rendement per jaar, voor iedereen gelijk, min de spotrate uit de rentetermijnstructuur (RTS) van DNB. Welke spotrate dat is, hangt af van het aantal jaren tot het jaar waarin u de AOW-leeftijd bereikt. Hoe verder weg uw AOW, hoe langer de looptijd. Er is geen beschermingsrendement: bij tegenvallende beurzen kan het kapitaal ook dalen.</p>
       <p><strong>Toedeelfactor.</strong> Het rendement wordt per leeftijd aangepast met een toedeelfactor. Die is 1,05 tot 50 jaar en daalt daarna lineair naar 0,45 op 67 jaar. Naarmate u ouder wordt, krijgt u dus een kleiner deel van het rendement toegerekend.</p>
       <p><strong>Maandbedrag.</strong> Het kapitaal wordt omgerekend naar een maandelijks pensioen met een fictieve deler die afhangt van uw leeftijd. Hoe ouder u bent bij de ingang, hoe lager de deler en hoe hoger het maandbedrag.</p>
       <p><strong>Nominaal en reëel.</strong> Nominale bedragen zijn in de euro's van dat moment. Reële bedragen zijn omgerekend naar euro's van vandaag, met 2% prijsinflatie per jaar.</p>
@@ -937,7 +937,8 @@
     $('melding').textContent = melding;
     $('melding').hidden = !melding;
 
-    var rente = C.rendement.overrendementNaRTS;
+    var orr = E.overrendement(C);
+    var rente = orr.rente;
     var wl = parttimeLijst();
     var sk = Math.max(0, Number($('startkapitaal').value) || 0);
     var marge = E.scenarioMarge(C, pensMaanden);
@@ -1004,7 +1005,8 @@
     // Kapitaal van het gekozen scenario (basis, pessimistisch of optimistisch).
     var selSim = scenario === 'pess' ? simLo : (scenario === 'opt' ? simHi : sim);
     var pct2 = new Intl.NumberFormat('nl-NL', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-    $('scenarioRente').textContent = 'Overrendement per jaar na RTS: basis ' + pct2.format(rente * 100) + '%, pessimistisch ' +
+    $('scenarioRente').textContent = 'Overrendement per jaar na RTS: ' + pct2.format(orr.nominaal * 100) + '% nominaal min ' +
+      pct2.format(orr.spot * 100) + '% spotrate (looptijd ' + orr.looptijd + ' jaar, tot het AOW-jaar ' + orr.aowJaar + '). Basis ' + pct2.format(rente * 100) + '%, pessimistisch ' +
       pct2.format((rente - marge) * 100) + '%, optimistisch ' + pct2.format((rente + marge) * 100) + '%.';
 
     var pensLabel = E.maandLabel(birthIdx + gekozenMaanden);
@@ -1460,7 +1462,7 @@
   }
 
   function renderVergelijk() {
-    var rente = C.rendement.overrendementNaRTS;
+    var rente = E.overrendement(C).rente;
     var sk = Math.max(0, Number($('startkapitaal').value) || 0);
     var lijst = allePlannen();
     var aantalVast = plannen().length;

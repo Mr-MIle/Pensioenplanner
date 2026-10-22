@@ -1,7 +1,8 @@
 /*
   Pensioenplanner: rekenkern. Bevat alleen rekenlogica, geen beeld.
   Bijschrijving per maand = kapitaal x ((1 + overrendement)^(1/12) - 1) x toedeelfactor van de leeftijd in die maand.
-  Het overrendement is het vaste rendement NA RTS-correctie. Er is geen beschermingsrendement.
+  Het overrendement (na RTS-correctie) = vast nominaal rendement - spotrate uit de RTS bij de looptijd tot het AOW-jaar
+  (zie overrendement()). Het verschilt dus per deelnemer. Er is geen beschermingsrendement.
   Premie = (min(salaris, maximum) x loonindex - franchise x prijsindex) x parttimepercentage x premiepercentage / 12,
   bijgeschreven aan het eind van de maand. Die premie levert pas vanaf de volgende maand rendement op.
   Uitkering: ouderdomspensioen per jaar = kapitaal / annuiteitsdeler. TOPAOW (AOW-overbrugging) loopt tot de AOW-leeftijd.
@@ -297,6 +298,30 @@
   }
 
   // Bandbreedte C = Y / sqrt((A - B) / 12), A = pensioenmaanden, B = leeftijd op de calculatiedatum in maanden.
+  // Spotrate bij een looptijd in jaren: buiten de tabel de kortste of langste looptijd, ertussen lineair
+  // tussen de dichtstbijzijnde looptijden (ook als de tabel gaten heeft).
+  function spotrate(looptijd, tabel) {
+    const keys = Object.keys(tabel).map(Number).sort((a, b) => a - b);
+    if (looptijd <= keys[0]) return tabel[keys[0]];
+    if (looptijd >= keys[keys.length - 1]) return tabel[keys[keys.length - 1]];
+    let i = 0;
+    while (keys[i + 1] < looptijd) i++;
+    const lo = keys[i], hi = keys[i + 1];
+    return tabel[lo] + (tabel[hi] - tabel[lo]) * (looptijd - lo) / (hi - lo);
+  }
+
+  // Overrendement na RTS-correctie voor de deelnemer in cfg.deelnemer.
+  // Looptijd = jaar waarin de AOW-leeftijd wordt bereikt - jaar van de calculatiedatum (hele jaren).
+  // Spotrate uit cfg.rts.spotrates bij die looptijd; buiten de tabel de kortste of langste looptijd, ertussen lineair.
+  function overrendement(cfg) {
+    const calcJaar = Math.floor(maandIndex(cfg.calculatiedatum) / 12);
+    const aowJaar = Math.floor((maandIndex(cfg.deelnemer.geboortedatum) + cfg.pensioenreglement.aowLeeftijdMaanden) / 12);
+    const looptijd = aowJaar - calcJaar;
+    const spot = spotrate(looptijd, cfg.rts.spotrates);
+    const nominaal = cfg.rendement.nominaalRendement;
+    return { aowJaar: aowJaar, calcJaar: calcJaar, looptijd: looptijd, spot: spot, nominaal: nominaal, rente: nominaal - spot };
+  }
+
   function scenarioMarge(cfg, pensioenLeeftijdMaanden) {
     const calc = maandIndex(cfg.calculatiedatum);
     const birth = maandIndex(cfg.deelnemer.geboortedatum);
@@ -315,6 +340,7 @@
     uitkeringen: uitkeringen,
     jaarlijkseUitkering: jaarlijkseUitkering,
     uitkeringsreeks: uitkeringsreeks,
+    overrendement: overrendement,
     scenarioMarge: scenarioMarge,
     nettoJaar: nettoJaar
   };

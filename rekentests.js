@@ -12,7 +12,7 @@ const pp = C.partnerpensioen;
 const aowM = reg.aowLeeftijdMaanden;
 const birth = E.maandIndex(C.deelnemer.geboortedatum);
 const calc = E.maandIndex(C.calculatiedatum);
-const rente = C.rendement.overrendementNaRTS;
+const rente = E.overrendement(C).rente;
 const std = C.parttimepercentages.map(r => ({ vanaf: r.vanaf, percentage: r.percentage }));
 const results = [];
 function check(name, ok, detail) { results.push((ok ? 'PASS ' : 'FAIL ') + name + (detail !== undefined ? '  [' + detail + ']' : '')); }
@@ -262,6 +262,24 @@ check('13 startkapitaal 0 geen NaN', isFinite(simE.kapitaal) && simE.kapitaal >=
 // 14. Negatief rendement: geen NaN, lager kapitaal
 const simNeg = E.simuleer(C, { pensioenLeeftijdMaanden: aowM, rente: -0.02, deeltijd: null, parttimepercentages: std, startkapitaal: 80000 });
 check('14 negatief rendement geeft lager kapitaal, geen NaN', isFinite(simNeg.kapitaal) && simNeg.kapitaal < simA.kapitaal);
+
+// 17. Overrendement = nominaal rendement - spotrate bij looptijd (AOW-jaar - jaar calculatiedatum)
+const metGeboorte = g => Object.assign({}, C, { deelnemer: Object.assign({}, C.deelnemer, { geboortedatum: g }) });
+const calcJaar = Math.floor(calc / 12);
+const o15 = E.overrendement(metGeboorte('1983-05-01'));   // AOW 2050-05: voorbeeld uit de specificatie
+check('17a voorbeeld AOW 2050: looptijd 2050 - ' + calcJaar, o15.aowJaar === 2050 && o15.looptijd === 2050 - calcJaar, o15.looptijd);
+check('17b spotrate uit de tabel bij die looptijd', near(o15.spot, C.rts.spotrates[o15.looptijd]), o15.spot);
+check('17c overrendement = nominaal - spotrate', near(o15.rente, C.rendement.nominaalRendement - o15.spot), o15.rente.toFixed(5));
+C.deelnemers.forEach(d => {
+  const o = E.overrendement(metGeboorte(d.geboortedatum));
+  const verwacht = Math.floor((E.maandIndex(d.geboortedatum) + aowM) / 12) - calcJaar;
+  check('17d ' + d.naam + ': looptijd ' + verwacht + ' jaar', o.looptijd === verwacht && near(o.rente, C.rendement.nominaalRendement - C.rts.spotrates[verwacht]), (o.rente * 100).toFixed(3) + '%');
+});
+const oOud = E.overrendement(metGeboorte('1955-01-01'));   // AOW-jaar vóór de calculatiedatum: kortste looptijd
+check('17e looptijd onder de tabel gebruikt de kortste looptijd', oOud.looptijd < 1 && near(oOud.spot, C.rts.spotrates[1]), oOud.looptijd);
+const C99 = Object.assign({}, C, { rts: { spotrates: { 1: 0.01, 3: 0.03 } } });
+const o99 = E.overrendement(Object.assign({}, C99, { deelnemer: Object.assign({}, C.deelnemer, { geboortedatum: (calcJaar + 2 - 67) + '-01-01' }) }));
+check('17f looptijd 2 tussen 1 en 3 wordt lineair geïnterpoleerd', o99.looptijd === 2 && near(o99.spot, 0.02), o99.spot);
 
 results.forEach(r => console.log(r));
 console.log('\nFAILS: ' + results.filter(r => r.startsWith('FAIL')).length + ' / ' + results.length);

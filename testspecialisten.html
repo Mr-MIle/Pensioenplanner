@@ -128,7 +128,8 @@ button:disabled { opacity: 0.6; cursor: wait; }
     // Pensioendatum voor de TOPAOW/TOPHL-tests: 5 jaar voor de AOW, minimaal 2 jaar na nu.
     var preJ = Math.floor(aowJ) - 5;
     if (preJ < Math.ceil(ageNow) + 2) preJ = Math.ceil(ageNow) + 2;
-    var rente = cfg.rendement.overrendementNaRTS;
+    var orr = E.overrendement(cfg);
+    var rente = orr.rente;
     function sim(pensJ, extra) {
       return E.simuleer(cfg, Object.assign({
         pensioenLeeftijdMaanden: Math.round(pensJ * 12),
@@ -138,7 +139,7 @@ button:disabled { opacity: 0.6; cursor: wait; }
         startkapitaal: cfg.deelnemer.startkapitaal
       }, extra || {}));
     }
-    var c = { cfg: cfg, E: E, reg: reg, birth: birth, calc: calc, aowJ: aowJ, preJ: preJ, rente: rente, sim: sim };
+    var c = { cfg: cfg, E: E, reg: reg, birth: birth, calc: calc, aowJ: aowJ, preJ: preJ, rente: rente, orr: orr, sim: sim };
     c.simAOW = sim(aowJ);
     c.simPre = sim(preJ);
     return c;
@@ -592,7 +593,9 @@ button:disabled { opacity: 0.6; cursor: wait; }
       ['TOPHL uiterlijk tot', fmt(cfg.tophl.jarenNaAOW) + ' jaar na AOW'],
       ['Partnerpensioen min / standaard / max', fmt(cfg.partnerpensioen.minPct) + '% / ' + fmt(cfg.partnerpensioen.standaardPct) + '% / ' + fmt(cfg.partnerpensioen.maxPct) + '%'],
       ['Partnerpensioen inkoopfactor', fmt(cfg.partnerpensioen.inkoopfactorNP)],
-      ['Overrendement na RTS', pctFrac(cfg.rendement.overrendementNaRTS)]
+      ['Nominaal rendement', pctFrac(cfg.rendement.nominaalRendement)],
+      ['RTS-spotrate (peildatum ' + cfg.rts.peildatum + ', looptijd ' + c.orr.looptijd + ' jaar)', pctFrac(c.orr.spot)],
+      ['Overrendement na RTS', pctFrac(c.orr.rente)]
     ];
     document.getElementById('configlijst').innerHTML = items.map(function (it) {
       return '<div><dt>' + esc(it[0]) + '</dt><dd>' + esc(it[1]) + '</dd></div>';

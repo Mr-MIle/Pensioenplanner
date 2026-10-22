@@ -158,6 +158,7 @@
   var eur = K.eur;
   function $(id) { return document.getElementById(id); }
   var nf2 = new Intl.NumberFormat('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+  var pct3 = new Intl.NumberFormat('nl-NL', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
   var basis = 'netto';
   var eindHandmatig = false;
 
@@ -287,6 +288,7 @@
       }).join('') +
       '<tr class="totaal"><td>Kapitaal op ' + res.tekst.pensioendatum + '</td><td class="r num">' + eur(res.kapitaal) + '</td><td class="r num">100%</td></tr></tbody></table>';
 
+    var o = res.overrendement;
     $('parameters').innerHTML = '<table><tbody>' +
       '<tr><td>Annuïteitsdeler OP (' + res.jaar + ' jaar)</td><td class="r num">' + nf2.format(res.aOP) + '</td></tr>' +
       '<tr><td>Inkoopfactor partnerpensioen</td><td class="r num">' + nf2.format(C.partnerpensioen.inkoopfactorNP) + '</td></tr>' +
@@ -295,8 +297,11 @@
       '<tr><td>Looptijd TOPHL</td><td class="r num">' + (u.t2 > 0 ? nf2.format(u.looptijdHL) + ' jr' : '–') + '</td></tr>' +
       '<tr><td>Inkoopfactor TOPHL (' + nf2.format(C.tophl.inkoopfactorPerJaar) + ' × looptijd)</td><td class="r num">' + (u.t2 > 0 ? nf2.format(u.inkoopHL) : '–') + '</td></tr>' +
       '<tr><td>Verlaging OP na einde TOPHL</td><td class="r num">' + (u.R > 0 ? eur(u.R) + '/jr' : '–') + '</td></tr>' +
-      '<tr><td>Overrendement na RTS</td><td class="r num">' + nf2.format(C.rendement.overrendementNaRTS * 100) + '%</td></tr>' +
-      '</tbody></table><p class="noot">Bedragen in de tabel zijn bruto per jaar. Fictieve parameters uit config.js.</p>';
+      '<tr><td>Nominaal rendement</td><td class="r num">' + pct3.format(o.nominaal * 100) + '%</td></tr>' +
+      '<tr><td>Looptijd RTS (AOW-jaar ' + o.aowJaar + ' − ' + o.calcJaar + ')</td><td class="r num">' + o.looptijd + ' jr</td></tr>' +
+      '<tr><td>Spotrate RTS bij ' + Math.max(1, o.looptijd) + ' jr (peildatum ' + C.rts.peildatum.split('-').reverse().join('-') + ')</td><td class="r num">− ' + pct3.format(o.spot * 100) + '%</td></tr>' +
+      '<tr class="totaal"><td>Overrendement na RTS</td><td class="r num">' + pct3.format(o.rente * 100) + '%</td></tr>' +
+      '</tbody></table><p class="noot">Bedragen in de tabel zijn bruto per jaar. Spotrates uit de RTS van DNB; overige parameters fictief, uit config.js.</p>';
   }
 
   vulDeelnemers();

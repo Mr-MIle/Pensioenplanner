@@ -60,7 +60,8 @@
     var pensIdx = birth + pensM;
     var voorAow = pensM < AOW_M;
     var partnerPct = k.partnerPct === undefined ? C.partnerpensioen.standaardPct : Number(k.partnerPct);
-    var rente = C.rendement.overrendementNaRTS;
+    var orr = E.overrendement(C);
+    var rente = orr.rente;
     var sk = C.deelnemer.startkapitaal;
     var sim = E.simuleer(C, { pensioenLeeftijdMaanden: pensM, rente: rente, deeltijd: null, parttimepercentages: parttimeLijst(), startkapitaal: sk });
 
@@ -101,7 +102,7 @@
       k: k, C: C, deelnemer: deelnemer(k.deelnemer), birth: birth, jaar: jaar, pensM: pensM, pensIdx: pensIdx,
       voorAow: voorAow, partnerPct: partnerPct, sim: sim, u: u, basis: basis, lhk: lhk,
       maxT1: maxHeel, tophlMogelijk: tophlMogelijk, eindMinM: eindMinM, eindMaxM: eindMaxM, eindStdM: eindStdM,
-      eindKeuze: eindKeuze, pctHL: pctHL, aOP: aOP,
+      eindKeuze: eindKeuze, pctHL: pctHL, aOP: aOP, overrendement: orr,
       // Bedragen per maand in de gekozen basis, zoals in het resultaatpaneel van de demo.
       maand: maand,
       eerst: maand(u.pre),                        // vanaf de pensioendatum
