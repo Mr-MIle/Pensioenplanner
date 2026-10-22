@@ -472,7 +472,7 @@
       <div class="seg-groep" role="group" aria-label="Nominaal of reëel bedragen"><button class="seg actief" type="button" data-reeel="nom" aria-pressed="true">Nominaal</button><button class="seg" type="button" data-reeel="reeel" aria-pressed="false">Reëel</button></div>
       <button class="link-knop mobiel" type="button" id="grafiekToggle" aria-expanded="true">Verberg grafiek</button>
     </div>
-    <p class="muted" style="margin: 6px 0 0">Werkinkomen, pensioen en AOW samen, gemiddeld per maand per levensjaar. De grafiek volgt de keuzes uit de wizard en de netto/bruto-keuze.</p>
+    <p class="muted" style="margin: 6px 0 0">Werkinkomen, pensioen en AOW samen, gemiddeld per maand per levensjaar. De grafiek volgt de keuzes uit de wizard en de netto/bruto-keuze. <span id="reeelUitleg"></span></p>
     <label class="grafiek-keuze"><input id="toonGrens" type="checkbox"> Toon de 70%-grens en de jaren daaronder</label>
     <div id="tijdlijnGrafiek" style="margin-top: 12px"></div>
     <div class="legenda">
@@ -631,6 +631,9 @@
     return E.maandLabel(birthIdx + m) + ', op ' + leeftijdTekst(m);
   }
   var REEEL = false;
+  // Standaard nominaal of reëel volgt de pensioendatum (zie render); na een klik op de schakelaar telt de eigen keuze, tot een reset.
+  var reeelHandmatig = false;
+  var REEEL_GRENS_MAANDEN = 24;
   var wijzigd = false, laatsteNom = null, vorigeNom = null;   // voor de stippellijn 'vorige keuze'   // één schakelaar voor alle bedragen: false = nominaal, true = reëel (euro's van vandaag)
   var laatsteBerekening = null;   // uitkomsten van de laatste render, voor de inkomenstijdlijn   // index van de gekozen deelnemer, voor de link naar bij-en-afschrijvingen
   var scenario = 'basis';   // basis | pess | opt: welk overrendement de kapitaalgrafiek en kapitaalcijfers gebruiken
@@ -686,6 +689,7 @@
     $('topaow').value = 0;
     $('tophl').value = 0;
     tophlEindHandmatig = false;
+    reeelHandmatig = false;
     var std = C.pensioenreglement.standaardPensioenleeftijd;
     $('leeftijd').value = $('leeftijd').querySelector('option[value="' + std + '"]') ? std : $('leeftijd').options[0].value;
     $('deelPct').value = 40;
@@ -841,6 +845,7 @@
     document.querySelectorAll('[data-reeel]').forEach(function (b) {
       b.addEventListener('click', function () {
         REEEL = b.getAttribute('data-reeel') === 'reeel';
+        reeelHandmatig = true;
         syncReeel();
         render();
       });
@@ -921,6 +926,19 @@
     var birthIdx = E.maandIndex(C.deelnemer.geboortedatum);
     var pensIdx = birthIdx + pensMaanden;
     var voorAow = pensMaanden < C.pensioenreglement.aowLeeftijdMaanden;
+
+    // Standaardweergave: pensioendatum (bij deeltijd de ingangsdatum daarvan) binnen 2 jaar na de calculatiedatum
+    // toont nominale bedragen, verder weg reële bedragen. Een eigen keuze met de schakelaar blijft staan.
+    var maandenTotPensioen = birthIdx + gekozenMaanden - calcIdx;
+    if (!reeelHandmatig) {
+      var reeelStd = maandenTotPensioen > REEEL_GRENS_MAANDEN;
+      if (REEEL !== reeelStd) { REEEL = reeelStd; syncReeel(); }
+      $('reeelUitleg').textContent = REEEL
+        ? 'Bedragen staan standaard reëel (in euro’s van vandaag), omdat uw pensioen over meer dan 2 jaar ingaat.'
+        : 'Bedragen staan standaard nominaal, omdat uw pensioen binnen 2 jaar ingaat.';
+    } else {
+      $('reeelUitleg').textContent = '';
+    }
 
     // Deeltijd
     var deel = null;
