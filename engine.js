@@ -115,8 +115,10 @@
         inleg: inleg,
         over: over,
         eind: S,
-        reeel: S / Math.pow(1 + pi, (i - calc) / 12),
-        defl: 1 / Math.pow(1 + pi, (i - calc) / 12),
+        // Eind = kapitaal aan het einde van maand i (= begin van maand i + 1): reëel daarom over i + 1 - calc maanden,
+        // zodat de laatste rij gelijk is aan kapitaal / inflIdx op de pensioendatum.
+        reeel: S / Math.pow(1 + pi, (i + 1 - calc) / 12),
+        defl: 1 / Math.pow(1 + pi, (i + 1 - calc) / 12),
         werk: werk,
         schema: schema,
         wijziging: schema !== vorigSchema,

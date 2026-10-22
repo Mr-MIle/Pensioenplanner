@@ -224,11 +224,12 @@ check('7b deeltijd verlaagt werk met (1-pct)', dRow && near(dRow.werk, 1 * (1 - 
 check('7c deeltijd: deelJaar > 0', simD.deelJaar > 0, simD.deelJaar.toFixed(2));
 check('7d kapitaal na deeltijd lager dan zonder deeltijd', simD.kapitaal < simA.kapitaal);
 
-// 8. Reële bedragen: reeel = eind / (1+pi)^(t)
+// 8. Reële bedragen: reeel = eind / (1+pi)^(t), t = maanden tot het einde van de maand (de laatste rij eindigt op de pensioendatum)
 const pi = C.rendement.inflatiePrijs;
 const rowLast = simA.rows[simA.rows.length - 1];
-const expectReeel = rowLast.eind / Math.pow(1 + pi, (simA.rows.length - 1) / 12);
-check('8 reëel eindkapitaal consistent', near(rowLast.reeel, expectReeel, 1e-3 * expectReeel), rowLast.reeel.toFixed(0) + ' vs ' + expectReeel.toFixed(0));
+const expectReeel = rowLast.eind / Math.pow(1 + pi, simA.rows.length / 12);
+check('8 reëel eindkapitaal consistent', near(rowLast.reeel, expectReeel, 1e-6 * expectReeel), rowLast.reeel.toFixed(0) + ' vs ' + expectReeel.toFixed(0));
+check('8c laatste rij reëel = kapitaal / inflIdx (zelfde als het kengetal)', near(rowLast.reeel, simA.kapitaal / simA.inflIdx, 0.01), rowLast.reeel.toFixed(2) + ' vs ' + (simA.kapitaal / simA.inflIdx).toFixed(2));
 check('8b inflIdx op pensioendatum > 1', simA.inflIdx > 1, simA.inflIdx.toFixed(4));
 
 // 9. Toedeelfactor: factorVoor tot leeftijdStart, factorNa vanaf leeftijdEind, lineair daartussen

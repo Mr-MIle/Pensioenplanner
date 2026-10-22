@@ -383,11 +383,12 @@ button:disabled { opacity: 0.6; cursor: wait; }
           return { verwacht: 'afwijking onder € 0,01', gemeten: 'afwijking ' + fmt(w), ok: w < 0.01 };
         } },
       { id: 'OP-02', groep: 'Opbouw en deeltijd', titel: 'Reële eindwaarde klopt met prijsinflatie',
-        uitleg: 'Reëel = nominaal / (1 + prijsinflatie)^jaren.',
+        uitleg: 'Reëel = nominaal / (1 + prijsinflatie)^jaren, gerekend tot het einde van de maand. De laatste maand eindigt op de pensioendatum, dus gelijk aan het reële kapitaal in de planner.',
         run: function () {
-          var rows = c.simAOW.rows, last = rows[rows.length - 1], n = rows.length - 1;
+          var rows = c.simAOW.rows, last = rows[rows.length - 1], n = rows.length;
           var exp = last.eind / Math.pow(1 + cfg.rendement.inflatiePrijs, n / 12);
-          return { verwacht: eur(exp), gemeten: eur(last.reeel), ok: near(last.reeel, exp) };
+          var kengetal = c.simAOW.kapitaal / c.simAOW.inflIdx;
+          return { verwacht: eur(exp), gemeten: eur(last.reeel), ok: near(last.reeel, exp) && near(last.reeel, kengetal) };
         } },
       { id: 'OP-03', groep: 'Opbouw en deeltijd', titel: 'Deeltijd onttrekt het ingestelde percentage',
         uitleg: 'Testinvoer: 40% deeltijd na 12 maanden. Werk daalt met 40%.',

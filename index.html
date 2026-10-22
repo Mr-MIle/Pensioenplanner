@@ -1142,11 +1142,12 @@
     $('legendaKapitaal').hidden = !toonK;
     $('legKapStip').textContent = kapRe ? 'Nominaal totaal' : 'Reëel totaal';
 
-    // Maandtabel
-    $('tInleg').textContent = eur0.format(somBedrag(sim.rows, 'inleg'));
-    $('tOver').textContent = eur0.format(somBedrag(sim.rows, 'over'));
+    // Maandtabel: altijd nominaal, met de reële eindwaarde in een eigen kolom. Volgt de nominaal/reëel-schakelaar niet.
+    var somNom = function (veld) { return sim.rows.reduce(function (a, r) { return a + r[veld]; }, 0); };
+    $('tInleg').textContent = eur0.format(somNom('inleg'));
+    $('tOver').textContent = eur0.format(somNom('over'));
     $('tabel').innerHTML = sim.rows.map(function (r) {
-      var k = REEEL ? r.defl : 1;
+      var k = 1;
       return '<tr class="' + (r.wijziging ? 'wijz' : '') + '">' +
         '<td>' + r.maand + '</td>' +
         '<td>' + r.leeftijd + '</td>' +
