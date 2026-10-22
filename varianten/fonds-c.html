@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fonds C · Keuzes vergelijken</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700&family=Instrument+Sans:wght@500;600&display=swap">
+<link rel="stylesheet" href="balk.css">
+<style>
+  :root {
+    color-scheme: light;
+    --bg: #f3f1fb; --kaart: #ffffff; --inkt: #1d1640; --zacht: #6a6390; --lijn: #dcd6f2;
+    --paars: #5b3fd1; --paars-zacht: #ece7ff; --groen: #138a66; --groen-zacht: #e2f5ec; --rood: #c2412d; --rood-zacht: #fdeae6;
+    --s1: #8f86b8; --s2: #5b3fd1; --s3: #18a37a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--inkt); font: 15px/1.55 "Manrope", system-ui, sans-serif; }
+  .num { font-variant-numeric: tabular-nums; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 28px 48px; }
+  .kop { display: flex; align-items: center; gap: 14px; padding: 22px 0 6px; }
+  .logo { display: flex; align-items: center; gap: 10px; font: 700 20px/1 "Space Grotesk", sans-serif; }
+  .logo .merk { width: 34px; height: 34px; border-radius: 10px; background: var(--paars); color: #fff; display: grid; place-items: center; transform: rotate(-6deg); }
+  h1 { font: 700 36px/1.15 "Space Grotesk", sans-serif; margin: 18px 0 6px; letter-spacing: -.02em; }
+  .intro { color: var(--zacht); margin: 0 0 22px; max-width: 760px; font-size: 16px; }
+  .balk { display: flex; flex-wrap: wrap; gap: 14px 22px; align-items: end; background: var(--kaart); border: 1px solid var(--lijn); border-radius: 16px; padding: 14px 18px; margin-bottom: 22px; }
+  .veld { display: grid; gap: 4px; }
+  .veld label, .veld .lbl { font-size: 12px; font-weight: 600; color: var(--zacht); text-transform: uppercase; letter-spacing: .05em; }
+  select { font: inherit; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--lijn); background: #fff; color: var(--inkt); min-width: 120px; }
+  select:focus-visible, button:focus-visible, input:focus-visible { outline: 3px solid var(--paars); outline-offset: 2px; }
+  .seg { display: inline-flex; border: 1px solid var(--lijn); border-radius: 10px; overflow: hidden; }
+  .seg button { border: 0; background: #fff; font: inherit; font-weight: 600; padding: 8px 14px; cursor: pointer; color: var(--zacht); }
+  .seg button[aria-pressed="true"] { background: var(--inkt); color: #fff; }
+  .kaarten { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; align-items: stretch; }
+  @media (max-width: 1000px) { .kaarten { grid-template-columns: 1fr; } }
+  .kaart { background: var(--kaart); border: 2px solid var(--lijn); border-radius: 20px; padding: 20px; display: flex; flex-direction: column; gap: 12px; transition: border-color .15s, box-shadow .15s; }
+  .kaart.gekozen { border-color: var(--paars); box-shadow: 0 18px 40px -24px rgba(91,63,209,.6); }
+  .kaart.uit { opacity: .55; }
+  .kaart .label { display: inline-flex; align-self: flex-start; gap: 6px; align-items: center; font-size: 12px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--c); }
+  .kaart .label::before { content: ""; width: 10px; height: 10px; border-radius: 50%; background: var(--c); }
+  .kaart h2 { margin: 0; font: 700 22px/1.2 "Space Grotesk", sans-serif; }
+  .kaart .wat { margin: 0; color: var(--zacht); min-height: 46px; }
+  .bedragen { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .bedrag { background: var(--bg); border-radius: 12px; padding: 10px 12px; }
+  .bedrag .w { font: 700 24px/1.1 "Space Grotesk", sans-serif; }
+  .bedrag .t { font-size: 12px; color: var(--zacht); }
+  .verschil { display: flex; flex-wrap: wrap; gap: 6px; min-height: 28px; }
+  .chip { padding: 3px 10px; border-radius: 99px; font-size: 13px; font-weight: 600; }
+  .chip.plus { background: var(--groen-zacht); color: var(--groen); }
+  .chip.min { background: var(--rood-zacht); color: var(--rood); }
+  .chip.nul { background: var(--paars-zacht); color: var(--paars); }
+  .mini svg { display: block; width: 100%; height: auto; }
+  .instel { display: grid; gap: 4px; padding-top: 10px; border-top: 1px dashed var(--lijn); }
+  .instel .boven { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; }
+  .instel input[type=range] { width: 100%; accent-color: var(--paars); }
+  .instel small { color: var(--zacht); font-size: 12px; }
+  .kies { margin-top: auto; border: 2px solid var(--paars); background: #fff; color: var(--paars); font: inherit; font-weight: 700; border-radius: 12px; padding: 10px; cursor: pointer; }
+  .kaart.gekozen .kies { background: var(--paars); color: #fff; }
+  .kies:disabled { border-color: var(--lijn); color: var(--zacht); cursor: not-allowed; }
+  .samen { margin-top: 22px; display: grid; grid-template-columns: 2fr 1fr; gap: 18px; }
+  @media (max-width: 1000px) { .samen { grid-template-columns: 1fr; } }
+  .vlak { background: var(--kaart); border: 1px solid var(--lijn); border-radius: 20px; padding: 18px 20px; }
+  .vlak h3 { margin: 0 0 10px; font: 700 17px/1.2 "Space Grotesk", sans-serif; }
+  .vlak svg { display: block; width: 100%; height: auto; }
+  .legenda { display: flex; gap: 16px; flex-wrap: wrap; font-size: 13px; color: var(--zacht); margin-top: 8px; }
+  .legenda span::before { content: ""; display: inline-block; width: 16px; height: 3px; border-radius: 2px; background: var(--c); margin-right: 6px; vertical-align: 3px; }
+  .advies { display: grid; gap: 10px; align-content: start; }
+  #keuze { display: grid; gap: 10px; }
+  .advies p { margin: 0; }
+  .advies .groot { font: 700 26px/1.15 "Space Grotesk", sans-serif; color: var(--paars); }
+  .noot { color: var(--zacht); font-size: 13px; }
+</style>
+</head>
+<body>
+<div class="vbalk" role="region" aria-label="Ontwerpvariant">
+  <span class="vb-tag">Ontwerpvariant</span>
+  <span class="vb-naam"><strong>Fonds C</strong> · keuzes naast elkaar (3 van 3)</span>
+  <span class="vb-noot">Illustratief: zelfde rekenkern als de demo, fictieve huisstijl</span>
+  <span class="vb-rechts">
+    <nav aria-label="Varianten"><a href="fonds-a.html">A</a><a href="fonds-b.html">B</a><a href="fonds-c.html" aria-current="page">C</a></nav>
+    <a class="vb-link" href="index.html">Alle varianten</a>
+    <a class="vb-link" href="../index.html">&larr; Terug naar de demo</a>
+  </span>
+</div>
+
+<div class="wrap">
+  <header class="kop"><div class="logo"><span class="merk" aria-hidden="true">C</span> Fonds C</div></header>
+  <h1>Hoe wilt u uw pensioen verdelen?</h1>
+  <p class="intro">Drie manieren naast elkaar, met hetzelfde pensioenvermogen. Vergelijk wat u eerder extra krijgt en wat u daar later voor inlevert. Alle bedragen zijn voorbeeldbedragen.</p>
+
+  <div class="balk" role="group" aria-label="Uitgangspunten">
+    <div class="veld"><label for="deelnemer">Deelnemer</label><select id="deelnemer"></select></div>
+    <div class="veld"><label for="leeftijd">Stoppen met werken</label><select id="leeftijd"></select></div>
+    <div class="veld"><label for="partner">Partnerpensioen</label><select id="partner"></select></div>
+    <div class="veld"><span class="lbl">Bedragen</span>
+      <span class="seg" role="group" aria-label="Bruto of netto"><button type="button" data-basis="netto" aria-pressed="true">Netto</button><button type="button" data-basis="bruto" aria-pressed="false">Bruto</button></span>
+    </div>
+    <div class="veld"><span class="lbl">AOW</span><span class="seg" role="group" aria-label="AOW meetellen"><button type="button" data-aow="ja" aria-pressed="true">Inclusief</button><button type="button" data-aow="nee" aria-pressed="false">Exclusief</button></span></div>
+  </div>
+
+  <div class="kaarten">
+    <article class="kaart" id="k1" style="--c: var(--s1)">
+      <span class="label">Scenario 1</span>
+      <h2>Gelijkmatig</h2>
+      <p class="wat">Elke maand ongeveer hetzelfde, uw hele leven lang. Het uitgangspunt.</p>
+      <div class="uitkomst"></div>
+      <button class="kies" type="button" data-kies="1">Dit kies ik</button>
+    </article>
+    <article class="kaart" id="k2" style="--c: var(--s2)">
+      <span class="label">Scenario 2</span>
+      <h2>Overbruggen tot de AOW</h2>
+      <p class="wat">Extra pensioen tot uw AOW begint (TOPAOW). Daarna een lager levenslang pensioen.</p>
+      <div class="uitkomst"></div>
+      <div class="instel">
+        <div class="boven"><label for="t1">Extra per jaar (bruto)</label><span class="num" id="t1W"></span></div>
+        <input id="t1" type="range" min="0" step="500" value="0">
+        <small id="t1S"></small>
+      </div>
+      <button class="kies" type="button" data-kies="2">Dit kies ik</button>
+    </article>
+    <article class="kaart" id="k3" style="--c: var(--s3)">
+      <span class="label">Scenario 3</span>
+      <h2>Eerst meer, later minder</h2>
+      <p class="wat">Een tijdelijk hoger pensioen (TOPHL), tot een datum die u kiest. Daarna een lager levenslang pensioen.</p>
+      <div class="uitkomst"></div>
+      <div class="instel">
+        <div class="boven"><label for="t2">Hoeveel hoger</label><span class="num" id="t2W"></span></div>
+        <input id="t2" type="range" min="5" step="1" value="20">
+        <div class="boven" style="margin-top:6px"><label for="t2e">Tot</label><span class="num" id="t2eW"></span></div>
+        <input id="t2e" type="range" step="12">
+      </div>
+      <button class="kies" type="button" data-kies="3">Dit kies ik</button>
+    </article>
+  </div>
+
+  <div class="samen">
+    <section class="vlak" aria-labelledby="h-samen">
+      <h3 id="h-samen">Uw inkomen per maand, de drie scenario's over elkaar</h3>
+      <div id="lijnen"></div>
+      <div class="legenda"><span style="--c: var(--s1)">Gelijkmatig</span><span style="--c: var(--s2)">Overbruggen</span><span style="--c: var(--s3)">Eerst meer</span></div>
+    </section>
+    <section class="vlak advies" aria-labelledby="h-keuze" aria-live="polite">
+      <h3 id="h-keuze">Uw keuze</h3>
+      <div id="keuze"></div>
+    </section>
+  </div>
+</div>
+
+<script src="../config.js"></script>
+<script src="../config-overlay.js"></script>
+<script src="../engine.js"></script>
+<script src="kern.js"></script>
+<script>
+(function () {
+  'use strict';
+  var K = window.VariantKern, C = K.C;
+  var eur = K.eur;
+  function $(id) { return document.getElementById(id); }
+  var basis = 'netto', metAow = true, gekozen = 1, eindHandmatig = false, t1Max = true;
+  var KLEUR = { 1: '#8f86b8', 2: '#5b3fd1', 3: '#18a37a' };
+
+  function vul() {
+    C.deelnemers.forEach(function (d, i) { $('deelnemer').add(new Option(d.naam + ' (' + K.deelnemer(i).leeftijdJaar + ' jaar)', i)); });
+    $('deelnemer').value = C.standaardDeelnemer;
+    for (var p = C.partnerpensioen.maxPct; p >= C.partnerpensioen.minPct; p -= 10) $('partner').add(new Option(p === 0 ? 'Geen' : p + '%', p));
+    $('partner').value = C.partnerpensioen.standaardPct;
+    vulLeeftijd();
+  }
+  function vulLeeftijd() {
+    var sel = $('leeftijd'), oud = Number(sel.value);
+    var lijst = K.leeftijden(Number($('deelnemer').value));
+    sel.innerHTML = '';
+    lijst.forEach(function (j) { sel.add(new Option(j === K.AOW_JAREN ? j + ' jaar (AOW)' : j + ' jaar', j)); });
+    var std = C.pensioenreglement.standaardPensioenleeftijd;
+    sel.value = lijst.indexOf(oud) >= 0 ? oud : (lijst.indexOf(std) >= 0 ? std : lijst[0]);
+  }
+
+  function basisKeuze() {
+    var j = Number($('leeftijd').value);
+    return { deelnemer: Number($('deelnemer').value), start: j === K.AOW_JAREN ? 'aow' : 'ander', leeftijd: j,
+      partnerPct: Number($('partner').value), topaow: 0, tophlPct: 0, tophlEind: null, basis: basis };
+  }
+  function scenario(n) {
+    var k = basisKeuze();
+    if (n === 2) k.topaow = t1Max ? 'max' : Number($('t1').value);
+    if (n === 3) { k.tophlPct = Number($('t2').value); k.tophlEind = eindHandmatig ? Number($('t2e').value) : null; }
+    return K.bereken(k);
+  }
+
+  // Maandbedrag op een leeftijd (jaren) in de gekozen basis, met of zonder AOW.
+  function op(res, ageM) {
+    var j = K.E.jaarlijkseUitkering(res.u, ageM) + (metAow && ageM >= K.AOW_M ? C.aowBrutoMaand * 12 : 0);
+    return res.maand(j);
+  }
+  // Fasen voor de kaart: [{ tot (maanden), bedrag }]
+  function fasen(res) {
+    var grenzen = [res.pensM];
+    [res.u.aowM, res.u.t2 > 0 ? res.eindKeuze : null].forEach(function (g) { if (g && g > res.pensM && grenzen.indexOf(g) < 0) grenzen.push(g); });
+    grenzen.sort(function (a, b) { return a - b; });
+    return grenzen.map(function (g, i) { return { van: g, tot: grenzen[i + 1] || null, bedrag: op(res, g) }; });
+  }
+  function leeftijdKort(m) { return K.leeftijdTekst(m).replace(' en ', ' + ').replace(' maanden', ' mnd').replace(' maand', ' mnd'); }
+
+  function mini(res, kleur, max) {
+    var W = 320, H = 90, eindM = C.pensioenreglement.grafiekEindLeeftijd * 12, x0 = res.pensM;
+    var x = function (m) { return 6 + (W - 12) * (m - x0) / Math.max(1, eindM - x0); };
+    var y = function (v) { return H - 14 - (H - 26) * v / max; };
+    var pad = '', vorige = null;
+    for (var m = x0; m <= eindM; m += 1) {
+      var v = op(res, m);
+      if (vorige === null) pad = 'M' + x(m).toFixed(1) + ' ' + y(v).toFixed(1);
+      else if (v !== vorige) pad += ' H' + x(m).toFixed(1) + ' V' + y(v).toFixed(1);
+      vorige = v;
+    }
+    pad += ' H' + x(eindM).toFixed(1);
+    var aowX = x(K.AOW_M);
+    return '<svg viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">' +
+      (K.AOW_M > x0 ? '<line x1="' + aowX + '" x2="' + aowX + '" y1="4" y2="' + (H - 14) + '" stroke="#dcd6f2" stroke-dasharray="3 3"/><text x="' + (aowX + 3) + '" y="12" font-size="10" fill="#6a6390">AOW</text>' : '') +
+      '<path d="' + pad + '" fill="none" stroke="' + kleur + '" stroke-width="3" stroke-linejoin="round"/>' +
+      '<text x="6" y="' + (H - 2) + '" font-size="10" fill="#6a6390">' + Math.floor(x0 / 12) + ' jaar</text>' +
+      '<text x="' + (W - 6) + '" y="' + (H - 2) + '" font-size="10" fill="#6a6390" text-anchor="end">' + (eindM / 12) + ' jaar</text></svg>';
+  }
+
+  function render() {
+    var r = { 1: scenario(1), 2: scenario(2), 3: scenario(3) };
+    var b = r[1];
+
+    // Schuiven van scenario 2 en 3 op de grenzen van de rekenkern zetten.
+    var t1 = $('t1');
+    t1.max = b.maxT1;
+    if (t1Max) t1.value = b.maxT1;
+    $('t1W').textContent = eur(r[2].u.t1);
+    $('t1S').textContent = b.maxT1 > 0 ? 'Maximaal ' + eur(b.maxT1) + ' per jaar in deze situatie' : '';
+    $('t2').max = Math.round(C.tophl.maxPctOP * 100);
+    $('t2W').textContent = $('t2').value + '%';
+    var e = $('t2e');
+    if (b.tophlMogelijk) {
+      // Einde in hele jaren na de pensioendatum, binnen het toegestane bereik.
+      e.min = b.pensM + 12; e.max = b.eindMaxM;
+      e.value = r[3].eindKeuze;
+      $('t2eW').textContent = leeftijdKort(r[3].eindKeuze);
+    }
+
+    var magOverbrug = b.voorAow && b.maxT1 > 0;
+    $('k2').classList.toggle('uit', !magOverbrug);
+    t1.disabled = !magOverbrug;
+    $('k2').querySelector('.kies').disabled = !magOverbrug;
+    $('k3').classList.toggle('uit', !b.tophlMogelijk);
+    $('t2').disabled = e.disabled = !b.tophlMogelijk;
+    $('k3').querySelector('.kies').disabled = !b.tophlMogelijk;
+    if ((gekozen === 2 && !magOverbrug) || (gekozen === 3 && !b.tophlMogelijk)) gekozen = 1;
+
+    var maxBedrag = 0;
+    [1, 2, 3].forEach(function (n) { fasen(r[n]).forEach(function (f) { maxBedrag = Math.max(maxBedrag, f.bedrag); }); });
+    maxBedrag *= 1.08;
+
+    var later1 = op(b, C.pensioenreglement.grafiekEindLeeftijd * 12 - 1);
+    [1, 2, 3].forEach(function (n) {
+      var res = r[n], kaart = $('k' + n);
+      kaart.classList.toggle('gekozen', gekozen === n);
+      kaart.querySelector('.kies').textContent = gekozen === n ? '✓ Gekozen' : 'Dit kies ik';
+      var uit = kaart.querySelector('.uitkomst');
+      if ((n === 2 && !magOverbrug) || (n === 3 && !b.tophlMogelijk)) {
+        uit.innerHTML = '<p class="noot">' + (n === 2 ? 'Kan alleen als u vóór de AOW-leeftijd stopt. Kies een eerdere stopleeftijd.' : 'Niet mogelijk bij deze stopleeftijd.') + '</p>';
+        return;
+      }
+      var f = fasen(res);
+      var eerste = f[0], laatste = f[f.length - 1];
+      var html = '<div class="bedragen">' +
+        '<div class="bedrag"><div class="w num">' + eur(eerste.bedrag) + '</div><div class="t">per maand vanaf ' + leeftijdKort(eerste.van) + '</div></div>' +
+        '<div class="bedrag"><div class="w num">' + eur(laatste.bedrag) + '</div><div class="t">per maand vanaf ' + leeftijdKort(laatste.van) + ', levenslang</div></div></div>';
+      var chips = '';
+      if (n === 1) chips = '<span class="chip nul">Uitgangspunt</span>';
+      else {
+        var extra = eerste.bedrag - op(b, eerste.van);
+        var minder = op(res, laatste.van) - op(b, laatste.van);
+        chips = '<span class="chip plus">+' + eur(extra) + ' p/m de eerste ' + jaren(res, n) + '</span>' +
+          '<span class="chip min">' + eur(minder).replace('-', '−') + ' p/m levenslang daarna</span>';
+      }
+      html += '<div class="verschil">' + chips + '</div><div class="mini">' + mini(res, KLEUR[n], maxBedrag) + '</div>';
+      uit.innerHTML = html;
+    });
+
+    $('lijnen').innerHTML = lijnen(r);
+    keuzeTekst(r);
+  }
+
+  function jaren(res, n) {
+    var tot = n === 2 ? K.AOW_M : res.eindKeuze;
+    var mnd = tot - res.pensM, j = Math.floor(mnd / 12), m = mnd % 12;
+    return (j ? j + (j === 1 ? ' jaar' : ' jaar') : '') + (j && m ? ' en ' : '') + (m ? m + ' mnd' : '');
+  }
+
+  function lijnen(r) {
+    var W = 760, H = 260, L = 50, R = 12, T = 14, B = 28;
+    var x0 = r[1].pensM, x1 = C.pensioenreglement.grafiekEindLeeftijd * 12;
+    var actief = [1, 2, 3].filter(function (n) { return !$('k' + n).classList.contains('uit'); });
+    var max = 0;
+    actief.forEach(function (n) { for (var m = x0; m <= x1; m += 1) max = Math.max(max, op(r[n], m)); });
+    var stap = max > 6000 ? 1000 : 500, top = Math.ceil(max * 1.05 / stap) * stap || stap;
+    var x = function (m) { return L + (W - L - R) * (m - x0) / Math.max(1, x1 - x0); };
+    var y = function (v) { return T + (H - T - B) * (1 - v / top); };
+    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Lijngrafiek van het maandinkomen per scenario, van de pensioendatum tot ' + (x1 / 12) + ' jaar">';
+    for (var g = 0; g <= top; g += stap) svg += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(g) + '" y2="' + y(g) + '" stroke="#ece7ff"/><text x="' + (L - 6) + '" y="' + (y(g) + 4) + '" font-size="11" fill="#6a6390" text-anchor="end">' + eur(g).replace(' ', ' ') + '</text>';
+    for (var a = Math.ceil(x0 / 12); a <= x1 / 12; a++) if (a % 2 === 0) svg += '<text x="' + x(a * 12) + '" y="' + (H - 8) + '" font-size="11" fill="#6a6390" text-anchor="middle">' + a + '</text>';
+    actief.forEach(function (n) {
+      var res = r[n], pad = '', vorige = null;
+      for (var m = x0; m <= x1; m++) {
+        var v = op(res, m);
+        if (vorige === null) pad = 'M' + x(m).toFixed(1) + ' ' + y(v).toFixed(1);
+        else if (v !== vorige) pad += ' H' + x(m).toFixed(1) + ' V' + y(v).toFixed(1);
+        vorige = v;
+      }
+      pad += ' H' + x(x1).toFixed(1);
+      svg += '<path d="' + pad + '" fill="none" stroke="' + KLEUR[n] + '" stroke-width="' + (gekozen === n ? 4 : 2.5) + '" opacity="' + (gekozen === n ? 1 : .55) + '" stroke-linejoin="round"/>';
+    });
+    return svg + '</svg>';
+  }
+
+  function keuzeTekst(r) {
+    var res = r[gekozen], b = r[1];
+    var namen = { 1: 'Gelijkmatig', 2: 'Overbruggen tot de AOW', 3: 'Eerst meer, later minder' };
+    var html = '<p class="groot">' + namen[gekozen] + '</p>';
+    html += '<p>U stopt ' + res.tekst.stop + ', in ' + res.tekst.pensioendatum + '.</p>';
+    if (gekozen === 1) html += '<p>U krijgt ' + eur(res.later) + ' ' + basis + ' per maand aan pensioen' + (metAow ? ', met AOW ' + eur(res.laterInclAow) : '') + '.</p>';
+    // Verschillen als verschil van totalen: netto van een los extra deel telt niet op tot het netto totaal.
+    if (gekozen === 2) html += '<p>Tot uw AOW krijgt u ' + eur(res.eerst) + ' per maand, ' + eur(res.eerst - b.eerst) + ' meer dan bij gelijkmatig. Daarna is uw pensioen ' + eur(b.later - res.later) + ' per maand lager.</p>';
+    if (gekozen === 3) html += '<p>Tot ' + res.tekst.tophlEind + ' krijgt u ' + eur(res.eerst) + ' per maand, ' + eur(res.eerst - b.eerst) + ' meer dan bij gelijkmatig. Daarna is uw pensioen ' + eur(b.later - res.later) + ' per maand lager.</p>';
+    html += '<p>' + (res.partnerPct > 0 ? 'Partnerpensioen: ' + eur(res.partner) + ' ' + basis + ' per maand.' : 'Geen partnerpensioen.') + '</p>';
+    html += '<p class="noot">Bedragen ' + basis + ', ' + (metAow ? 'inclusief' : 'exclusief') + ' AOW in de grafieken. Voorbeeldbedragen, geen advies.</p>';
+    $('keuze').innerHTML = html;
+  }
+
+  vul();
+  $('deelnemer').addEventListener('change', function () { vulLeeftijd(); eindHandmatig = false; t1Max = true; render(); });
+  $('leeftijd').addEventListener('change', function () { eindHandmatig = false; t1Max = true; render(); });
+  $('partner').addEventListener('change', render);
+  $('t1').addEventListener('input', function () { t1Max = Number(this.value) >= Number(this.max); render(); });
+  $('t2').addEventListener('input', render);
+  $('t2e').addEventListener('input', function () { eindHandmatig = true; render(); });
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('button');
+    if (!b || b.disabled) return;
+    if (b.hasAttribute('data-kies')) { gekozen = Number(b.getAttribute('data-kies')); render(); }
+    if (b.hasAttribute('data-basis')) { basis = b.getAttribute('data-basis'); document.querySelectorAll('[data-basis]').forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); }); render(); }
+    if (b.hasAttribute('data-aow')) { metAow = b.getAttribute('data-aow') === 'ja'; document.querySelectorAll('[data-aow]').forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); }); render(); }
+  });
+  render();
+})();
+</script>
+</body>
+</html>

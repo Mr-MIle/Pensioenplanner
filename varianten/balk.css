@@ -1,0 +1,26 @@
+/* Vaste balk bovenin elke ontwerpvariant: maakt duidelijk dat het een illustratie is en leidt terug naar de demo. */
+.vbalk {
+  position: sticky; top: 0; z-index: 100;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px;
+  padding: 9px 24px;
+  background: #1c2421; color: #e7ece9;
+  font: 500 13px/1.4 "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  border-bottom: 1px solid #000;
+}
+.vbalk .vb-tag {
+  padding: 2px 9px; border-radius: 99px;
+  background: #f0c36a; color: #2b2208; font-weight: 600; font-size: 11px; letter-spacing: .04em; text-transform: uppercase;
+}
+.vbalk .vb-naam strong { font-weight: 600; color: #fff; }
+.vbalk .vb-noot { color: #a3ada8; }
+.vbalk .vb-rechts { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+.vbalk nav { display: flex; gap: 4px; }
+.vbalk nav a {
+  display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 6px;
+  color: #e7ece9; text-decoration: none; font-weight: 600; border: 1px solid #3b4743;
+}
+.vbalk nav a:hover { background: #2b3532; }
+.vbalk nav a[aria-current="page"] { background: #e7ece9; color: #1c2421; border-color: #e7ece9; }
+.vbalk .vb-link { color: #9fd8d3; text-decoration: none; font-weight: 600; }
+.vbalk .vb-link:hover { text-decoration: underline; }
+.vbalk a:focus-visible { outline: 2px solid #f0c36a; outline-offset: 2px; }

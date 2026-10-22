@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fonds B · Pensioendashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@500;600&display=swap">
+<link rel="stylesheet" href="balk.css">
+<style>
+  :root {
+    color-scheme: dark;
+    --bg: #0b1422; --vlak: #13203a; --vlak2: #1a2a47; --lijn: #24365a; --tekst: #e6edf7; --zacht: #8ea2c0;
+    --op: #3ec5c1; --t1: #a98bf0; --t2: #e8b04a; --aow: #6f86ab; --werk: #3a4d6e; --partner: #f07f8f;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--tekst); font: 14px/1.5 "IBM Plex Sans", system-ui, sans-serif; }
+  .num { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  .kop { display: flex; align-items: center; gap: 16px; padding: 14px 24px; border-bottom: 1px solid var(--lijn); }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 16px; letter-spacing: .02em; }
+  .logo .merk { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 6px; background: linear-gradient(135deg, var(--op), #2a7fd4); color: #06101e; font-weight: 700; }
+  .kop .titel { color: var(--zacht); }
+  .kop .rechts { margin-left: auto; display: flex; gap: 10px; align-items: center; }
+  .seg { display: inline-flex; background: var(--vlak); border: 1px solid var(--lijn); border-radius: 8px; padding: 2px; }
+  .seg button { border: 0; background: none; color: var(--zacht); font: inherit; padding: 5px 12px; border-radius: 6px; cursor: pointer; }
+  .seg button[aria-pressed="true"] { background: var(--vlak2); color: var(--tekst); }
+  .seg button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--op); outline-offset: 2px; }
+  .raster { display: grid; grid-template-columns: 330px 1fr; gap: 20px; padding: 20px 24px 40px; max-width: 1440px; margin: 0 auto; }
+  @media (max-width: 980px) { .raster { grid-template-columns: 1fr; } }
+  .paneel { background: var(--vlak); border: 1px solid var(--lijn); border-radius: 12px; padding: 16px 18px; }
+  .paneel h2 { margin: 0 0 12px; font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--zacht); }
+  .stuur { display: grid; gap: 18px; align-content: start; }
+  .regel { display: grid; gap: 6px; }
+  .regel .boven { display: flex; justify-content: space-between; gap: 8px; }
+  .regel label { font-weight: 500; }
+  .regel .waarde { color: var(--op); }
+  .regel small { color: var(--zacht); font-size: 12px; }
+  input[type=range] { width: 100%; accent-color: var(--op); }
+  input[type=range]:disabled { opacity: .35; }
+  select { width: 100%; background: var(--vlak2); color: var(--tekst); border: 1px solid var(--lijn); border-radius: 8px; padding: 8px 10px; font: inherit; }
+  .scheiding { border: 0; border-top: 1px solid var(--lijn); margin: 0; }
+  .hoofd { display: grid; gap: 20px; align-content: start; }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  @media (max-width: 1200px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+  .kpi { background: var(--vlak); border: 1px solid var(--lijn); border-radius: 12px; padding: 14px 16px; border-top: 3px solid var(--kleur, var(--op)); }
+  .kpi .label { color: var(--zacht); font-size: 12px; }
+  .kpi .getal { font-size: 28px; font-weight: 500; margin: 4px 0 2px; }
+  .kpi .sub { color: var(--zacht); font-size: 12px; }
+  .grafiek svg { display: block; width: 100%; height: auto; }
+  .legenda { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 10px; color: var(--zacht); font-size: 12px; }
+  .legenda span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; background: var(--c); vertical-align: -1px; }
+  .twee { display: grid; grid-template-columns: 1.3fr 1fr; gap: 20px; }
+  @media (max-width: 1200px) { .twee { grid-template-columns: 1fr; } }
+  .verdeelbalk { display: flex; height: 26px; border-radius: 6px; overflow: hidden; margin: 4px 0 14px; background: var(--vlak2); }
+  .verdeelbalk div { background: var(--c); min-width: 0; }
+  table { width: 100%; border-collapse: collapse; }
+  td, th { padding: 7px 0; border-bottom: 1px solid var(--lijn); text-align: left; font-weight: 400; }
+  th { color: var(--zacht); font-size: 12px; }
+  td.r, th.r { text-align: right; }
+  td .stip { display: inline-block; width: 9px; height: 9px; border-radius: 2px; background: var(--c); margin-right: 8px; }
+  tr.totaal td { border-bottom: 0; font-weight: 600; }
+  .noot { color: var(--zacht); font-size: 12px; margin: 10px 0 0; }
+</style>
+</head>
+<body>
+<div class="vbalk" role="region" aria-label="Ontwerpvariant">
+  <span class="vb-tag">Ontwerpvariant</span>
+  <span class="vb-naam"><strong>Fonds B</strong> · dashboard (2 van 3)</span>
+  <span class="vb-noot">Illustratief: zelfde rekenkern als de demo, fictieve huisstijl</span>
+  <span class="vb-rechts">
+    <nav aria-label="Varianten"><a href="fonds-a.html">A</a><a href="fonds-b.html" aria-current="page">B</a><a href="fonds-c.html">C</a></nav>
+    <a class="vb-link" href="index.html">Alle varianten</a>
+    <a class="vb-link" href="../index.html">&larr; Terug naar de demo</a>
+  </span>
+</div>
+
+<header class="kop">
+  <div class="logo"><span class="merk" aria-hidden="true">B</span> Fonds B</div>
+  <span class="titel">Pensioendashboard</span>
+  <div class="rechts">
+    <span class="seg" role="group" aria-label="Bruto of netto">
+      <button type="button" data-basis="netto" aria-pressed="true">Netto</button>
+      <button type="button" data-basis="bruto" aria-pressed="false">Bruto</button>
+    </span>
+  </div>
+</header>
+
+<div class="raster">
+  <aside class="paneel stuur" aria-label="Keuzes">
+    <h2>Deelnemer</h2>
+    <div class="regel" style="margin-top:-12px">
+      <select id="deelnemer" aria-label="Deelnemer"></select>
+      <small id="deelnemerInfo" class="num"></small>
+    </div>
+    <hr class="scheiding">
+    <h2>Keuzes</h2>
+    <div class="regel" style="margin-top:-12px">
+      <div class="boven"><label for="leeftijd">Stopleeftijd</label><span class="waarde num" id="leeftijdW"></span></div>
+      <input id="leeftijd" type="range" step="1">
+      <small id="leeftijdS"></small>
+    </div>
+    <div class="regel">
+      <div class="boven"><label for="partner">Partnerpensioen</label><span class="waarde num" id="partnerW"></span></div>
+      <input id="partner" type="range" step="5">
+      <small>Percentage van het OP vóór TOPAOW en TOPHL</small>
+    </div>
+    <div class="regel">
+      <div class="boven"><label for="topaow">AOW-overbrugging (TOPAOW)</label><span class="waarde num" id="topaowW"></span></div>
+      <input id="topaow" type="range" min="0" step="100" value="0">
+      <small id="topaowS"></small>
+    </div>
+    <div class="regel">
+      <div class="boven"><label for="tophl">Tijdelijk hoger (TOPHL)</label><span class="waarde num" id="tophlW"></span></div>
+      <input id="tophl" type="range" min="0" step="1" value="0">
+      <small id="tophlS"></small>
+    </div>
+    <div class="regel">
+      <div class="boven"><label for="tophlEind">Einde TOPHL</label><span class="waarde num" id="tophlEindW"></span></div>
+      <input id="tophlEind" type="range" step="1">
+      <small id="tophlEindS"></small>
+    </div>
+  </aside>
+
+  <main class="hoofd">
+    <div class="kpis" id="kpis"></div>
+    <section class="paneel grafiek" aria-labelledby="h-inkomen">
+      <h2 id="h-inkomen">Inkomen per maand, per leeftijd</h2>
+      <div id="grafiek"></div>
+      <div class="legenda">
+        <span style="--c: var(--werk)">Werkinkomen</span>
+        <span style="--c: var(--op)">Levenslang OP</span>
+        <span style="--c: var(--t1)">TOPAOW</span>
+        <span style="--c: var(--t2)">TOPHL</span>
+        <span style="--c: var(--aow)">AOW</span>
+      </div>
+    </section>
+    <div class="twee">
+      <section class="paneel" aria-labelledby="h-kapitaal">
+        <h2 id="h-kapitaal">Waar gaat het kapitaal heen?</h2>
+        <div id="verdeling"></div>
+      </section>
+      <section class="paneel" aria-labelledby="h-param">
+        <h2 id="h-param">Rekenparameters</h2>
+        <div id="parameters"></div>
+      </section>
+    </div>
+  </main>
+</div>
+
+<script src="../config.js"></script>
+<script src="../config-overlay.js"></script>
+<script src="../engine.js"></script>
+<script src="kern.js"></script>
+<script>
+(function () {
+  'use strict';
+  var K = window.VariantKern, C = K.C, E = K.E;
+  var eur = K.eur;
+  function $(id) { return document.getElementById(id); }
+  var nf2 = new Intl.NumberFormat('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+  var basis = 'netto';
+  var eindHandmatig = false;
+
+  function vulDeelnemers() {
+    C.deelnemers.forEach(function (d, i) {
+      $('deelnemer').add(new Option(d.naam + ' · ' + K.deelnemer(i).leeftijdJaar + ' jaar · ' + eur(d.startkapitaal), i));
+    });
+    $('deelnemer').value = C.standaardDeelnemer;
+  }
+
+  function zetLeeftijdBereik() {
+    var lijst = K.leeftijden(Number($('deelnemer').value));
+    var sl = $('leeftijd');
+    var oud = Number(sl.value);
+    sl.min = lijst[0]; sl.max = lijst[lijst.length - 1];
+    var std = C.pensioenreglement.standaardPensioenleeftijd;
+    sl.value = lijst.indexOf(oud) >= 0 ? oud : (lijst.indexOf(std) >= 0 ? std : lijst[0]);
+  }
+
+  function keuzes() {
+    var j = Number($('leeftijd').value);
+    return {
+      deelnemer: Number($('deelnemer').value),
+      start: j === K.AOW_JAREN ? 'aow' : 'ander', leeftijd: j,
+      partnerPct: Number($('partner').value),
+      topaow: Number($('topaow').value) >= Number($('topaow').max) && Number($('topaow').max) > 0 ? 'max' : Number($('topaow').value),
+      tophlPct: Number($('tophl').value),
+      tophlEind: eindHandmatig ? Number($('tophlEind').value) : null,
+      basis: basis
+    };
+  }
+
+  function grafiek(res) {
+    var serie = K.jaarSerie(res);
+    var W = 900, H = 300, L = 54, R = 10, T = 12, B = 30;
+    var max = Math.max.apply(null, serie.map(function (d) { return d.w + d.op + d.t1 + d.t2 + d.a; })) || 1;
+    var stap = max > 8000 ? 2000 : (max > 4000 ? 1000 : 500);
+    var top = Math.ceil(max / stap) * stap;
+    var bw = (W - L - R) / serie.length;
+    var y = function (v) { return T + (H - T - B) * (1 - v / top); };
+    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Gestapelde staafgrafiek van het maandinkomen per leeftijd">';
+    for (var g = 0; g <= top; g += stap) {
+      svg += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(g) + '" y2="' + y(g) + '" stroke="#24365a"/>' +
+        '<text x="' + (L - 8) + '" y="' + (y(g) + 4) + '" fill="#8ea2c0" font-size="11" text-anchor="end" font-family="IBM Plex Mono">' + (g / 1000) + 'k</text>';
+    }
+    var kleuren = [['w', '#3a4d6e'], ['op', '#3ec5c1'], ['t1', '#a98bf0'], ['t2', '#e8b04a'], ['a', '#6f86ab']];
+    serie.forEach(function (d, i) {
+      var x = L + i * bw + bw * 0.12, bww = bw * 0.76, acc = 0;
+      var titel = d.leeftijd + ' jaar: ' + eur(d.totaal) + ' ' + basis + ' per maand';
+      svg += '<g><title>' + titel + '</title>';
+      kleuren.forEach(function (k) {
+        var v = d[k[0]];
+        if (v <= 0) return;
+        svg += '<rect x="' + x.toFixed(1) + '" y="' + y(acc + v).toFixed(1) + '" width="' + bww.toFixed(1) + '" height="' + (y(acc) - y(acc + v)).toFixed(1) + '" fill="' + k[1] + '"/>';
+        acc += v;
+      });
+      svg += '</g>';
+      if (d.leeftijd % 5 === 0) svg += '<text x="' + (x + bww / 2) + '" y="' + (H - 10) + '" fill="#8ea2c0" font-size="11" text-anchor="middle" font-family="IBM Plex Mono">' + d.leeftijd + '</text>';
+    });
+    // Markering van de pensioendatum en de AOW-leeftijd.
+    [[res.jaar, 'stop'], [K.AOW_JAREN, 'AOW']].forEach(function (m, n) {
+      var idx = serie.findIndex(function (d) { return d.leeftijd >= Math.floor(m[0]); });
+      if (idx < 0 || (n === 1 && Math.floor(m[0]) === Math.floor(res.jaar))) return;
+      var x = L + idx * bw + (m[0] % 1) * bw;
+      svg += '<line x1="' + x + '" x2="' + x + '" y1="' + T + '" y2="' + (H - B) + '" stroke="#e6edf7" stroke-dasharray="3 4" opacity=".5"/>' +
+        '<text x="' + (x + 4) + '" y="' + (T + 10) + '" fill="#e6edf7" font-size="11" opacity=".75">' + m[1] + '</text>';
+    });
+    return svg + '</svg>';
+  }
+
+  function kpi(kleur, label, getal, sub) {
+    return '<div class="kpi" style="--kleur:' + kleur + '"><div class="label">' + label + '</div><div class="getal num">' + getal + '</div><div class="sub">' + sub + '</div></div>';
+  }
+
+  function render() {
+    var res = K.bereken(keuzes());
+    var u = res.u;
+    var d = res.deelnemer;
+
+    // Schuiven bijwerken op de grenzen van de rekenkern.
+    var t1 = $('topaow');
+    t1.max = res.maxT1;
+    t1.disabled = res.maxT1 <= 0;
+    var hl = $('tophl');
+    hl.max = Math.round(C.tophl.maxPctOP * 100);
+    hl.disabled = !res.tophlMogelijk;
+    var eind = $('tophlEind');
+    eind.disabled = !res.tophlMogelijk || u.t2 <= 0;
+    if (res.tophlMogelijk) {
+      eind.min = res.eindMinM; eind.max = res.eindMaxM;
+      eind.value = res.eindKeuze;
+    }
+
+    $('deelnemerInfo').textContent = 'Geboren ' + d.geboortedatum.split('-').reverse().join('-') + ' · salaris ' + eur(d.brutoSalaris) + ' · leeftijd ' + d.leeftijdJaar;
+    $('leeftijdW').textContent = res.jaar + ' jaar';
+    $('leeftijdS').textContent = 'Pensioendatum ' + res.tekst.pensioendatum + (res.voorAow ? ' · vóór de AOW-leeftijd' : (res.pensM === K.AOW_M ? ' · op de AOW-leeftijd' : ' · na de AOW-leeftijd'));
+    $('partnerW').textContent = res.partnerPct + '%';
+    $('topaowW').textContent = eur(u.t1) + '/jr';
+    $('topaowS').textContent = res.maxT1 > 0 ? 'Max ' + eur(res.maxT1) + ' per jaar (bruto) · tot de AOW-leeftijd' : 'Alleen bij stoppen vóór de AOW-leeftijd';
+    $('tophlW').textContent = Math.round(res.pctHL * 100) + '% · ' + eur(u.t2) + '/jr';
+    $('tophlS').textContent = res.tophlMogelijk ? 'Max 33% van het OP na TOPAOW · samen max 133%' : 'Niet mogelijk bij deze stopleeftijd';
+    $('tophlEindW').textContent = res.tophlMogelijk ? K.leeftijdTekst(res.eindKeuze).replace(' jaar en ', 'j ').replace(' maanden', 'm').replace(' maand', 'm') : '–';
+    $('tophlEindS').textContent = u.t2 > 0 ? res.tekst.tophlEind + (eindHandmatig ? '' : ' (standaard)') : 'Kies eerst een percentage TOPHL';
+
+    var twee = u.t1 > 0 || u.t2 > 0;
+    $('kpis').innerHTML =
+      kpi('var(--op)', 'Vanaf ' + res.tekst.pensioendatum, eur(res.eerst), basis + ' per maand' + (twee ? ', inclusief tijdelijke delen' : '')) +
+      kpi('var(--aow)', twee ? 'Daarna, levenslang' : 'Levenslang, inclusief AOW', eur(twee ? res.later : res.laterInclAow), twee ? 'Inclusief AOW: ' + eur(res.laterInclAow) : basis + ' per maand vanaf de AOW-leeftijd') +
+      kpi('var(--partner)', 'Partnerpensioen', eur(res.partner), res.partnerPct + '% · ' + basis + ' per maand') +
+      kpi('var(--t2)', 'Kapitaal op pensioendatum', eur(res.kapitaal), 'Nominaal · start ' + eur(d.startkapitaal));
+
+    $('grafiek').innerHTML = grafiek(res);
+
+    var v = res.verdeling;
+    var totaal = v.levenslang + v.topaow + v.tophl + v.partner;
+    var delen = [
+      ['Levenslang ouderdomspensioen', v.levenslang, 'var(--op)'],
+      ['Inkoop AOW-overbrugging', v.topaow, 'var(--t1)'],
+      ['Inkoop TOPHL', v.tophl, 'var(--t2)'],
+      ['Inkoop partnerpensioen', v.partner, 'var(--partner)']
+    ];
+    $('verdeling').innerHTML = '<div class="verdeelbalk" aria-hidden="true">' + delen.map(function (p) {
+      return '<div style="--c:' + p[2] + ';flex:' + Math.max(0, p[1]) + '"></div>';
+    }).join('') + '</div><table><thead><tr><th>Onderdeel</th><th class="r">Kapitaal</th><th class="r">Aandeel</th></tr></thead><tbody>' +
+      delen.map(function (p) {
+        return '<tr><td><span class="stip" style="--c:' + p[2] + '"></span>' + p[0] + '</td><td class="r num">' + eur(p[1]) + '</td><td class="r num">' + nf2.format(totaal ? p[1] / totaal * 100 : 0) + '%</td></tr>';
+      }).join('') +
+      '<tr class="totaal"><td>Kapitaal op ' + res.tekst.pensioendatum + '</td><td class="r num">' + eur(res.kapitaal) + '</td><td class="r num">100%</td></tr></tbody></table>';
+
+    $('parameters').innerHTML = '<table><tbody>' +
+      '<tr><td>Annuïteitsdeler OP (' + res.jaar + ' jaar)</td><td class="r num">' + nf2.format(res.aOP) + '</td></tr>' +
+      '<tr><td>Inkoopfactor partnerpensioen</td><td class="r num">' + nf2.format(C.partnerpensioen.inkoopfactorNP) + '</td></tr>' +
+      '<tr><td>OP vóór uitruil</td><td class="r num">' + eur(u.standaard) + '/jr</td></tr>' +
+      '<tr><td>Inkoopfactor TOPAOW</td><td class="r num">' + nf2.format(C.topaow.inkoopfactor) + '</td></tr>' +
+      '<tr><td>Looptijd TOPHL</td><td class="r num">' + (u.t2 > 0 ? nf2.format(u.looptijdHL) + ' jr' : '–') + '</td></tr>' +
+      '<tr><td>Inkoopfactor TOPHL (' + nf2.format(C.tophl.inkoopfactorPerJaar) + ' × looptijd)</td><td class="r num">' + (u.t2 > 0 ? nf2.format(u.inkoopHL) : '–') + '</td></tr>' +
+      '<tr><td>Verlaging OP na einde TOPHL</td><td class="r num">' + (u.R > 0 ? eur(u.R) + '/jr' : '–') + '</td></tr>' +
+      '<tr><td>Overrendement na RTS</td><td class="r num">' + nf2.format(C.rendement.overrendementNaRTS * 100) + '%</td></tr>' +
+      '</tbody></table><p class="noot">Bedragen in de tabel zijn bruto per jaar. Fictieve parameters uit config.js.</p>';
+  }
+
+  vulDeelnemers();
+  zetLeeftijdBereik();
+  $('partner').min = C.partnerpensioen.minPct;
+  $('partner').max = C.partnerpensioen.maxPct;
+  $('partner').value = C.partnerpensioen.standaardPct;
+
+  $('deelnemer').addEventListener('change', function () { zetLeeftijdBereik(); eindHandmatig = false; $('topaow').value = 0; render(); });
+  $('leeftijd').addEventListener('input', function () { eindHandmatig = false; render(); });
+  $('tophlEind').addEventListener('input', function () { eindHandmatig = true; render(); });
+  ['partner', 'topaow', 'tophl'].forEach(function (id) { $(id).addEventListener('input', render); });
+  document.querySelectorAll('[data-basis]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      basis = b.getAttribute('data-basis');
+      document.querySelectorAll('[data-basis]').forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); });
+      render();
+    });
+  });
+  render();
+})();
+</script>
+</body>
+</html>
