@@ -20,6 +20,15 @@
     return j + ' jaar' + (r ? ' en ' + r + (r === 1 ? ' maand' : ' maanden') : '');
   }
   var AOW_LABEL = leeftijdTekst(AOW_M);
+  var REEEL_GRENS_MAANDEN = 24;   // pensioendatum binnen 2 jaar: standaard nominaal, anders reëel (zoals de demo)
+
+  // Korte uitleg bij de standaardkeuze, of leeg als de gebruiker zelf heeft gekozen.
+  function reeelUitleg(r, handmatig) {
+    if (handmatig) return '';
+    return r.reeel
+      ? 'Standaard reëel (in euro’s van vandaag), omdat het pensioen over meer dan 2 jaar ingaat.'
+      : 'Standaard nominaal, omdat het pensioen binnen 2 jaar ingaat.';
+  }
 
   // Deelnemer i uit config.js, met leeftijd op de calculatiedatum.
   function deelnemer(i) {
@@ -49,7 +58,8 @@
       topaow: euro per jaar, of 'max',
       tophlPct: 0-33 (procent van het OP na uitruil),
       tophlEind: leeftijd in maanden, of null voor de standaard,
-      basis: 'netto' | 'bruto', lhk: loonheffingskorting (standaard aan)
+      basis: 'netto' | 'bruto', lhk: loonheffingskorting (standaard aan),
+      reeel: true | false, of null voor de standaard (zoals de demo: pensioendatum binnen 2 jaar nominaal, anders reëel)
     }
   */
   function bereken(k) {
@@ -88,8 +98,18 @@
 
     var basis = k.basis || 'netto';
     var lhk = k.lhk === undefined ? true : !!k.lhk;
-    function maand(jaarBruto) {
-      return basis === 'netto' ? E.nettoJaar(C, jaarBruto, lhk) / 12 : jaarBruto / 12;
+    var maandenTotPensioen = pensIdx - CALC;
+    var reeelStandaard = maandenTotPensioen > REEEL_GRENS_MAANDEN;
+    var reeel = k.reeel === true || k.reeel === false ? k.reeel : reeelStandaard;
+    var leeftijdNu = (CALC - birth) / 12;
+    // Reële factor zoals in de demo: 1 op de calculatiedatum, daarna lager met de prijsinflatie. Leeftijd in jaren.
+    function reeelFactor(leeftijd) {
+      return Math.pow(1 + C.rendement.inflatiePrijs, -Math.max(0, leeftijd - leeftijdNu));
+    }
+    // Maandbedrag in de gekozen basis; met reëel omgerekend naar euro's van vandaag op de leeftijd van uitkering.
+    function maand(jaarBruto, leeftijd) {
+      var v = basis === 'netto' ? E.nettoJaar(C, jaarBruto, lhk) / 12 : jaarBruto / 12;
+      return reeel && leeftijd !== undefined ? v * reeelFactor(leeftijd) : v;
     }
 
     var aowJaar = C.aowBrutoMaand * 12;
@@ -101,19 +121,23 @@
     return {
       k: k, C: C, deelnemer: deelnemer(k.deelnemer), birth: birth, jaar: jaar, pensM: pensM, pensIdx: pensIdx,
       voorAow: voorAow, partnerPct: partnerPct, sim: sim, u: u, basis: basis, lhk: lhk,
+      reeel: reeel, reeelStandaard: reeelStandaard,
+      maandenTotPensioen: maandenTotPensioen, reeelFactor: reeelFactor,
       maxT1: maxHeel, tophlMogelijk: tophlMogelijk, eindMinM: eindMinM, eindMaxM: eindMaxM, eindStdM: eindStdM,
       eindKeuze: eindKeuze, pctHL: pctHL, aOP: aOP, overrendement: orr,
-      // Bedragen per maand in de gekozen basis, zoals in het resultaatpaneel van de demo.
+      // Bedragen per maand in de gekozen basis, zoals in het resultaatpaneel van de demo
+      // (ook de leeftijd waarop reëel wordt omgerekend: de stopleeftijd, of de AOW-leeftijd voor 'later').
       maand: maand,
-      eerst: maand(u.pre),                        // vanaf de pensioendatum
-      opNa: maand(u.opNa),                        // levenslang OP vóór het einde van TOPHL
-      t1: maand(u.t1),
-      t2: maand(u.t2),
-      later: maand(bedragNa),                     // levenslang, na de fase met TOPAOW en TOPHL
-      laterInclAow: maand(bedragNa + aowJaar),
-      tussen: tussenJaar === null ? null : maand(tussenJaar),
-      partner: maand(u.partner),
-      kapitaal: sim.kapitaal,
+      eerst: maand(u.pre, jaar),                  // vanaf de pensioendatum
+      opNa: maand(u.opNa, jaar),                  // levenslang OP vóór het einde van TOPHL
+      t1: maand(u.t1, jaar),
+      t2: maand(u.t2, jaar),
+      later: maand(bedragNa, AOW_JAREN),          // levenslang, na de fase met TOPAOW en TOPHL
+      laterInclAow: maand(bedragNa + aowJaar, AOW_JAREN),
+      tussen: tussenJaar === null ? null : maand(tussenJaar, AOW_JAREN),
+      partner: maand(u.partner, jaar),
+      kapitaal: reeel ? sim.kapitaal / sim.inflIdx : sim.kapitaal,
+      kapitaalNominaal: sim.kapitaal,
       // Kapitaalverdeling op de pensioendatum (som = kapitaal).
       verdeling: {
         partner: u.partner * C.partnerpensioen.inkoopfactorNP,
@@ -161,6 +185,7 @@
       var w = g.w / g.n, op = g.op / g.n, t1 = g.t1 / g.n, t2 = g.t2 / g.n, a = g.a / g.n;
       var bruto = w + op + t1 + t2 + a;
       var f = r.basis === 'netto' ? (bruto > 0 ? E.nettoJaar(C, bruto * 12, r.lhk) / 12 / bruto : 0) : 1;
+      if (r.reeel) f *= r.reeelFactor(k + 0.5);   // reëel per levensjaar op het midden van het jaar, zoals de demo
       return { leeftijd: k, w: w * f, op: op * f, t1: t1 * f, t2: t2 * f, a: a * f, totaal: bruto * f };
     });
   }
@@ -168,7 +193,7 @@
   global.VariantKern = {
     C: C, E: E, eur: function (v) { return eur0.format(Math.round(v)); },
     AOW_M: AOW_M, AOW_JAREN: AOW_JAREN, AOW_LABEL: AOW_LABEL,
-    leeftijdTekst: leeftijdTekst, deelnemer: deelnemer, leeftijden: leeftijden,
+    leeftijdTekst: leeftijdTekst, deelnemer: deelnemer, leeftijden: leeftijden, reeelUitleg: reeelUitleg,
     bereken: bereken, jaarSerie: jaarSerie
   };
 })(window);

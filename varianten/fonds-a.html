@@ -121,7 +121,8 @@
   var s = {
     deelnemer: C.standaardDeelnemer, start: 'aow', leeftijd: C.pensioenreglement.standaardPensioenleeftijd,
     partnerPct: C.partnerpensioen.standaardPct, partnerKeuze: 'max',
-    verdeling: 'gelijk', topaow: 'max', tophlPct: 33, basis: 'netto'
+    verdeling: 'gelijk', topaow: 'max', tophlPct: 33, basis: 'netto',
+    reeel: null   // null = standaard (pensioendatum binnen 2 jaar nominaal, anders reëel)
   };
 
   function keuzes(extra) {
@@ -129,13 +130,15 @@
       deelnemer: s.deelnemer, start: s.start, leeftijd: s.leeftijd, partnerPct: s.partnerPct,
       topaow: s.verdeling === 'overbrug' ? s.topaow : 0,
       tophlPct: s.verdeling === 'tijdelijk' ? s.tophlPct : 0,
-      tophlEind: null, basis: s.basis
+      tophlEind: null, basis: s.basis, reeel: s.reeel
     };
     return Object.assign(k, extra || {});
   }
   function r() { return K.bereken(keuzes()); }
   function $(id) { return document.getElementById(id); }
   function esc(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+
+  function eenheid(res) { return s.basis + (res.reeel ? ', in euro’s van vandaag' : ''); }
 
   function coach(tekst) {
     return '<div class="coach"><div class="avatar" aria-hidden="true">&#128075;</div><div class="wolk">' + tekst + '</div></div>';
@@ -172,7 +175,7 @@
       html += '<button class="chip" type="button" data-leeftijd="' + j + '" aria-pressed="' + (s.start === 'ander' && s.leeftijd === j) + '">' + j + ' jaar</button>';
     });
     var res = r();
-    html += '</div><p class="tip">Dan krijg je vanaf ' + res.tekst.pensioendatum + ' ongeveer <strong>' + eur(res.eerst) + '</strong> ' + s.basis + ' per maand aan pensioen.</p>';
+    html += '</div><p class="tip">Dan krijg je vanaf ' + res.tekst.pensioendatum + ' ongeveer <strong>' + eur(res.eerst) + '</strong> per maand aan pensioen (' + eenheid(res) + ').</p>';
     return html + nav(2);
   }
 
@@ -257,10 +260,14 @@
     var html = coach('Dit is jouw pensioen met de keuzes die je hebt gemaakt. Alle bedragen zijn voorbeeldbedragen, geen advies.') +
       '<div class="resultaat"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">' +
       '<span style="color:var(--zacht)">Vanaf ' + res.tekst.pensioendatum + ' krijg je per maand</span>' +
-      '<span class="wissel" role="group" aria-label="Bruto of netto">' +
+      '<span style="display:flex;gap:8px;flex-wrap:wrap"><span class="wissel" role="group" aria-label="Bruto of netto">' +
       '<button type="button" data-basis="netto" aria-pressed="' + (s.basis === 'netto') + '">netto</button>' +
-      '<button type="button" data-basis="bruto" aria-pressed="' + (s.basis === 'bruto') + '">bruto</button></span></div>' +
-      '<div class="groot">' + eur(res.eerst) + '</div><div style="color:var(--zacht)">' + s.basis + ' pensioen per maand' + (twee ? ', de eerste jaren' : '') + '</div>';
+      '<button type="button" data-basis="bruto" aria-pressed="' + (s.basis === 'bruto') + '">bruto</button></span>' +
+      '<span class="wissel" role="group" aria-label="Nominaal of reëel">' +
+      '<button type="button" data-reeel="nom" aria-pressed="' + !res.reeel + '">nominaal</button>' +
+      '<button type="button" data-reeel="reeel" aria-pressed="' + res.reeel + '">reëel</button></span></span></div>' +
+      (s.reeel === null ? '<p class="tip" style="margin:8px 0 0;font-size:14px">' + K.reeelUitleg(res, false) + '</p>' : '') +
+      '<div class="groot">' + eur(res.eerst) + '</div><div style="color:var(--zacht)">pensioen per maand, ' + eenheid(res) + (twee ? ', de eerste jaren' : '') + '</div>';
 
     // Fasebalk: breedte = aantal jaren, hoogte = bedrag.
     var startJ = res.jaar, aowJ = K.AOW_JAREN;
@@ -284,8 +291,8 @@
     if (res.u.t1 > 0) zinnen.push('Tot je AOW krijg je ' + eur(res.eerst) + ' per maand. Daarna gaat je pensioen naar ' + eur(res.later) + ' per maand.');
     if (res.u.t2 > 0) zinnen.push('Tot ' + res.tekst.tophlEind + ' krijg je ' + eur(res.eerst) + ' per maand. Daarna is je pensioen ' + eur(res.tussen !== null ? res.tussen : res.later) + ' per maand.');
     if (!twee) zinnen.push('Je krijgt elke maand ongeveer hetzelfde bedrag, je hele leven lang.');
-    zinnen.push('Samen met je AOW krijg je later ' + eur(res.laterInclAow) + ' ' + s.basis + ' per maand.');
-    zinnen.push(res.partnerPct > 0 ? 'Als je overlijdt, krijgt je partner ' + eur(res.partner) + ' ' + s.basis + ' per maand.' : 'Je hebt geen partnerpensioen gekozen.');
+    zinnen.push('Samen met je AOW krijg je later ' + eur(res.laterInclAow) + ' per maand (' + eenheid(res) + ').');
+    zinnen.push(res.partnerPct > 0 ? 'Als je overlijdt, krijgt je partner ' + eur(res.partner) + ' per maand (' + eenheid(res) + ').' : 'Je hebt geen partnerpensioen gekozen.');
     html += '<ul class="zinnen">' + zinnen.map(function (z) { return '<li>' + z + '</li>'; }).join('') + '</ul>';
 
     html += '<div class="wijzig"><span style="color:var(--zacht);align-self:center;font-size:15px">Iets anders proberen?</span>' +
@@ -308,7 +315,7 @@
     if (stap > 0 && stap < 4) {
       var res = r();
       pil.hidden = false;
-      pil.innerHTML = '<span>Jouw pensioen nu</span><strong>' + eur(res.eerst) + '</strong><span>' + s.basis + ' per maand</span>';
+      pil.innerHTML = '<span>Jouw pensioen nu</span><strong>' + eur(res.eerst) + '</strong><span>per maand, ' + eenheid(res) + '</span>';
     } else pil.hidden = true;
     if (focus) { var h = $('podium').querySelector('h1, .groot'); if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); } window.scrollTo(0, 0); }
   }
@@ -329,6 +336,7 @@
       // Stopleeftijd die voor deze deelnemer niet meer kan: terug naar de AOW-leeftijd.
       if (s.start === 'ander' && K.leeftijden(s.deelnemer).indexOf(s.leeftijd) < 0) s.start = 'aow';
       s.topaow = 'max';
+      s.reeel = null;
       teken(false); return;
     }
     if (b.hasAttribute('data-start')) { s.start = 'aow'; teken(false); return; }
@@ -340,6 +348,7 @@
     }
     if (b.hasAttribute('data-verdeling')) { s.verdeling = b.getAttribute('data-verdeling'); s.topaow = 'max'; teken(false); return; }
     if (b.hasAttribute('data-basis')) { s.basis = b.getAttribute('data-basis'); teken(false); return; }
+    if (b.hasAttribute('data-reeel')) { s.reeel = b.getAttribute('data-reeel') === 'reeel'; teken(false); return; }
   });
   // Tijdens het slepen alleen de waarde en het meelopende bedrag bijwerken; bij loslaten alles opnieuw tekenen.
   function leesSchuif(t) {

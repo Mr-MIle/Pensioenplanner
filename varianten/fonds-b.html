@@ -20,6 +20,8 @@
   .logo { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 16px; letter-spacing: .02em; }
   .logo .merk { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 6px; background: linear-gradient(135deg, var(--op), #2a7fd4); color: #06101e; font-weight: 700; }
   .kop .titel { color: var(--zacht); }
+  .reeel-uitleg { color: var(--zacht); font-size: 12px; flex: 1; min-width: 0; }
+  .logo, .kop .titel { white-space: nowrap; }
   .kop .rechts { margin-left: auto; display: flex; gap: 10px; align-items: center; }
   .seg { display: inline-flex; background: var(--vlak); border: 1px solid var(--lijn); border-radius: 8px; padding: 2px; }
   .seg button { border: 0; background: none; color: var(--zacht); font: inherit; padding: 5px 12px; border-radius: 6px; cursor: pointer; }
@@ -77,10 +79,15 @@
 <header class="kop">
   <div class="logo"><span class="merk" aria-hidden="true">B</span> Fonds B</div>
   <span class="titel">Pensioendashboard</span>
+  <span class="reeel-uitleg" id="reeelUitleg"></span>
   <div class="rechts">
     <span class="seg" role="group" aria-label="Bruto of netto">
       <button type="button" data-basis="netto" aria-pressed="true">Netto</button>
       <button type="button" data-basis="bruto" aria-pressed="false">Bruto</button>
+    </span>
+    <span class="seg" role="group" aria-label="Nominaal of reëel">
+      <button type="button" data-reeel="nom" aria-pressed="true">Nominaal</button>
+      <button type="button" data-reeel="reeel" aria-pressed="false">Reëel</button>
     </span>
   </div>
 </header>
@@ -160,6 +167,7 @@
   var nf2 = new Intl.NumberFormat('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
   var pct3 = new Intl.NumberFormat('nl-NL', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
   var basis = 'netto';
+  var reeel = null;   // null = standaard: pensioendatum binnen 2 jaar nominaal, anders reëel
   var eindHandmatig = false;
 
   function vulDeelnemers() {
@@ -187,7 +195,7 @@
       topaow: Number($('topaow').value) >= Number($('topaow').max) && Number($('topaow').max) > 0 ? 'max' : Number($('topaow').value),
       tophlPct: Number($('tophl').value),
       tophlEind: eindHandmatig ? Number($('tophlEind').value) : null,
-      basis: basis
+      basis: basis, reeel: reeel
     };
   }
 
@@ -207,7 +215,7 @@
     var kleuren = [['w', '#3a4d6e'], ['op', '#3ec5c1'], ['t1', '#a98bf0'], ['t2', '#e8b04a'], ['a', '#6f86ab']];
     serie.forEach(function (d, i) {
       var x = L + i * bw + bw * 0.12, bww = bw * 0.76, acc = 0;
-      var titel = d.leeftijd + ' jaar: ' + eur(d.totaal) + ' ' + basis + ' per maand';
+      var titel = d.leeftijd + ' jaar: ' + eur(d.totaal) + ' ' + basis + (res.reeel ? ' · reëel' : '') + ' per maand';
       svg += '<g><title>' + titel + '</title>';
       kleuren.forEach(function (k) {
         var v = d[k[0]];
@@ -263,12 +271,16 @@
     $('tophlEindW').textContent = res.tophlMogelijk ? K.leeftijdTekst(res.eindKeuze).replace(' jaar en ', 'j ').replace(' maanden', 'm').replace(' maand', 'm') : '–';
     $('tophlEindS').textContent = u.t2 > 0 ? res.tekst.tophlEind + (eindHandmatig ? '' : ' (standaard)') : 'Kies eerst een percentage TOPHL';
 
+    document.querySelectorAll('[data-reeel]').forEach(function (o) { o.setAttribute('aria-pressed', String((o.getAttribute('data-reeel') === 'reeel') === res.reeel)); });
+    $('reeelUitleg').textContent = K.reeelUitleg(res, reeel !== null);
+    var eenheid = basis + (res.reeel ? ' · reëel' : '');
+
     var twee = u.t1 > 0 || u.t2 > 0;
     $('kpis').innerHTML =
-      kpi('var(--op)', 'Vanaf ' + res.tekst.pensioendatum, eur(res.eerst), basis + ' per maand' + (twee ? ', inclusief tijdelijke delen' : '')) +
-      kpi('var(--aow)', twee ? 'Daarna, levenslang' : 'Levenslang, inclusief AOW', eur(twee ? res.later : res.laterInclAow), twee ? 'Inclusief AOW: ' + eur(res.laterInclAow) : basis + ' per maand vanaf de AOW-leeftijd') +
-      kpi('var(--partner)', 'Partnerpensioen', eur(res.partner), res.partnerPct + '% · ' + basis + ' per maand') +
-      kpi('var(--t2)', 'Kapitaal op pensioendatum', eur(res.kapitaal), 'Nominaal · start ' + eur(d.startkapitaal));
+      kpi('var(--op)', 'Vanaf ' + res.tekst.pensioendatum, eur(res.eerst), eenheid + ' per maand' + (twee ? ', inclusief tijdelijke delen' : '')) +
+      kpi('var(--aow)', twee ? 'Daarna, levenslang' : 'Levenslang, inclusief AOW', eur(twee ? res.later : res.laterInclAow), twee ? 'Inclusief AOW: ' + eur(res.laterInclAow) + ' · ' + eenheid : eenheid + ' per maand vanaf de AOW-leeftijd') +
+      kpi('var(--partner)', 'Partnerpensioen', eur(res.partner), res.partnerPct + '% · ' + eenheid + ' per maand') +
+      kpi('var(--t2)', 'Kapitaal op pensioendatum', eur(res.kapitaal), res.reeel ? 'Reëel · nominaal ' + eur(res.kapitaalNominaal) : 'Nominaal · start ' + eur(d.startkapitaal));
 
     $('grafiek').innerHTML = grafiek(res);
 
@@ -286,7 +298,7 @@
       delen.map(function (p) {
         return '<tr><td><span class="stip" style="--c:' + p[2] + '"></span>' + p[0] + '</td><td class="r num">' + eur(p[1]) + '</td><td class="r num">' + nf2.format(totaal ? p[1] / totaal * 100 : 0) + '%</td></tr>';
       }).join('') +
-      '<tr class="totaal"><td>Kapitaal op ' + res.tekst.pensioendatum + '</td><td class="r num">' + eur(res.kapitaal) + '</td><td class="r num">100%</td></tr></tbody></table>';
+      '<tr class="totaal"><td>Kapitaal op ' + res.tekst.pensioendatum + ' (nominaal)</td><td class="r num">' + eur(res.kapitaalNominaal) + '</td><td class="r num">100%</td></tr></tbody></table>';
 
     var o = res.overrendement;
     $('parameters').innerHTML = '<table><tbody>' +
@@ -310,10 +322,13 @@
   $('partner').max = C.partnerpensioen.maxPct;
   $('partner').value = C.partnerpensioen.standaardPct;
 
-  $('deelnemer').addEventListener('change', function () { zetLeeftijdBereik(); eindHandmatig = false; $('topaow').value = 0; render(); });
+  $('deelnemer').addEventListener('change', function () { zetLeeftijdBereik(); eindHandmatig = false; reeel = null; $('topaow').value = 0; render(); });
   $('leeftijd').addEventListener('input', function () { eindHandmatig = false; render(); });
   $('tophlEind').addEventListener('input', function () { eindHandmatig = true; render(); });
   ['partner', 'topaow', 'tophl'].forEach(function (id) { $(id).addEventListener('input', render); });
+  document.querySelectorAll('[data-reeel]').forEach(function (b) {
+    b.addEventListener('click', function () { reeel = b.getAttribute('data-reeel') === 'reeel'; render(); });
+  });
   document.querySelectorAll('[data-basis]').forEach(function (b) {
     b.addEventListener('click', function () {
       basis = b.getAttribute('data-basis');

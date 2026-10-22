@@ -55,6 +55,13 @@ th { color: var(--muted); font-weight: 600; font-size: 0.8rem; }
 td input[type="text"] { min-width: 90px; }
 .rijknop { font-size: 0.85rem; padding: 5px 9px; }
 .voet { color: var(--muted); font-size: 0.85rem; }
+/* RTS: kolommen van 15 looptijden naast elkaar */
+fieldset.breed { grid-column: 1 / -1; }
+.rts-noot { margin: 0; color: var(--muted); font-size: 0.82rem; }
+.rts-raster { display: grid; grid-auto-flow: column; grid-template-rows: repeat(15, auto); grid-auto-columns: minmax(96px, 1fr); gap: 3px 12px; overflow-x: auto; }
+.rts-cel { display: grid; grid-template-columns: 24px 1fr; align-items: center; gap: 4px; font-size: 0.8rem; }
+.rts-cel span { color: var(--muted); text-align: right; font-variant-numeric: tabular-nums; }
+.rts-cel input[type="text"] { padding: 2px 5px; font-size: 0.8rem; border-radius: 5px; font-variant-numeric: tabular-nums; }
 @media (max-width: 640px) {
   .grid { grid-template-columns: 1fr 1fr; }
 }
@@ -177,6 +184,7 @@ td input[type="text"] { min-width: 90px; }
   function esc(s) { return String(s === null || s === undefined ? '' : s).replace(/[&<>"']/g, function (ch) {
     return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]; }); }
   function fmt(v) { return Number(v).toLocaleString('nl-NL', { maximumFractionDigits: 2 }); }
+  function fmtPct(v) { return Number(v * 100).toLocaleString('nl-NL', { maximumFractionDigits: 3 }) + '%'; }
   function getAt(obj, p) { return p.reduce(function (o, k) { return o[k]; }, obj); }
   function setAt(obj, p, val) { var parent = getAt(obj, p.slice(0, -1)); parent[p[p.length - 1]] = val; }
   function pad(s) { return String(s).length === 1 ? '0' + s : String(s); }
@@ -225,10 +233,18 @@ td input[type="text"] { min-width: 90px; }
         return '<fieldset><legend>' + esc(LABELS[k]) + '</legend><div class="grid">' +
                Object.keys(v).map(function (a) { return veld(pk.concat([a]), v[a], a, 'Leeftijd ' + a); }).join('') + '</div></fieldset>';
       }
-      // Spotrates: één veld per looptijd, met het percentage ernaast.
+      // Spotrates: compact, in kolommen van 15 looptijden naast elkaar. Het percentage staat in de tooltip.
       if (k === 'spotrates' && isObj(v)) {
-        return '<fieldset><legend>' + esc(LABELS[k]) + '</legend><div class="grid">' +
-               Object.keys(v).map(function (a) { return veld(pk.concat([a]), v[a], 'spotrate', 'Looptijd ' + a + ' jaar'); }).join('') + '</div></fieldset>';
+        var looptijden = Object.keys(v).map(Number).sort(function (a, b) { return a - b; });
+        return '<fieldset class="breed"><legend>' + esc(LABELS[k]) + '</legend>' +
+               '<p class="rts-noot">Looptijd in jaren, spotrate als fractie (0,03614 = 3,614%). Houd de muis op een veld voor het percentage.</p>' +
+               '<div class="rts-raster">' + looptijden.map(function (a) {
+                 var id = 'f' + (++teller);
+                 var titel = typeof v[a] === 'number' ? fmtPct(v[a]) : '';
+                 return '<label class="rts-cel" for="' + id + '"><span>' + a + '</span>' +
+                        '<input type="text" inputmode="decimal" id="' + id + '" value="' + esc(v[a]) + '" title="' + esc(titel) +
+                        '" data-path="' + esc(JSON.stringify(pk.concat([String(a)]))) + '" data-type="num" data-pct-title="1"></label>';
+               }).join('') + '</div></fieldset>';
       }
       if (isObj(v)) return '<fieldset><legend>' + esc(LABELS[k] || k) + '</legend><div class="grid">' + kinderen(v, pk) + '</div></fieldset>';
       return veld(pk, v, k);
@@ -345,6 +361,7 @@ td input[type="text"] { min-width: 90px; }
       setAt(bewerkt, p, val);
 
       el.classList.toggle('ongeldig', typeof val === 'number' && !isFinite(val));
+      if (el.hasAttribute('data-pct-title')) el.title = isFinite(val) ? fmtPct(val) : '';
       var hintId = el.getAttribute('data-hint');
       if (hintId) {
         var h = document.getElementById(hintId);

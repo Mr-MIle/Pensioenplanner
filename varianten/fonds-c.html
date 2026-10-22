@@ -95,7 +95,9 @@
     <div class="veld"><span class="lbl">Bedragen</span>
       <span class="seg" role="group" aria-label="Bruto of netto"><button type="button" data-basis="netto" aria-pressed="true">Netto</button><button type="button" data-basis="bruto" aria-pressed="false">Bruto</button></span>
     </div>
+    <div class="veld"><span class="lbl">Waarde</span><span class="seg" role="group" aria-label="Nominaal of reëel"><button type="button" data-reeel="nom" aria-pressed="true">Nominaal</button><button type="button" data-reeel="reeel" aria-pressed="false">Reëel</button></span></div>
     <div class="veld"><span class="lbl">AOW</span><span class="seg" role="group" aria-label="AOW meetellen"><button type="button" data-aow="ja" aria-pressed="true">Inclusief</button><button type="button" data-aow="nee" aria-pressed="false">Exclusief</button></span></div>
+    <p class="noot" id="reeelUitleg" style="margin:0;flex-basis:100%"></p>
   </div>
 
   <div class="kaarten">
@@ -156,6 +158,7 @@
   var K = window.VariantKern, C = K.C;
   var eur = K.eur;
   function $(id) { return document.getElementById(id); }
+  var reeel = null;   // null = standaard: pensioendatum binnen 2 jaar nominaal, anders reëel
   var basis = 'netto', metAow = true, gekozen = 1, eindHandmatig = false, t1Max = true;
   var KLEUR = { 1: '#8f86b8', 2: '#5b3fd1', 3: '#18a37a' };
 
@@ -178,7 +181,7 @@
   function basisKeuze() {
     var j = Number($('leeftijd').value);
     return { deelnemer: Number($('deelnemer').value), start: j === K.AOW_JAREN ? 'aow' : 'ander', leeftijd: j,
-      partnerPct: Number($('partner').value), topaow: 0, tophlPct: 0, tophlEind: null, basis: basis };
+      partnerPct: Number($('partner').value), topaow: 0, tophlPct: 0, tophlEind: null, basis: basis, reeel: reeel };
   }
   function scenario(n) {
     var k = basisKeuze();
@@ -190,7 +193,7 @@
   // Maandbedrag op een leeftijd (jaren) in de gekozen basis, met of zonder AOW.
   function op(res, ageM) {
     var j = K.E.jaarlijkseUitkering(res.u, ageM) + (metAow && ageM >= K.AOW_M ? C.aowBrutoMaand * 12 : 0);
-    return res.maand(j);
+    return res.maand(j, ageM / 12);
   }
   // Fasen voor de kaart: [{ tot (maanden), bedrag }]
   function fasen(res) {
@@ -224,6 +227,8 @@
   function render() {
     var r = { 1: scenario(1), 2: scenario(2), 3: scenario(3) };
     var b = r[1];
+    document.querySelectorAll('[data-reeel]').forEach(function (o) { o.setAttribute('aria-pressed', String((o.getAttribute('data-reeel') === 'reeel') === b.reeel)); });
+    $('reeelUitleg').textContent = K.reeelUitleg(b, reeel !== null);
 
     // Schuiven van scenario 2 en 3 op de grenzen van de rekenkern zetten.
     var t1 = $('t1');
@@ -327,12 +332,12 @@
     if (gekozen === 2) html += '<p>Tot uw AOW krijgt u ' + eur(res.eerst) + ' per maand, ' + eur(res.eerst - b.eerst) + ' meer dan bij gelijkmatig. Daarna is uw pensioen ' + eur(b.later - res.later) + ' per maand lager.</p>';
     if (gekozen === 3) html += '<p>Tot ' + res.tekst.tophlEind + ' krijgt u ' + eur(res.eerst) + ' per maand, ' + eur(res.eerst - b.eerst) + ' meer dan bij gelijkmatig. Daarna is uw pensioen ' + eur(b.later - res.later) + ' per maand lager.</p>';
     html += '<p>' + (res.partnerPct > 0 ? 'Partnerpensioen: ' + eur(res.partner) + ' ' + basis + ' per maand.' : 'Geen partnerpensioen.') + '</p>';
-    html += '<p class="noot">Bedragen ' + basis + ', ' + (metAow ? 'inclusief' : 'exclusief') + ' AOW in de grafieken. Voorbeeldbedragen, geen advies.</p>';
+    html += '<p class="noot">Bedragen ' + basis + (res.reeel ? ' en reëel (euro’s van vandaag)' : ' en nominaal') + ', ' + (metAow ? 'inclusief' : 'exclusief') + ' AOW in de grafieken. Voorbeeldbedragen, geen advies.</p>';
     $('keuze').innerHTML = html;
   }
 
   vul();
-  $('deelnemer').addEventListener('change', function () { vulLeeftijd(); eindHandmatig = false; t1Max = true; render(); });
+  $('deelnemer').addEventListener('change', function () { vulLeeftijd(); eindHandmatig = false; t1Max = true; reeel = null; render(); });
   $('leeftijd').addEventListener('change', function () { eindHandmatig = false; t1Max = true; render(); });
   $('partner').addEventListener('change', render);
   $('t1').addEventListener('input', function () { t1Max = Number(this.value) >= Number(this.max); render(); });
@@ -343,6 +348,7 @@
     if (!b || b.disabled) return;
     if (b.hasAttribute('data-kies')) { gekozen = Number(b.getAttribute('data-kies')); render(); }
     if (b.hasAttribute('data-basis')) { basis = b.getAttribute('data-basis'); document.querySelectorAll('[data-basis]').forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); }); render(); }
+    if (b.hasAttribute('data-reeel')) { reeel = b.getAttribute('data-reeel') === 'reeel'; render(); }
     if (b.hasAttribute('data-aow')) { metAow = b.getAttribute('data-aow') === 'ja'; document.querySelectorAll('[data-aow]').forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); }); render(); }
   });
   render();
