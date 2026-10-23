@@ -272,8 +272,10 @@
     .rechts > .resultaat .bedrag { font-size: 26px; }
     .rechts > .resultaat .blok { padding: 14px; }
   }
-  .bewaar-plan { display: grid; gap: 8px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); }
+  .bewaar-plan { display: grid; gap: 8px; margin-top: 10px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
   .bewaar-plan h3 { font-size: 17px; }
+  .bewaar-plan .link-knop { font-size: inherit; }
+  table.vergelijk tr.huidig td { background: var(--accent-soft); }
   .bewaar-plan input[type="text"] { flex: 1 1 220px; min-width: 0; font: inherit; background: var(--surface); color: var(--fg); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
   .grafiek-keuze { display: inline-flex; align-items: center; gap: 8px; margin: 10px 0 0; font-size: 14px; cursor: pointer; }
   .grafiek-keuze input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); }
@@ -429,6 +431,16 @@
           </div>
         </div>
       </div>
+
+      <div class="bewaar-plan">
+        <h3>Bewaar deze invoer als scenario</h3>
+        <p class="muted" style="margin: 0">Geef uw scenario een naam. De keuzes hierboven worden bewaard in deze browser. U vindt het terug onder &ldquo;Mijn opgeslagen scenario&rsquo;s&rdquo;.</p>
+        <div class="rij">
+          <input id="planNaam" type="text" maxlength="60" placeholder="Bijvoorbeeld: deeltijd vanaf 63" aria-label="Naam van het scenario">
+          <button class="wkp-btn" type="button" id="planBewaar">Bewaar scenario</button>
+        </div>
+        <p class="muted" id="planMelding" role="status" style="margin: 0"></p>
+      </div>
     </section>
 
     <div class="rechts">
@@ -532,21 +544,15 @@
     </div>
   </section>
 
-  <section class="paneel uitvoer" aria-label="Vier plannen naast elkaar">
-    <details class="plannen">
-    <summary>Plannen naast elkaar <span class="muted">(klik om te openen)</span></summary>
-    <p class="muted" style="margin: 14px 0 0">Bedragen per maand, <span id="vergelijkBasis">netto</span>. Zelfde deelnemer en startkapitaal. Het verschil is ten opzichte van plan A. Met &ldquo;Laad in de wizard&rdquo; zet u een plan in de keuzes.</p>
-    <div style="margin: 14px 0">
-      <table class="maand vergelijk" id="vergelijk"><thead id="vergelijkKop"></thead><tbody id="vergelijkRijen"></tbody></table>
-    </div>
-    <div class="bewaar-plan">
-      <h3>Bewaar de huidige keuzes als plan</h3>
-      <p class="muted" style="margin: 0">Zet de keuzes uit de wizard als eigen plan in deze tabel, met een naam die u zelf kiest. Het plan blijft bewaard in deze browser.</p>
-      <div class="rij">
-        <input id="planNaam" type="text" maxlength="60" placeholder="Bijvoorbeeld: deeltijd vanaf 63" aria-label="Naam van het plan">
-        <button class="wkp-btn" type="button" id="planBewaar">Bewaar plan</button>
+  <section class="paneel uitvoer" id="scenarioPaneel" aria-label="Mijn opgeslagen scenario's">
+    <details class="plannen" id="scenarioDetails">
+    <summary>Mijn opgeslagen scenario&rsquo;s <span class="muted" id="scenarioAantal">(klik om te openen)</span></summary>
+    <p class="muted" id="scenarioLeeg" style="margin: 14px 0 0">U heeft nog geen scenario&rsquo;s opgeslagen. Vul de keuzes in en bewaar ze onderaan de invoer met een eigen naam.</p>
+    <div id="scenarioInhoud">
+      <p class="muted" style="margin: 14px 0 0">Bedragen per maand, <span id="vergelijkBasis">netto</span>. Het verschil is ten opzichte van uw huidige invoer. Met &ldquo;Laad in de invoer&rdquo; zet u een scenario terug in de keuzes.</p>
+      <div style="margin: 14px 0">
+        <table class="maand vergelijk" id="vergelijk"><thead id="vergelijkKop"></thead><tbody id="vergelijkRijen"></tbody></table>
       </div>
-      <p class="muted" id="planMelding" role="status" style="margin: 0"></p>
     </div>
     </details>
   </section>
@@ -814,15 +820,12 @@
         renderVergelijk();
       }
     });
-    $('planBewaar').addEventListener('click', function () {
-      var naam = $('planNaam').value.trim();
-      if (!naam) { $('planMelding').textContent = 'Geef het plan eerst een naam.'; return; }
-      var lijst = leesRuwe();
-      lijst.push(huidigeKeuzes(naam));
-      bewaarRuwe(lijst);
-      $('planNaam').value = '';
-      $('planMelding').textContent = 'Plan \u201c' + naam + '\u201d is bewaard in deze browser.';
-      renderVergelijk();
+    $('planBewaar').addEventListener('click', bewaarScenario);
+    $('planNaam').addEventListener('keydown', function (e) { if (e.key === 'Enter') bewaarScenario(); });
+    $('planMelding').addEventListener('click', function (e) {
+      if (!e.target.closest('[data-naar-scenarios]')) return;
+      $('scenarioDetails').open = true;
+      $('scenarioPaneel').scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
 
     // Deeltijd en de pensioenleeftijd hangen samen: deeltijd vraagt een ingangsleeftijd tussen 57 en 66 jaar.
@@ -1374,26 +1377,7 @@
       zones + grid + body + drempel + basis + ax + ghost + lijnen + '</svg>';
   }
 
-  // Vaste plannen voor dezelfde deelnemer, in dezelfde vorm als de keuzes in de wizard.
-  // Plan C gebruikt TOPAOW op het maximum en TOPHL op het maximum van het OP na uitruil.
-  function plannen() {
-    var birthIdx = E.maandIndex(C.deelnemer.geboortedatum);
-    var calcIdx = E.maandIndex(C.calculatiedatum);
-    var aowJaar = C.pensioenreglement.aowLeeftijdMaanden / 12;
-    function rij(leeftijd, pct) { return { vanaf: formatMaand(birthIdx + Math.round(leeftijd * 12)), percentage: pct }; }
-    var std = C.parttimepercentages.map(function (r) { return { vanaf: r.vanaf, percentage: r.percentage }; });
-    var geleidelijk = [rij(62, 80), rij(64, 50), rij(66, 25)].filter(function (r) { return E.maandIndex(r.vanaf) > calcIdx; });
-    var basis = { deel: false, deelPct: $('deelPct').value, partnerPct: C.partnerpensioen.standaardPct, topaow: 0, tophl: 0 };
-    function plan(naam, extra) { return Object.assign({}, basis, { naam: naam }, extra); }
-    return [
-      plan('Regulier, pensioen op AOW-leeftijd', { start: 'aow', leeftijd: aowJaar, parttime: std }),
-      plan('Regulier, pensioen 3 jaar eerder', { start: 'ander', leeftijd: aowJaar - 3, parttime: std }),
-      plan('3 jaar eerder, met maximaal TOPAOW en TOPHL', { start: 'ander', leeftijd: aowJaar - 3, parttime: std, topaow: 100000, tophl: Math.round(C.tophl.maxPctOP * 100) }),
-      plan('Geleidelijk minder werken tot de AOW', { start: 'aow', leeftijd: aowJaar, parttime: geleidelijk })
-    ];
-  }
-
-  // Zelf bewaarde plannen, in de browser (localStorage). Ruwe lijst, zoals opgeslagen.
+  // Zelf bewaarde scenario's, in de browser (localStorage). Ruwe lijst, zoals opgeslagen.
   function leesRuwe() {
     try {
       var a = JSON.parse(window.localStorage.getItem('pensioenplanner.plannen.v1') || '[]');
@@ -1409,7 +1393,27 @@
   function opgeslagenPlannen() {
     return leesRuwe().map(function (p) { return Object.assign({ deel: false, deelPct: 50, partnerPct: C.partnerpensioen.standaardPct, topaow: 0, tophl: 0 }, p); });
   }
-  function allePlannen() { return plannen().concat(opgeslagenPlannen()); }
+
+  // Bewaar de keuzes uit de invoer onder een eigen naam. Een bestaande naam wordt overschreven.
+  // Deelnemer en startkapitaal horen niet bij een scenario: die gelden altijd zoals ze op het scherm staan.
+  function bewaarScenario() {
+    var naam = $('planNaam').value.trim();
+    if (!naam) { $('planMelding').textContent = 'Geef het scenario eerst een naam.'; $('planNaam').focus(); return; }
+    var lijst = leesRuwe();
+    var p = huidigeKeuzes(naam);
+    p.opgeslagen = new Date().toISOString().slice(0, 10);
+    var i = lijst.findIndex(function (o) { return o.naam.toLowerCase() === naam.toLowerCase(); });
+    if (i >= 0) lijst[i] = p; else lijst.push(p);
+    bewaarRuwe(lijst);
+    $('planMelding').innerHTML = 'Scenario “' + esc(naam) + '” is ' + (i >= 0 ? 'bijgewerkt' : 'opgeslagen') +
+      '. <button class="link-knop" type="button" data-naar-scenarios>Bekijk mijn opgeslagen scenario’s</button>';
+    $('scenarioDetails').open = true;
+    renderVergelijk();
+  }
+
+  function esc(s) {
+    return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
+  }
 
   // De huidige keuzes uit de wizard, als plan.
   function huidigeKeuzes(naam) {
@@ -1465,13 +1469,15 @@
     };
   }
 
-  // Zet een plan in de wizard. Daarna rekent de hele pagina met de keuzes van dat plan.
+  // Zet een opgeslagen scenario in de invoer. Daarna rekent de hele pagina met de keuzes van dat scenario,
+  // voor de deelnemer en het startkapitaal die nu op het scherm staan.
   function laadPlan(i) {
+    var p = opgeslagenPlannen()[i];
+    if (!p) return;
     wijzigd = true;
-    var p = allePlannen()[i];
     radioSet('start', p.start);
     radioSet('deel', p.deel ? 'ja' : 'nee');
-    if (p.start === 'ander') $('leeftijd').value = String(p.leeftijd);
+    if (p.start === 'ander' && $('leeftijd').querySelector('option[value="' + p.leeftijd + '"]')) $('leeftijd').value = String(p.leeftijd);
     $('deelPct').value = p.deelPct;
     $('partnerPct').value = p.partnerPct;
     parttimeRows = p.parttime.map(function (r) { return { vanaf: r.vanaf, pct: r.percentage }; });
@@ -1484,6 +1490,9 @@
     if (tophlEindHandmatig) $('tophlEind').value = p.tophlEind;
     renderWerk();
     render();
+    $('planNaam').value = p.naam;
+    $('planMelding').textContent = 'Scenario “' + p.naam + '” staat in de invoer. Pas iets aan en bewaar het onder dezelfde naam om het bij te werken.';
+    document.querySelector('.invoer').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function naarBasis(m) {
@@ -1494,9 +1503,13 @@
   function renderVergelijk() {
     var rente = E.overrendement(C).rente;
     var sk = Math.max(0, Number($('startkapitaal').value) || 0);
-    var lijst = allePlannen();
-    var aantalVast = plannen().length;
-    var res = lijst.map(function (p) { return planUitkomst(p, rente, sk); });
+    var lijst = opgeslagenPlannen();
+    $('scenarioAantal').textContent = lijst.length ? '(' + lijst.length + ' opgeslagen)' : '(nog leeg)';
+    $('scenarioLeeg').hidden = lijst.length > 0;
+    $('scenarioInhoud').hidden = lijst.length === 0;
+    if (!lijst.length) { $('vergelijkRijen').innerHTML = ''; return; }
+    // De eerste rij is de huidige invoer: daar worden de opgeslagen scenario's mee vergeleken.
+    var res = [huidigeKeuzes('Uw huidige invoer')].concat(lijst).map(function (p) { return planUitkomst(p, rente, sk); });
     if (REEEL) {
       res = res.map(function (r) {
         var fp = reeelFactor(r.pensJaar), fa = reeelFactor(AOW_JAREN);
@@ -1510,12 +1523,11 @@
         });
       });
     }
-    var letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     var basis = $('basis').value;
     var ref = res[0].pl;
 
     $('vergelijkBasis').textContent = basis + (REEEL ? ', reëel (euro van vandaag)' : ', nominaal');
-    $('vergelijkKop').innerHTML = '<tr><th>Plan</th><th>Vóór AOW</th><th>Na AOW</th><th>Verschil met A</th></tr>';
+    $('vergelijkKop').innerHTML = '<tr><th>Scenario</th><th>Vóór AOW</th><th>Na AOW</th><th>Verschil met huidige invoer</th></tr>';
     $('vergelijkRijen').innerHTML = res.map(function (r, i) {
       var verschil = r.pl - ref;
       var pijl = verschil > 0.5 ? '▲' : (verschil < -0.5 ? '▼' : '=');
@@ -1526,12 +1538,14 @@
       var opties = [];
       if (r.t1 > 0) opties.push('TOPAOW ' + eur0.format(r.t1) + ' per jaar');
       if (r.t2 > 0) opties.push('TOPHL ' + Math.round(r.pctHL * 100) + '%');
-      var eigen = i >= aantalVast ? ' <span class="sub-cel" style="display: inline">(eigen plan)</span>' : '';
-      var wis = i >= aantalVast ? '<button class="link-knop" type="button" data-delete="' + (i - aantalVast) + '">Verwijder</button>' : '';
-      return '<tr>' +
-        '<td><strong>Plan ' + letters[i] + '</strong> ' + r.naam + eigen +
-          '<span class="sub-cel">Pensioen vanaf ' + r.pensLabel + ' · kapitaal ' + eur0.format(r.kapitaal) + (opties.length ? ' · ' + opties.join(' · ') : '') + '</span>' +
-          '<button class="link-knop" type="button" data-plan="' + i + '">Laad in de wizard</button> ' + wis + '</td>' +
+      var p = i > 0 ? lijst[i - 1] : null;
+      var datum = p && p.opgeslagen ? ' · opgeslagen op ' + datumNl(p.opgeslagen) : '';
+      var knoppen = p ? '<button class="link-knop" type="button" data-plan="' + (i - 1) + '">Laad in de invoer</button> ' +
+        '<button class="link-knop" type="button" data-delete="' + (i - 1) + '">Verwijder</button>' : '';
+      return '<tr' + (p ? '' : ' class="huidig"') + '>' +
+        '<td><strong>' + esc(r.naam) + '</strong>' +
+          '<span class="sub-cel">Pensioen vanaf ' + r.pensLabel + ' · kapitaal ' + eur0.format(r.kapitaal) + (opties.length ? ' · ' + opties.join(' · ') : '') + datum + '</span>' +
+          knoppen + '</td>' +
         '<td>' + eur0.format(r.pl) + '</td>' +
         '<td>' + eur0.format(r.na) + '</td>' +
         '<td>' + verschilTxt + '</td>' +
