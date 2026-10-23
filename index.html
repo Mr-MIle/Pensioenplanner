@@ -323,7 +323,7 @@
             <label class="optie"><input type="radio" name="start" value="aow" checked>
               <span>Op mijn AOW-leeftijd<small>Dat is 67 jaar. De meeste mensen kiezen dit.</small></span></label>
             <label class="optie"><input type="radio" name="start" value="ander">
-              <span><strong id="optieAnderTitel">Ik stop op een andere leeftijd</strong><small>Eerder stoppen geeft een lager maandbedrag, later stoppen een hoger.</small></span></label>
+              <span><strong id="optieAnderTitel">Ik wil eerder of later stoppen</strong><small>Eerder stoppen geeft een lager maandbedrag, later stoppen een hoger.</small></span></label>
           </div>
           <div class="sub" id="startAnder" hidden>
             <div class="rij">
@@ -636,6 +636,8 @@
   var huidigDeel = 0;
   // Einddatum van TOPHL: standaard volgt de regel; zodra de deelnemer zelf schuift, blijft die keuze staan.
   var tophlEindHandmatig = false;
+  // Titel van optie 2 bij stap 1: neutraal tot de deelnemer zelf een leeftijd kiest, daarna met die leeftijd.
+  var leeftijdGekozen = false;
   document.addEventListener('input', function (e) {
     if (e.target && e.target.id === 'tophlEind') tophlEindHandmatig = true;
   }, true);
@@ -706,6 +708,7 @@
     $('topaow').value = 0;
     $('tophl').value = 0;
     tophlEindHandmatig = false;
+    leeftijdGekozen = false;
     reeelHandmatig = false;
     var std = C.pensioenreglement.standaardPensioenleeftijd;
     $('leeftijd').value = $('leeftijd').querySelector('option[value="' + std + '"]') ? std : $('leeftijd').options[0].value;
@@ -836,6 +839,8 @@
       vulLeeftijd();
     });
     document.querySelector('input[name="start"][value="ander"]').addEventListener('change', function () { vulLeeftijd(); });
+    // Vóór de algemene render-luisteraar hieronder, zodat de titel van optie 2 meteen de gekozen leeftijd toont.
+    $('leeftijd').addEventListener('change', function () { leeftijdGekozen = true; });
 
     var inputs = document.querySelectorAll('input, select');
     for (var i = 0; i < inputs.length; i++) {
@@ -924,7 +929,8 @@
     var deelAan = radio('deel') === 'ja';
     var partnerPct = Number($('partnerPct').value);
     $('startAnder').hidden = start !== 'ander';
-    $('optieAnderTitel').textContent = 'Ik stop op ' + $('leeftijd').value + ' jaar';
+    $('optieAnderTitel').textContent = start === 'ander' && leeftijdGekozen
+      ? 'Ik stop op ' + $('leeftijd').value + ' jaar' : 'Ik wil eerder of later stoppen';
     $('deelSub').hidden = !deelAan;
     $('partnerPctWaarde').textContent = partnerPct + '%';
 
@@ -1477,7 +1483,7 @@
     wijzigd = true;
     radioSet('start', p.start);
     radioSet('deel', p.deel ? 'ja' : 'nee');
-    if (p.start === 'ander' && $('leeftijd').querySelector('option[value="' + p.leeftijd + '"]')) $('leeftijd').value = String(p.leeftijd);
+    if (p.start === 'ander' && $('leeftijd').querySelector('option[value="' + p.leeftijd + '"]')) { $('leeftijd').value = String(p.leeftijd); leeftijdGekozen = true; }
     $('deelPct').value = p.deelPct;
     $('partnerPct').value = p.partnerPct;
     parttimeRows = p.parttime.map(function (r) { return { vanaf: r.vanaf, pct: r.percentage }; });
