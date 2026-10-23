@@ -495,7 +495,7 @@
       <div class="seg-groep" role="group" aria-label="Nominaal of reëel bedragen"><button class="seg actief" type="button" data-reeel="nom" aria-pressed="true">Nominaal</button><button class="seg" type="button" data-reeel="reeel" aria-pressed="false">Reëel</button></div>
       <button class="link-knop mobiel" type="button" id="grafiekToggle" aria-expanded="true">Verberg grafiek</button>
     </div>
-    <p class="muted" style="margin: 6px 0 0">Werkinkomen, pensioen en AOW samen, gemiddeld per maand per levensjaar. De grafiek volgt de keuzes uit de wizard en de netto/bruto-keuze. <span id="reeelUitleg"></span></p>
+    <p class="muted" style="margin: 6px 0 0">Werkinkomen, pensioen en AOW samen, gemiddeld per maand per kalenderjaar. De grafiek volgt de keuzes uit de wizard en de netto/bruto-keuze. <span id="reeelUitleg"></span></p>
     <label class="grafiek-keuze"><input id="toonGrens" type="checkbox"> Toon de 70%-grens en de jaren daaronder</label>
     <div id="tijdlijnGrafiek" style="margin-top: 12px"></div>
     <div class="legenda">
@@ -1175,8 +1175,10 @@
     renderTijdlijn();
   }
 
-  // Per levensjaar het gemiddelde maandbedrag: werkinkomen, ouderdomspensioen (incl. deeltijd), TOPAOW, TOPHL en AOW.
-  // Netto via dezelfde belastingtabel als de rest van de planner. Gebruikt door de tijdlijn en de vergelijking.
+  // Per kalenderjaar het gemiddelde maandbedrag: werkinkomen, ouderdomspensioen (incl. deeltijd), TOPAOW, TOPHL en AOW.
+  // Het eerste jaar telt vanaf de calculatiedatum, het laatste tot de eindleeftijd van de grafiek; het gemiddelde is over
+  // de maanden die in de grafiek vallen. Netto via dezelfde belastingtabel als de rest van de planner.
+  // Per jaar: jaar (kalenderjaar), leeftijd (de leeftijd die in dat jaar wordt bereikt) en lft (leeftijd midden in het jaar, voor reëel).
   function jaarSerie(o) {
     var calcIdx = E.maandIndex(C.calculatiedatum);
     var j0 = Math.floor(calcIdx / 12);
@@ -1191,8 +1193,8 @@
 
     var jaren = {};
     for (var i = calcIdx; i < eindIdx; i++) {
-      var leeftijd = Math.floor((i - o.birth) / 12);
-      var g = jaren[leeftijd] || (jaren[leeftijd] = { w: 0, op: 0, t1: 0, t2: 0, a: 0, n: 0 });
+      var jaar = Math.floor(i / 12);
+      var g = jaren[jaar] || (jaren[jaar] = { w: 0, op: 0, t1: 0, t2: 0, a: 0, n: 0 });
       var row = rowMap[i];
       if (i < o.pensIdx && row) g.w += salaris * Math.pow(1 + li, Math.floor(i / 12) - j0) / 12 * row.werk;
       if (o.deelIdx !== null && i >= o.deelIdx) g.op += o.deelJaar / 12;
@@ -1214,7 +1216,8 @@
       var bruto = w + op + t1 + t2 + a;
       var netto = bruto > 0 ? E.nettoJaar(C, bruto * 12, lhk) / 12 : 0;
       var f = basis === 'netto' ? (bruto > 0 ? netto / bruto : 0) : 1;
-      return { leeftijd: k, w: w * f, op: op * f, t1: t1 * f, t2: t2 * f, a: a * f, totaal: bruto * f };
+      return { jaar: k, leeftijd: k - Math.floor(o.birth / 12), lft: (k * 12 + 6 - o.birth) / 12,
+        w: w * f, op: op * f, t1: t1 * f, t2: t2 * f, a: a * f, totaal: bruto * f };
     });
   }
 
@@ -1224,19 +1227,19 @@
     var serieNom = jaarSerie({ sim: L.sim, u: L.u, pensIdx: L.pensIdx, birth: L.birth, deelIdx: L.deelIdx, deelJaar: L.deelJaar });
     // Vorige keuze: het totaal van de toestand vóór de laatste wijziging, als stippellijn.
     var huidigNom = {};
-    serieNom.forEach(function (s) { huidigNom[s.leeftijd] = s.totaal; });
+    serieNom.forEach(function (s) { huidigNom[s.jaar] = s.totaal; });
     // Alleen bij een afgeronde wijziging (veld verlaten) schuift de stippellijn op.
     if (wijzigd) { vorigeNom = laatsteNom; laatsteNom = huidigNom; wijzigd = false; }
     var vorigeMap = null;
     if (vorigeNom) {
       vorigeMap = {};
-      Object.keys(vorigeNom).forEach(function (k) { vorigeMap[k] = vorigeNom[k] * (REEEL ? reeelFactor(Number(k) + 0.5) : 1); });
+      Object.keys(vorigeNom).forEach(function (k) { vorigeMap[k] = vorigeNom[k] * (REEEL ? reeelFactor((Number(k) * 12 + 6 - L.birth) / 12) : 1); });
     }
     var serie = serieNom;
     if (REEEL) {
       serie = serie.map(function (s) {
-        var f = reeelFactor(s.leeftijd + 0.5);
-        return { leeftijd: s.leeftijd, w: s.w * f, op: s.op * f, t1: s.t1 * f, t2: s.t2 * f, a: s.a * f, totaal: s.totaal * f };
+        var f = reeelFactor(s.lft);
+        return { jaar: s.jaar, leeftijd: s.leeftijd, lft: s.lft, w: s.w * f, op: s.op * f, t1: s.t1 * f, t2: s.t2 * f, a: s.a * f, totaal: s.totaal * f };
       });
     }
     var basis = $('basis').value + (REEEL ? ' · reëel' : ' · nominaal');
@@ -1247,21 +1250,20 @@
     serie.forEach(function (s) { if (s.totaal > piek.totaal) piek = s; });
     var grens = 0.7 * piek.totaal;
     // Dalen tellen pas vanaf het hoogste punt: de lagere startjaren komen door de salarisgroei, niet door de overgang.
-    var na = serie.filter(function (s) { return s.leeftijd > piek.leeftijd && s.totaal > 0; });
-    var laagste = na.length ? na.reduce(function (m, s) { return s.totaal < m.totaal ? s : m; }, na[0]) : piek;
+    var na = serie.filter(function (s) { return s.jaar > piek.jaar && s.totaal > 0; });
     var aowLeeftijd = Math.floor(C.pensioenreglement.aowLeeftijdMaanden / 12);
-    var naAow = serie.filter(function (s) { return s.leeftijd === aowLeeftijd; })[0];
     var dal = na.filter(function (s) { return s.totaal < grens; });
 
     var noot = dal.length
-      ? 'Jaren onder 70% van het hoogste inkomen: van ' + dal[0].leeftijd + ' tot ' + dal[dal.length - 1].leeftijd + ' jaar. '
+      ? 'Jaren onder 70% van het hoogste inkomen: van ' + dal[0].jaar + ' tot en met ' + dal[dal.length - 1].jaar +
+        ' (u wordt dan ' + dal[0].leeftijd + ' tot ' + dal[dal.length - 1].leeftijd + ' jaar). '
       : 'Geen jaren onder 70% van het hoogste inkomen. ';
     $('tijdlijnNoot').textContent = ($('toonGrens').checked ? noot : '') + 'AOW is het standaardbedrag uit de configuratie en wordt niet geïndexeerd, zoals in de rest van de planner. Andere inkomsten, zoals vermogen of een partnerinkomen, zitten er niet in.';
     $('tijdlijnGrafiek').innerHTML = tekenTijdlijn(serie, L, grens, aowLeeftijd, dal, vorigeMap);
   }
 
   function tekenTijdlijn(serie, L, grens, aowLeeftijd, dal, vorigeMap) {
-    var W = 720, H = 330, pl = 76, pr = 16, pt = 56, pb = 34;
+    var W = 720, H = 344, pl = 76, pr = 16, pt = 56, pb = 48;
     var top = 0;
     serie.forEach(function (s) { top = Math.max(top, s.totaal); });
     if (vorigeMap) { Object.keys(vorigeMap).forEach(function (k) { top = Math.max(top, vorigeMap[k]); }); }
@@ -1269,24 +1271,29 @@
     top = as.top;
     var slot = (W - pl - pr) / serie.length;
     var bw = slot * 0.72;
-    var eerste = serie[0].leeftijd;
+    var eerste = serie[0].jaar;
     var x1 = W - pr;
     function y(v) { return H - pb - (H - pt - pb) * v / top; }
+    // Elke kolom is een kalenderjaar; een maandindex staat op zijn plek binnen dat jaar.
+    function xMaand(m) { return Math.min(x1, Math.max(pl, pl + slot * (m / 12 - eerste))); }
 
     // Alleen de jaren na het hoogste punt onder de 70% krijgen de achtergrond, zoals de noot en de legenda zeggen.
     var toon = $('toonGrens').checked;
     var inDal = {};
-    if (toon) dal.forEach(function (s) { inDal[s.leeftijd] = true; });
+    if (toon) dal.forEach(function (s) { inDal[s.jaar] = true; });
 
-    // Fasen als achtergrondzones: Werken, Deeltijd, Pensioen en AOW. Elk levensjaar hoort bij precies één zone.
-    // Deeltijd loopt van de gekozen leeftijd tot de volledige pensioendatum (pensIdx); daarna is het pensioen volledig.
-    var pensAgeZ = Math.floor(L.pensIdx / 12 - L.birth / 12);
-    var deelAgeZ = (L.deelIdx !== null && L.deelIdx !== undefined) ? Math.floor((L.deelIdx - L.birth) / 12) : null;
-    function zoneVan(age) {
-      if (age < pensAgeZ) return (deelAgeZ !== null && age >= deelAgeZ) ? 'deeltijd' : 'werken';
-      if (age < aowLeeftijd) return 'pensioen';
-      return 'aow';
-    }
+    // Fasen als achtergrondzones: Werken, Deeltijd, Pensioen en AOW, met de grenzen op de maand van de overgang.
+    // Deeltijd loopt van de ingangsdatum tot de volledige pensioendatum (pensIdx); daarna is het pensioen volledig.
+    // Gaat het pensioen pas na de AOW in, dan volgt de AOW-zone direct op het werken.
+    var aowIdx = L.birth + C.pensioenreglement.aowLeeftijdMaanden;
+    var heeftDeel = L.deelIdx !== null && L.deelIdx !== undefined;
+    var beginIdx = eerste * 12, eindIdx = (serie[serie.length - 1].jaar + 1) * 12;
+    var grenzen = [
+      { z: 'werken', van: beginIdx, tot: heeftDeel ? L.deelIdx : L.pensIdx },
+      { z: 'deeltijd', van: heeftDeel ? L.deelIdx : L.pensIdx, tot: L.pensIdx },
+      { z: 'pensioen', van: L.pensIdx, tot: aowIdx },
+      { z: 'aow', van: Math.max(L.pensIdx, aowIdx), tot: eindIdx }
+    ];
     var zoneNamen = { werken: 'Werken', deeltijd: 'Deeltijd', pensioen: 'Pensioen', aow: 'AOW' };
     var zoneStijl = {
       werken: 'fill:color-mix(in srgb, var(--accent) 4%, transparent)',
@@ -1294,21 +1301,17 @@
       pensioen: 'fill:color-mix(in srgb, var(--warm) 16%, transparent)',
       aow: 'fill:color-mix(in srgb, var(--muted) 16%, transparent)'
     };
-    var runs = [];
-    serie.forEach(function (s, k) {
-      var z = zoneVan(s.leeftijd);
-      if (runs.length && runs[runs.length - 1].z === z) runs[runs.length - 1].e = k;
-      else runs.push({ z: z, b: k, e: k });
-    });
     var zones = '';
-    runs.forEach(function (r) {
-      var zx0 = pl + slot * r.b, zx1 = pl + slot * (r.e + 1);
+    grenzen.forEach(function (r) {
+      var van = Math.max(r.van, beginIdx), tot = Math.min(r.tot, eindIdx);
+      if (tot <= van) return;
+      var zx0 = xMaand(van), zx1 = xMaand(tot);
       zones += '<rect x="' + zx0.toFixed(2) + '" y="0" width="' + (zx1 - zx0).toFixed(2) + '" height="' + (H - pb) + '" style="' + zoneStijl[r.z] + '"/>';
-      var van = serie[r.b].leeftijd, tot = serie[r.e].leeftijd, lang;
-      if (r.z === 'werken') lang = 'Werken t/m ' + tot + ' j';
-      else if (r.z === 'deeltijd') lang = 'Deeltijd ' + van + '–' + tot + ' j';
-      else if (r.z === 'pensioen') lang = 'Pensioen vanaf ' + van + ' j';
-      else lang = 'AOW vanaf ' + van + ' j';
+      var lang;
+      if (r.z === 'werken') lang = 'Werken tot ' + E.maandLabel(tot);
+      else if (r.z === 'deeltijd') lang = 'Deeltijd vanaf ' + E.maandLabel(van);
+      else if (r.z === 'pensioen') lang = 'Pensioen vanaf ' + E.maandLabel(van);
+      else lang = 'AOW vanaf ' + E.maandLabel(van);
       var label = zx1 - zx0 >= 130 ? lang : (zx1 - zx0 >= 58 ? zoneNamen[r.z] : '');
       if (label) zones += '<text class="as zone" x="' + (zx0 + 6).toFixed(1) + '" y="18">' + label + '</text>';
     });
@@ -1322,7 +1325,7 @@
     var body = '';
     serie.forEach(function (s, k) {
       var sx = pl + slot * k;
-      if (inDal[s.leeftijd]) {
+      if (inDal[s.jaar]) {
         body += '<rect x="' + sx.toFixed(2) + '" y="' + pt + '" width="' + slot.toFixed(2) + '" height="' + (H - pt - pb) + '" fill="var(--warn-bg)"/>';
       }
       var acc = 0;
@@ -1331,7 +1334,7 @@
         if (v <= 0) return;
         var ya = y(acc), yb = y(acc + v);
         body += '<rect x="' + (sx + (slot - bw) / 2).toFixed(2) + '" y="' + yb.toFixed(2) + '" width="' + bw.toFixed(2) + '" height="' + (ya - yb).toFixed(2) +
-          '" fill="' + d[1] + '" stroke="var(--surface)" stroke-width="1"><title>' + s.leeftijd + ' jaar, ' + d[2] + ': ' + eur0.format(v) + ' per maand (totaal ' + eur0.format(s.totaal) + ')</title></rect>';
+          '" fill="' + d[1] + '" stroke="var(--surface)" stroke-width="1"><title>' + s.jaar + ' (u wordt ' + s.leeftijd + '), ' + d[2] + ': ' + eur0.format(v) + ' per maand (totaal ' + eur0.format(s.totaal) + ')</title></rect>';
         acc += v;
       });
     });
@@ -1344,9 +1347,12 @@
     var basis = '<line x1="' + pl + '" x2="' + x1 + '" y1="' + y(0).toFixed(1) + '" y2="' + y(0).toFixed(1) + '" stroke="var(--muted)" stroke-width="1"/>';
 
     var ax = '';
+    // Kalenderjaar op de as, met daaronder de leeftijd die in dat jaar wordt bereikt.
     serie.forEach(function (s, k) {
-      if (s.leeftijd % 5 === 0 || k === 0) {
-        ax += '<text class="as" x="' + (pl + slot * k + slot / 2).toFixed(1) + '" y="' + (H - 10) + '" text-anchor="middle">' + s.leeftijd + ' j</text>';
+      if (s.jaar % 5 === 0 || k === 0) {
+        var ax0 = (pl + slot * k + slot / 2).toFixed(1);
+        ax += '<text class="as" x="' + ax0 + '" y="' + (H - 24) + '" text-anchor="middle">' + s.jaar + '</text>' +
+          '<text class="as" x="' + ax0 + '" y="' + (H - 8) + '" text-anchor="middle" opacity=".7">' + s.leeftijd + ' j</text>';
       }
     });
 
@@ -1354,32 +1360,20 @@
     if (vorigeMap) {
       var gp = [];
       serie.forEach(function (s, k) {
-        var v = vorigeMap[s.leeftijd];
+        var v = vorigeMap[s.jaar];
         if (v !== undefined) gp.push((pl + slot * k + slot / 2).toFixed(1) + ',' + y(v).toFixed(1));
       });
       if (gp.length) ghost = '<polyline points="' + gp.join(' ') + '" fill="none" stroke="var(--fg)" stroke-width="1.5" stroke-dasharray="3 3" opacity=".7"/>';
     }
-    // Markeringen bij AOW en pensioen. De vroegste krijgt het label links van de lijn, de latere rechts,
-    // zodat de twee labels elkaar nooit raken.
-    function marker(age, label, eindLabel) {
-      var k = age - eerste;
-      if (k < 0 || k >= serie.length) return '';
-      var x = pl + slot * k;
-      var tx = eindLabel ? x - 6 : x + 6;
-      // De fasenamen staan in de zones, dus hier alleen de lijn.
+    // Markeringen bij de pensioendatum en de AOW-datum, op de maand zelf. De fasenamen staan in de zones, dus hier alleen de lijn.
+    function marker(m) {
+      if (m <= beginIdx || m >= eindIdx) return '';
+      var x = xMaand(m);
       return '<line x1="' + x.toFixed(1) + '" x2="' + x.toFixed(1) + '" y1="' + (pt - 10) + '" y2="' + (H - pb) + '" stroke="var(--fg)" stroke-dasharray="2 3" opacity=".6"/>';
     }
-    var pensAge = Math.floor(L.pensIdx / 12 - L.birth / 12);
-    var lijnen;
-    if (pensAge === aowLeeftijd) {
-      lijnen = marker(aowLeeftijd, 'AOW', false);
-    } else if (pensAge < aowLeeftijd) {
-      lijnen = marker(pensAge, 'Pensioen', true) + marker(aowLeeftijd, 'AOW', false);
-    } else {
-      lijnen = marker(aowLeeftijd, 'AOW', true) + marker(pensAge, 'Pensioen', false);
-    }
+    var lijnen = marker(aowIdx) + (L.pensIdx !== aowIdx ? marker(L.pensIdx) : '');
 
-    return '<svg class="grafiek" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Inkomen per levensjaar: werkinkomen, pensioen en AOW">' +
+    return '<svg class="grafiek" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Inkomen per kalenderjaar: werkinkomen, pensioen en AOW">' +
       zones + grid + body + drempel + basis + ax + ghost + lijnen + '</svg>';
   }
 
@@ -1460,7 +1454,6 @@
     var hl = Math.max(0, Number(p.tophl) || 0) / 100;
     var eindM = p.tophlEind !== null && p.tophlEind !== undefined ? Number(p.tophlEind) : undefined;
     var u = E.uitkeringen(C, sim, { partnerPct: partnerPct, topaow: t1, tophlPct: hl, tophlEindMaanden: eindM, werkfractie: werk }, jaar);
-    var serie = jaarSerie({ sim: sim, u: u, pensIdx: pensIdx, birth: birthIdx, deelIdx: deel ? deel.idx : null, deelJaar: u.deelJaar });
     return {
       naam: p.naam,
       pensLabel: E.maandLabel(pensIdx),
@@ -1470,8 +1463,7 @@
       t1: u.t1,
       t2: u.t2,
       pctHL: hl,
-      kapitaal: sim.kapitaal,
-      serie: serie
+      kapitaal: sim.kapitaal
     };
   }
 
@@ -1521,11 +1513,7 @@
         var fp = reeelFactor(r.pensJaar), fa = reeelFactor(AOW_JAREN);
         return Object.assign({}, r, {
           pl: r.pl * fp,
-          na: r.na * fa,
-          serie: r.serie.map(function (s) {
-            var f = reeelFactor(s.leeftijd + 0.5);
-            return { leeftijd: s.leeftijd, w: s.w * f, op: s.op * f, t1: s.t1 * f, t2: s.t2 * f, a: s.a * f, totaal: s.totaal * f };
-          })
+          na: r.na * fa
         });
       });
     }

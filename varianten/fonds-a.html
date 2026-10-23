@@ -121,15 +121,16 @@
   var s = {
     deelnemer: C.standaardDeelnemer, start: 'aow', leeftijd: C.pensioenreglement.standaardPensioenleeftijd,
     partnerPct: C.partnerpensioen.standaardPct, partnerKeuze: 'max',
-    verdeling: 'gelijk', topaow: 'max', tophlPct: 33, basis: 'netto',
+    overbrug: false, tijdelijk: false,   // AOW-overbrugging en tijdelijk hoger pensioen, los van elkaar aan of uit
+    topaow: 'max', tophlPct: 33, basis: 'netto',
     reeel: null   // null = standaard (pensioendatum binnen 2 jaar nominaal, anders reëel)
   };
 
   function keuzes(extra) {
     var k = {
       deelnemer: s.deelnemer, start: s.start, leeftijd: s.leeftijd, partnerPct: s.partnerPct,
-      topaow: s.verdeling === 'overbrug' ? s.topaow : 0,
-      tophlPct: s.verdeling === 'tijdelijk' ? s.tophlPct : 0,
+      topaow: s.overbrug ? s.topaow : 0,
+      tophlPct: s.tijdelijk ? s.tophlPct : 0,
       tophlEind: null, basis: s.basis, reeel: s.reeel
     };
     return Object.assign(k, extra || {});
@@ -208,7 +209,7 @@
   // Stap 4: verdeling
   function schermVerdeling() {
     var basisRes = K.bereken(keuzes({ topaow: 0, tophlPct: 0 }));
-    var html = coach('Je kunt je pensioen gelijk over de jaren verdelen, of de eerste jaren wat meer krijgen. Dat laatste kan prettig zijn als je vóór je AOW stopt. Je levenslange pensioen wordt daarna wel lager.') +
+    var html = coach('Je kunt je pensioen gelijk over de jaren verdelen, of de eerste jaren wat meer krijgen. Dat laatste kan prettig zijn als je vóór je AOW stopt. Je levenslange pensioen wordt daarna wel lager. De twee manieren om eerst meer te krijgen kun je ook combineren.') +
       '<h1>Hoe wil je je pensioen verdelen?</h1><div class="keuzes">';
 
     function regel(res) {
@@ -219,32 +220,40 @@
       return eur(res.eerst) + ' p/m, elke maand hetzelfde';
     }
 
-    html += '<button class="keuze" type="button" data-verdeling="gelijk" aria-pressed="' + (s.verdeling === 'gelijk') + '">' +
+    var magOverbrug = basisRes.voorAow && basisRes.maxT1 > 0;
+    var magTijdelijk = basisRes.tophlMogelijk;
+    var metOverbrug = s.overbrug && magOverbrug, metTijdelijk = s.tijdelijk && magTijdelijk;
+
+    // "Gelijk verdeeld" zet beide uit. De andere twee tegels zijn schakelaars die samen aan kunnen.
+    html += '<button class="keuze" type="button" data-verdeling="gelijk" aria-pressed="' + (!metOverbrug && !metTijdelijk) + '">' +
       '<span class="titel">Gelijk verdeeld</span><span class="uitleg">Elke maand ongeveer hetzelfde bedrag, je hele leven lang.</span>' +
       '<span class="bedrag">' + regel(basisRes) + '</span></button>';
 
-    var magOverbrug = basisRes.voorAow && basisRes.maxT1 > 0;
-    var resO = K.bereken(keuzes({ topaow: s.verdeling === 'overbrug' ? s.topaow : 'max', tophlPct: 0 }));
-    html += '<button class="keuze" type="button" data-verdeling="overbrug" aria-pressed="' + (s.verdeling === 'overbrug') + '"' + (magOverbrug ? '' : ' disabled') + '>' +
+    // Het bedrag op een tegel laat het effect van die keuze alleen zien.
+    var resO = K.bereken(keuzes({ topaow: s.overbrug ? s.topaow : 'max', tophlPct: 0 }));
+    html += '<button class="keuze" type="button" data-verdeling="overbrug" aria-pressed="' + metOverbrug + '"' + (magOverbrug ? '' : ' disabled') + '>' +
       '<span class="titel">Extra tot mijn AOW begint</span><span class="uitleg">' +
       (magOverbrug ? 'Je overbrugt de jaren zonder AOW met een hoger bedrag.' : 'Kan alleen als je vóór je AOW-leeftijd stopt.') + '</span>' +
       (magOverbrug ? '<span class="bedrag">' + regel(resO) + '</span>' : '') + '</button>';
 
-    var magTijdelijk = basisRes.tophlMogelijk;
-    var resT = K.bereken(keuzes({ topaow: 0, tophlPct: s.verdeling === 'tijdelijk' ? s.tophlPct : 33 }));
-    html += '<button class="keuze" type="button" data-verdeling="tijdelijk" aria-pressed="' + (s.verdeling === 'tijdelijk') + '"' + (magTijdelijk ? '' : ' disabled') + '>' +
+    var resT = K.bereken(keuzes({ topaow: 0, tophlPct: s.tijdelijk ? s.tophlPct : 33 }));
+    html += '<button class="keuze" type="button" data-verdeling="tijdelijk" aria-pressed="' + metTijdelijk + '"' + (magTijdelijk ? '' : ' disabled') + '>' +
       '<span class="titel">Eerst wat meer, daarna wat minder</span><span class="uitleg">Een tijdelijk hoger pensioen ' +
       (basisRes.voorAow ? 'tot je AOW-leeftijd.' : 'in de eerste jaren.') + '</span>' +
       (magTijdelijk ? '<span class="bedrag">' + regel(resT) + '</span>' : '') + '</button></div>';
 
-    if (s.verdeling === 'overbrug') {
+    if (metOverbrug && metTijdelijk) {
+      html += '<p class="tip">Samen: <strong>' + regel(r()) + '</strong> (' + eenheid(r()) + ').</p>';
+    }
+
+    if (metOverbrug) {
       var max = resO.maxT1;
       var waarde = s.topaow === 'max' ? max : s.topaow;
       html += '<div class="schuif"><label for="t1Schuif"><span>Extra per jaar tot je AOW (bruto)</span><span>' + eur(waarde) + '</span></label>' +
         '<input id="t1Schuif" type="range" min="0" max="' + max + '" step="500" value="' + waarde + '">' +
         '<small>Maximaal ' + eur(max) + ' per jaar in jouw situatie.</small></div>';
     }
-    if (s.verdeling === 'tijdelijk') {
+    if (metTijdelijk) {
       html += '<div class="schuif"><label for="t2Schuif"><span>Hoeveel meer in die eerste jaren</span><span>' + s.tophlPct + '%</span></label>' +
         '<input id="t2Schuif" type="range" min="5" max="33" step="1" value="' + s.tophlPct + '">' +
         '<small>Tot 33% bovenop je levenslange pensioen.</small></div>';
@@ -288,8 +297,10 @@
     var zinnen = [];
     zinnen.push('Je stopt met werken ' + res.tekst.stop + ', in ' + res.tekst.pensioendatum + '.');
     // Totaalbedragen per fase: netto van een los extra deel telt niet op tot het netto totaal.
-    if (res.u.t1 > 0) zinnen.push('Tot je AOW krijg je ' + eur(res.eerst) + ' per maand. Daarna gaat je pensioen naar ' + eur(res.later) + ' per maand.');
-    if (res.u.t2 > 0) zinnen.push('Tot ' + res.tekst.tophlEind + ' krijg je ' + eur(res.eerst) + ' per maand. Daarna is je pensioen ' + eur(res.tussen !== null ? res.tussen : res.later) + ' per maand.');
+    // Met beide keuzes stopt het tijdelijk hogere pensioen hier altijd op de AOW-datum (standaard einde), dus één zin.
+    if (res.u.t1 > 0 && res.u.t2 > 0) zinnen.push('Met de AOW-overbrugging en het tijdelijk hogere pensioen samen krijg je tot je AOW ' + eur(res.eerst) + ' per maand. Daarna gaat je pensioen naar ' + eur(res.tussen !== null ? res.tussen : res.later) + ' per maand.');
+    else if (res.u.t1 > 0) zinnen.push('Tot je AOW krijg je ' + eur(res.eerst) + ' per maand. Daarna gaat je pensioen naar ' + eur(res.later) + ' per maand.');
+    else if (res.u.t2 > 0) zinnen.push('Tot ' + res.tekst.tophlEind + ' krijg je ' + eur(res.eerst) + ' per maand. Daarna is je pensioen ' + eur(res.tussen !== null ? res.tussen : res.later) + ' per maand.');
     if (!twee) zinnen.push('Je krijgt elke maand ongeveer hetzelfde bedrag, je hele leven lang.');
     zinnen.push('Samen met je AOW krijg je later ' + eur(res.laterInclAow) + ' per maand (' + eenheid(res) + ').');
     zinnen.push(res.partnerPct > 0 ? 'Als je overlijdt, krijgt je partner ' + eur(res.partner) + ' per maand (' + eenheid(res) + ').' : 'Je hebt geen partnerpensioen gekozen.');
@@ -346,7 +357,13 @@
       s.partnerPct = s.partnerKeuze === 'max' ? C.partnerpensioen.maxPct : (s.partnerKeuze === 'geen' ? 0 : Math.round(C.partnerpensioen.maxPct / 2));
       teken(false); return;
     }
-    if (b.hasAttribute('data-verdeling')) { s.verdeling = b.getAttribute('data-verdeling'); s.topaow = 'max'; teken(false); return; }
+    if (b.hasAttribute('data-verdeling')) {
+      var v = b.getAttribute('data-verdeling');
+      if (v === 'gelijk') { s.overbrug = false; s.tijdelijk = false; }
+      if (v === 'overbrug') { s.overbrug = !s.overbrug; s.topaow = 'max'; }
+      if (v === 'tijdelijk') s.tijdelijk = !s.tijdelijk;
+      teken(false); return;
+    }
     if (b.hasAttribute('data-basis')) { s.basis = b.getAttribute('data-basis'); teken(false); return; }
     if (b.hasAttribute('data-reeel')) { s.reeel = b.getAttribute('data-reeel') === 'reeel'; teken(false); return; }
   });

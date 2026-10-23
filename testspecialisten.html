@@ -440,14 +440,15 @@ button:disabled { opacity: 0.6; cursor: wait; }
 
       // Deelnemers en config (3)
       { id: 'DEL-01', groep: 'Deelnemers en config', titel: 'Pensioendatum na calculatiedatum voor alle deelnemers',
-        uitleg: 'Bij de standaard pensioenleeftijd moet de pensioendatum na de calculatiedatum liggen. Controleert alle deelnemers uit de config.',
+        uitleg: 'Standaard gaat het pensioen in op de AOW-leeftijd uit de config (aowLeeftijdMaanden). Die pensioendatum moet na de calculatiedatum liggen. Controleert alle deelnemers uit de config.',
         run: function () {
-          var std = c.reg.standaardPensioenleeftijd;
+          var stdM = c.reg.aowLeeftijdMaanden;
+          var std = Math.floor(stdM / 12) + ' jaar' + (stdM % 12 ? ' en ' + (stdM % 12) + ' maanden' : '');
           var delen = cfg.deelnemers.map(function (d) {
-            var pIdx = E.maandIndex(d.geboortedatum) + std * 12;
-            return { ok: pIdx > c.calc, label: d.naam + ': ' + (pIdx > c.calc ? 'ok' : 'pensioen ' + std + ' jaar ligt vóór calculatiedatum') };
+            var pIdx = E.maandIndex(d.geboortedatum) + stdM;
+            return { ok: pIdx > c.calc, label: d.naam + ': ' + (pIdx > c.calc ? 'ok' : 'pensioen op ' + std + ' ligt vóór calculatiedatum') };
           });
-          return { verwacht: 'pensioendatum (' + std + ' jaar) na calculatiedatum voor alle deelnemers',
+          return { verwacht: 'pensioendatum (AOW-leeftijd, ' + std + ') na calculatiedatum voor alle deelnemers',
                    gemeten: delen.map(function (d) { return d.label; }).join('; '),
                    ok: delen.every(function (d) { return d.ok; }) };
         } },
