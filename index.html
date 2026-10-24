@@ -196,7 +196,7 @@
   #vergelijk .link-knop { margin-top: 8px; justify-self: start; }
   @media (max-width: 600px) {
     #deelnemerKeuze { min-width: 0 !important; width: 100%; }
-    #startkapitaal, #salaris, #basisParttime { width: 100% !important; }
+    .up-velden .veld { width: 100%; }
     .resultaat .bedrag { font-size: 30px; }
   }
   .as-titel { font-size: 12px; font-weight: 600; }
@@ -213,6 +213,25 @@
   table.vergelijk .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
   label.weergave { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); font-size: 14px; cursor: pointer; }
   label.weergave input { accent-color: var(--accent); width: 16px; height: 16px; margin: 0; }
+  /* Uitgangspunten bovenaan: ingeklapt met een samenvatting, open met drie gelijk opgemaakte velden. */
+  details.uitgangspunt { border-top: 1px solid var(--line); padding-top: 10px; }
+  details.uitgangspunt > summary { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; cursor: pointer; list-style: none; font-size: 14px; }
+  details.uitgangspunt > summary::-webkit-details-marker { display: none; }
+  details.uitgangspunt > summary:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
+  .up-titel { font-weight: 600; }
+  .up-waarden { color: var(--muted); }
+  .up-aangepast { font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 99px; background: var(--warn-bg); color: var(--fg); }
+  .up-aangepast[hidden] { display: none; }
+  .up-knop { margin-left: auto; color: var(--accent); font-weight: 600; white-space: nowrap; }
+  .up-knop::after { content: " \25B8"; }
+  details[open] .up-knop::after { content: " \25BE"; }
+  details[open] .up-dicht, details:not([open]) .up-open { display: none; }
+  .up-velden { display: grid; gap: 10px; margin-top: 12px; }
+  .up-velden label { font-weight: 600; }
+  .veld { width: 170px; height: 40px; box-sizing: border-box; }
+  .veld-eur { display: inline-flex; align-items: center; gap: 6px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 0 10px; color: var(--muted); }
+  .veld-eur:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .veld-eur input { flex: 1; min-width: 0; height: 100%; font: inherit; color: var(--fg); background: transparent; border: 0; padding: 0; outline: none; }
   details.uitleg { margin-top: 12px; }
   details.uitleg summary { cursor: pointer; font-weight: 600; color: var(--accent); }
   details.uitleg p { margin: 10px 0 0; }
@@ -302,19 +321,30 @@
       <select id="deelnemerKeuze" style="min-width: 280px"></select>
     </div>
     <p class="muted" id="deelnemerInfo" style="margin: -6px 0 0; font-size: 13px"></p>
-    <div class="rij" style="justify-content: space-between; gap: 12px">
-      <label for="startkapitaal" style="font-weight: 600"><span data-i18n="demo.opgebouwd"></span> <span id="kapDatum"></span></label>
-      <span class="rij" style="gap: 6px"><span>€</span><input id="startkapitaal" type="number" min="0" step="1000" style="width: 160px"></span>
-    </div>
-    <div class="rij" style="justify-content: space-between; gap: 12px">
-      <label for="salaris" style="font-weight: 600" data-i18n="demo.salaris"></label>
-      <span class="rij" style="gap: 6px"><span>€</span><input id="salaris" type="number" min="0" step="500" style="width: 160px"></span>
-    </div>
-    <div class="rij" style="justify-content: space-between; gap: 12px">
-      <label for="basisParttime" style="font-weight: 600" data-i18n="demo.basisParttime"></label>
-      <select id="basisParttime" style="width: 160px"></select>
-    </div>
-    <p class="muted" style="margin: -6px 0 0; font-size: 13px" data-i18n="demo.uitgangspuntUitleg"></p>
+    <!-- Uitgangspunten: standaard ingeklapt, met de huidige waarden in de samenvattingsregel. -->
+    <details class="uitgangspunt" id="uitgangspunt">
+      <summary>
+        <span class="up-titel" data-i18n="demo.up.titel"></span>
+        <span class="up-waarden" id="upWaarden"></span>
+        <span class="up-aangepast" id="upAangepast" hidden data-i18n="demo.up.aangepast"></span>
+        <span class="up-knop"><span class="up-dicht" data-i18n="demo.up.aanpassen"></span><span class="up-open" data-i18n="demo.up.verbergen"></span></span>
+      </summary>
+      <div class="up-velden">
+        <div class="rij" style="justify-content: space-between; gap: 12px">
+          <label for="startkapitaal"><span data-i18n="demo.opgebouwd"></span> <span id="kapDatum"></span></label>
+          <span class="veld veld-eur"><span aria-hidden="true">€</span><input id="startkapitaal" type="number" min="0" step="1000"></span>
+        </div>
+        <div class="rij" style="justify-content: space-between; gap: 12px">
+          <label for="salaris" data-i18n="demo.salaris"></label>
+          <span class="veld veld-eur"><span aria-hidden="true">€</span><input id="salaris" type="number" min="0" step="500"></span>
+        </div>
+        <div class="rij" style="justify-content: space-between; gap: 12px">
+          <label for="basisParttime" data-i18n="demo.basisParttime"></label>
+          <select id="basisParttime" class="veld"></select>
+        </div>
+        <p class="muted" style="margin: 0; font-size: 13px" data-i18n="demo.uitgangspuntUitleg"></p>
+      </div>
+    </details>
   </div>
 
   <div class="opzet">
@@ -680,6 +710,14 @@
   // Uitgangspunt bovenaan de pagina: het parttimepercentage van nu. De wijzigingen uit stap 2
   // komen erna; een wijziging in dezelfde maand gaat voor.
   function basisPct() { return Number($('basisParttime').value) || 100; }
+  // Samenvatting van de uitgangspunten in de ingeklapte regel, met 'aangepast' als iets afwijkt van de deelnemer.
+  function toonUitgangspunt() {
+    var d = C.deelnemers[huidigDeel];
+    var sk = Math.max(0, Number($('startkapitaal').value) || 0);
+    var sal = Math.max(0, Number($('salaris').value) || 0);
+    $('upWaarden').textContent = t('demo.up.samenvatting', { kapitaal: eur0.format(sk), salaris: eur0.format(sal), pct: basisPct() });
+    $('upAangepast').hidden = sk === d.startkapitaal && sal === d.brutoSalaris && basisPct() === 100;
+  }
   function metUitgangspunt(lijst) {
     return [{ vanaf: '1900-01', percentage: basisPct() }].concat(lijst);   // geldt al vóór de eerste maand: geen 'wijziging' in maand 1
   }
@@ -974,6 +1012,7 @@
     var start = radio('start');
     // Salaris uit het invoerveld bovenaan; de rekenkern, de tijdlijn en de scenario's lezen het uit C.deelnemer.
     C.deelnemer.brutoSalaris = Math.max(0, Number($('salaris').value) || 0);
+    toonUitgangspunt();
     var deelAan = radio('deel') === 'ja';
     var partnerPct = Number($('partnerPct').value);
     $('startAnder').hidden = start !== 'ander';
