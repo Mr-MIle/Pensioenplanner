@@ -57,6 +57,9 @@
     } catch (e) { return false; }
   }
 
+  // Of er na het toepassen echt iets afwijkt van config.js. Een bewaarde aanpassing die niet meer meetelt
+  // (zoals een oude calculatiedatum) of gelijk is aan config.js, geeft geen melding.
+  var actief = false;
   if (global.PLANNER_CONFIG) {
     global.PLANNER_BASIS = clone(global.PLANNER_CONFIG);
     var ov = lees();
@@ -67,10 +70,14 @@
       // Oude naam van de inkoopfactoren OP.
       if (ov.annuiteitsdelers) { ov.inkoopfactorenOP = ov.annuiteitsdelers; delete ov.annuiteitsdelers; }
       merge(global.PLANNER_CONFIG, ov);
+      actief = diff(global.PLANNER_BASIS, global.PLANNER_CONFIG) !== undefined;
     }
   }
 
   var editor = typeof document !== 'undefined' && document.documentElement && document.documentElement.hasAttribute('data-configbewerker');
+  // De bewerkpagina staat naast dit script, ook als een pagina in een submap (varianten/) het laadt.
+  var bewerkUrl = typeof document !== 'undefined' && document.currentScript
+    ? new URL('config-bewerken.html', document.currentScript.src).href : 'config-bewerken.html';
 
   // Ververs open planner-pagina's zodra de configuratie in een andere tab wijzigt.
   if (!editor) {
@@ -80,13 +87,20 @@
   }
 
   // Melding op de planner-pagina's zolang er aanpassingen actief zijn.
+  // Tekst in de gekozen taal als i18n/i18n.js geladen is, anders Nederlands.
+  function bannerTekst() {
+    var t = global.I18N ? global.I18N.t : null;
+    return (t ? t('gemeen.configActief') : 'Configuratie-aanpassingen actief.') +
+      ' <a href="' + bewerkUrl + '" style="color:#8a5a00;font-weight:600">' + (t ? t('gemeen.configBewerken') : 'Bewerken') + '</a>';
+  }
   function toonBanner() {
-    if (editor || !lees() || typeof document === 'undefined') return;
+    if (editor || !actief || typeof document === 'undefined') return;
     var b = document.createElement('div');
     b.setAttribute('role', 'status');
     b.style.cssText = 'position:fixed;left:12px;bottom:12px;z-index:9999;background:#fff4d6;color:#8a5a00;border:1px solid #e0b860;border-radius:8px;padding:8px 12px;font:14px system-ui,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,.12)';
-    b.innerHTML = 'Configuratie-aanpassingen actief. <a href="config-bewerken.html" style="color:#8a5a00;font-weight:600">Bewerken</a>';
+    b.innerHTML = bannerTekst();
     document.body.appendChild(b);
+    if (global.I18N) global.I18N.opWissel(function () { b.innerHTML = bannerTekst(); });
   }
   if (typeof document !== 'undefined') {
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', toonBanner);
@@ -95,6 +109,7 @@
 
   global.PensioenOverlay = {
     KEY: KEY,
+    actief: actief,
     clone: clone,
     diff: diff,
     merge: merge,

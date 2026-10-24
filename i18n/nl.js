@@ -17,6 +17,8 @@ I18N.voeg('nl', {
   'gemeen.Reeel': 'Reëel',
   'gemeen.brutoOfNetto': 'Bruto of netto',
   'gemeen.nominaalOfReeel': 'Nominaal of reëel',
+  'gemeen.configActief': 'Configuratie-aanpassingen actief.',
+  'gemeen.configBewerken': 'Bewerken',
 
   // Rekenkoppeling van de varianten (kern.js)
   'kern.jaar': ['{n} jaar', '{n} jaar'],

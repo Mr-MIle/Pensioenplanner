@@ -18,6 +18,8 @@ I18N.voeg('da', {
   'gemeen.Reeel': 'Real',
   'gemeen.brutoOfNetto': 'Brutto eller netto',
   'gemeen.nominaalOfReeel': 'Nominel eller real',
+  'gemeen.configActief': 'Konfigurationsændringer er aktive.',
+  'gemeen.configBewerken': 'Rediger (hollandsk)',
 
   'kern.jaar': ['{n} år', '{n} år'],
   'kern.maanden': ['{n} måned', '{n} måneder'],
