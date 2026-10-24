@@ -17,7 +17,7 @@ const MAP = __dirname;
 const ROOT = path.join(MAP, '..');
 const HASHBESTAND = path.join(MAP, 'bron-hash.json');
 // Pagina's en scripts waarin sleutels gebruikt worden.
-const BRONNEN = ['index.html', 'engine.js', 'varianten/index.html', 'varianten/fonds-a.html', 'varianten/fonds-b.html', 'varianten/fonds-c.html', 'varianten/kern.js', 'i18n/i18n.js'];
+const BRONNEN = ['index.html', 'bij-en-afschrijvingen.html', 'engine.js', 'varianten/index.html', 'varianten/fonds-a.html', 'varianten/fonds-b.html', 'varianten/fonds-c.html', 'varianten/kern.js', 'i18n/i18n.js'];
 
 global.window = global;
 eval(fs.readFileSync(path.join(MAP, 'i18n.js'), 'utf8'));

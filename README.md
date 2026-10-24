@@ -10,8 +10,8 @@ Bestanden:
 Deployen op Vercel: importeer deze map (of de repository waarin ze staan) als project,
 kies framework "Other", laat build command en output directory leeg.
 
-Talen (Nederlands, Engels, Deens) in de demo (index.html) en de ontwerpvarianten (varianten/);
-pensioenpot per maand, testspecialisten en config-bewerken blijven Nederlands:
+Talen (Nederlands, Engels, Deens) in de demo (index.html), pensioenpot per maand en de ontwerpvarianten (varianten/);
+testspecialisten en config-bewerken blijven Nederlands:
 - i18n/i18n.js: taalknop, vertaalfunctie en getal-, bedrag- en datumnotatie per taal
 - i18n/nl.js is de bron; en.js en da.js hebben dezelfde sleutels
 - een tekst wijzigen: eerst in nl.js, dan in en.js en da.js, en daarna
