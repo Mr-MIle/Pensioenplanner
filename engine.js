@@ -26,6 +26,7 @@
   }
 
   function leeftijdLabel(m) {
+    if (global.I18N) return global.I18N.t('kern.leeftijdTabel', { j: Math.floor(m / 12), m: m % 12 });
     return Math.floor(m / 12) + ' j ' + (m % 12) + ' m';
   }
 
