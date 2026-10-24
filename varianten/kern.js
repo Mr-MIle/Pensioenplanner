@@ -3,31 +3,45 @@
   Volgt hetzelfde rekenpad als render() in ../index.html, zodat de bedragen in de varianten
   gelijk zijn aan die van de klassieke planner. Deeltijdpensioen en werkwijzigingen zitten
   niet in de varianten; het parttimeschema uit config.js telt wel mee, net als in de demo.
-  Laad na ../config.js, ../config-overlay.js en ../engine.js.
+  Teksten komen uit de taalbestanden (../i18n). Laad na ../i18n/*.js, ../config.js, ../config-overlay.js en ../engine.js.
 */
 (function (global) {
   'use strict';
   var C = global.PLANNER_CONFIG;
   var E = global.PensioenEngine;
+  var I = global.I18N, t = I.t;
 
-  var eur0 = new Intl.NumberFormat('nl-NL', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
   var AOW_M = C.pensioenreglement.aowLeeftijdMaanden;
   var AOW_JAREN = AOW_M / 12;
   var CALC = E.maandIndex(C.calculatiedatum);
 
+  // Leeftijd in maanden als '67 jaar en 3 maanden', kort als '67 jaar + 3 mnd', compact als '67j 3m'.
   function leeftijdTekst(m) {
     var j = Math.floor(m / 12), r = m % 12;
-    return j + ' jaar' + (r ? ' en ' + r + (r === 1 ? ' maand' : ' maanden') : '');
+    var jaar = t('kern.jaar', { n: j });
+    return r ? t('kern.jaarEnMaanden', { jaar: jaar, maanden: t('kern.maanden', { n: r }) }) : jaar;
   }
-  var AOW_LABEL = leeftijdTekst(AOW_M);
+  function leeftijdKort(m) {
+    var j = Math.floor(m / 12), r = m % 12;
+    return r ? t('kern.jaarMndKort', { j: j, m: r }) : t('kern.jaar', { n: j });
+  }
+  function leeftijdCompact(m) {
+    var j = Math.floor(m / 12), r = m % 12;
+    return r ? t('kern.jaarMndCompact', { j: j, m: r }) : t('kern.jaar', { n: j });
+  }
+  function aowLabel() { return leeftijdTekst(AOW_M); }
   var REEEL_GRENS_MAANDEN = 24;   // pensioendatum binnen 2 jaar: standaard nominaal, anders reëel (zoals de demo)
 
   // Korte uitleg bij de standaardkeuze, of leeg als de gebruiker zelf heeft gekozen.
   function reeelUitleg(r, handmatig) {
     if (handmatig) return '';
-    return r.reeel
-      ? 'Standaard reëel (in euro’s van vandaag), omdat het pensioen over meer dan 2 jaar ingaat.'
-      : 'Standaard nominaal, omdat het pensioen binnen 2 jaar ingaat.';
+    return t(r.reeel ? 'kern.standaardReeel' : 'kern.standaardNominaal');
+  }
+
+  // Naam van deelnemer i. De voorbeeldnamen 'Deelnemer A' tot 'Deelnemer D' volgen de taal; andere namen blijven staan.
+  function naam(i) {
+    var n = C.deelnemers[i].naam, m = /^Deelnemer ([A-Z])$/.exec(n);
+    return m ? t('kern.deelnemer', { letter: m[1] }) : n;
   }
 
   // Deelnemer i uit config.js, met leeftijd op de calculatiedatum.
@@ -147,8 +161,9 @@
       },
       tekst: {
         pensioendatum: E.maandLabel(pensIdx),
-        stop: k.start === 'aow' ? 'op de AOW-leeftijd (' + AOW_LABEL + ')' : 'op ' + jaar + ' jaar',
-        tophlEind: u.t2 > 0 ? E.maandLabel(birth + eindKeuze) + ', op ' + leeftijdTekst(eindKeuze) : ''
+        stop: k.start === 'aow' ? t('kern.stopAow', { leeftijd: aowLabel() }) : t('kern.stopOp', { n: jaar }),
+        tophlEind: u.t2 > 0 ? t('kern.tophlEind', { datum: E.maandLabel(birth + eindKeuze), leeftijd: leeftijdTekst(eindKeuze) }) : '',
+        tophlEindDatum: u.t2 > 0 ? E.maandLabel(birth + eindKeuze) : ''
       }
     };
   }
@@ -191,9 +206,9 @@
   }
 
   global.VariantKern = {
-    C: C, E: E, eur: function (v) { return eur0.format(Math.round(v)); },
-    AOW_M: AOW_M, AOW_JAREN: AOW_JAREN, AOW_LABEL: AOW_LABEL,
-    leeftijdTekst: leeftijdTekst, deelnemer: deelnemer, leeftijden: leeftijden, reeelUitleg: reeelUitleg,
+    C: C, E: E, I: I, t: t, eur: function (v) { return I.eur(v); },
+    AOW_M: AOW_M, AOW_JAREN: AOW_JAREN, aowLabel: aowLabel,
+    leeftijdTekst: leeftijdTekst, leeftijdKort: leeftijdKort, leeftijdCompact: leeftijdCompact, naam: naam, deelnemer: deelnemer, leeftijden: leeftijden, reeelUitleg: reeelUitleg,
     bereken: bereken, jaarSerie: jaarSerie
   };
 })(window);

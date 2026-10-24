@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Ontwerpvarianten · Pensioenplanner</title>
+<title data-i18n="overzicht.titel">Ontwerpvarianten · Pensioenplanner</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:opsz,wght@6..72,400;6..72,600&family=Instrument+Sans:wght@400;500;600&display=swap">
 <style>
@@ -22,10 +22,13 @@
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.55 "Instrument Sans", system-ui, sans-serif; }
   .wrap { max-width: 1120px; margin: 0 auto; padding: 40px 24px 64px; }
+  .boven { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
   .terug { color: var(--accent); font-weight: 600; text-decoration: none; }
   .terug:hover { text-decoration: underline; }
   .eyebrow { margin: 28px 0 6px; color: var(--muted); font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
   h1 { font: 600 44px/1.1 "Newsreader", Georgia, serif; margin: 0 0 14px; letter-spacing: -.01em; }
+  h1, h2 { overflow-wrap: break-word; hyphens: auto; }   /* lange Deense en Engelse woorden op smalle schermen */
+  @media (max-width: 600px) { h1 { font-size: 34px; } }
   .lead { max-width: 720px; margin: 0 0 10px; font-size: 18px; color: var(--muted); }
   .lead strong { color: var(--fg); }
   .feiten { display: flex; flex-wrap: wrap; gap: 10px; margin: 22px 0 36px; padding: 0; list-style: none; }
@@ -52,22 +55,22 @@
 </head>
 <body>
 <main class="wrap">
-  <a class="terug" href="../index.html">&larr; Terug naar de demo</a>
+  <div class="boven"><a class="terug" href="../index.html" data-i18n="balk.terug"></a><span data-taalknop style="color:var(--accent)"></span></div>
 
-  <p class="eyebrow">Ontwerpvarianten · illustratief</p>
-  <h1>Eén rekenkern, meerdere gezichten</h1>
-  <p class="lead">De demo laat zien <strong>wat</strong> de pensioenplanner kan. Deze pagina laat zien <strong>hoe</strong> diezelfde planner er bij een fonds uit kan zien: drie ontwerpen, elk met een eigen doel en doelgroep.</p>
-  <p class="lead">Alle drie rekenen met precies dezelfde rekenkern en dezelfde voorbeelddeelnemers als de demo. Met dezelfde keuzes komen dezelfde bedragen eruit. Alleen de vormgeving en de manier van vragen verschillen.</p>
+  <p class="eyebrow" data-i18n="overzicht.eyebrow"></p>
+  <h1 data-i18n="overzicht.h1"></h1>
+  <p class="lead" data-i18n="overzicht.lead1"></p>
+  <p class="lead" data-i18n="overzicht.lead2"></p>
   <ul class="feiten">
-    <li>Zelfde rekenkern als de demo</li>
-    <li>Zelfde vier voorbeelddeelnemers</li>
-    <li>Fictieve fondsen en huisstijlen</li>
-    <li>Alleen de kernkeuzes</li>
+    <li data-i18n="overzicht.feit1"></li>
+    <li data-i18n="overzicht.feit2"></li>
+    <li data-i18n="overzicht.feit3"></li>
+    <li data-i18n="overzicht.feit4"></li>
   </ul>
 
   <div class="tegels">
     <a class="tegel" href="fonds-a.html">
-      <svg viewBox="0 0 360 190" role="img" aria-label="Schets van Fonds A: één vraag per scherm met grote keuzeknoppen">
+      <svg viewBox="0 0 360 190" role="img" data-i18n-attr="aria-label:overzicht.a.schets">
         <rect width="360" height="190" fill="#f7efe6"/>
         <circle cx="40" cy="34" r="12" fill="#c8553d"/>
         <rect x="60" y="28" width="70" height="12" rx="6" fill="#e6d3c3"/>
@@ -80,15 +83,15 @@
       </svg>
       <div class="tekst">
         <h2>Fonds A</h2>
-        <p class="principe">Coachend gesprek</p>
-        <p>Eén vraag per scherm, in gewone taal. De deelnemer ziet bij elke keuze direct wat die betekent, zonder vaktermen of tabellen. Met keuzebegeleiding: een doelvraag vooraf, signalen bij gestapelde keuzes, een vergelijking met het laatste salaris en concrete vervolgstappen.</p>
-        <dl><dt>Voor</dt><dd>Deelnemers die weinig van pensioen weten</dd><dt>Laat zien</dt><dd>Hoe laagdrempelig het kan</dd></dl>
-        <span class="open">Bekijk Fonds A &rarr;</span>
+        <p class="principe" data-i18n="overzicht.a.principe"></p>
+        <p data-i18n="overzicht.a.tekst"></p>
+        <dl><dt data-i18n="overzicht.voor"></dt><dd data-i18n="overzicht.a.voor"></dd><dt data-i18n="overzicht.laatZien"></dt><dd data-i18n="overzicht.a.laatZien"></dd></dl>
+        <span class="open" data-i18n="overzicht.a.open"></span>
       </div>
     </a>
 
     <a class="tegel" href="fonds-b.html">
-      <svg viewBox="0 0 360 190" role="img" aria-label="Schets van Fonds B: dashboard met schuiven, kengetallen en grafiek">
+      <svg viewBox="0 0 360 190" role="img" data-i18n-attr="aria-label:overzicht.b.schets">
         <rect width="360" height="190" fill="#0f1a2b"/>
         <rect x="14" y="14" width="96" height="162" rx="8" fill="#16243a"/>
         <g fill="#2d4466"><rect x="26" y="34" width="72" height="4" rx="2"/><rect x="26" y="62" width="72" height="4" rx="2"/><rect x="26" y="90" width="72" height="4" rx="2"/><rect x="26" y="118" width="72" height="4" rx="2"/></g>
@@ -102,15 +105,15 @@
       </svg>
       <div class="tekst">
         <h2>Fonds B</h2>
-        <p class="principe">Dashboard voor inzicht</p>
-        <p>Alle knoppen en uitkomsten op één scherm. Elke schuif werkt direct door in de kengetallen, de inkomensgrafiek en de verdeling van het kapitaal.</p>
-        <dl><dt>Voor</dt><dd>Adviseurs en inhoudelijke experts</dd><dt>Laat zien</dt><dd>Hoe transparant het rekenwerk kan zijn</dd></dl>
-        <span class="open">Bekijk Fonds B &rarr;</span>
+        <p class="principe" data-i18n="overzicht.b.principe"></p>
+        <p data-i18n="overzicht.b.tekst"></p>
+        <dl><dt data-i18n="overzicht.voor"></dt><dd data-i18n="overzicht.b.voor"></dd><dt data-i18n="overzicht.laatZien"></dt><dd data-i18n="overzicht.b.laatZien"></dd></dl>
+        <span class="open" data-i18n="overzicht.b.open"></span>
       </div>
     </a>
 
     <a class="tegel" href="fonds-c.html">
-      <svg viewBox="0 0 360 190" role="img" aria-label="Schets van Fonds C: drie scenariokaarten naast elkaar">
+      <svg viewBox="0 0 360 190" role="img" data-i18n-attr="aria-label:overzicht.c.schets">
         <rect width="360" height="190" fill="#f3f1fb"/>
         <g fill="#fff" stroke="#dcd6f2"><rect x="16" y="22" width="100" height="146" rx="10"/><rect x="130" y="16" width="100" height="158" rx="10" stroke="#5b3fd1" stroke-width="2"/><rect x="244" y="22" width="100" height="146" rx="10"/></g>
         <g fill="#5b3fd1"><rect x="28" y="38" width="50" height="8" rx="4"/><rect x="142" y="32" width="50" height="8" rx="4"/><rect x="256" y="38" width="50" height="8" rx="4"/></g>
@@ -122,15 +125,20 @@
       </svg>
       <div class="tekst">
         <h2>Fonds C</h2>
-        <p class="principe">Keuzes naast elkaar</p>
-        <p>Drie manieren om het pensioen te verdelen staan als kaarten naast elkaar, met het verschil per maand. Kiezen wordt vergelijken.</p>
-        <dl><dt>Voor</dt><dd>Deelnemers vlak voor een keuzemoment, en het gesprek met management</dd><dt>Laat zien</dt><dd>Keuzebegeleiding: wat levert het op, wat kost het</dd></dl>
-        <span class="open">Bekijk Fonds C &rarr;</span>
+        <p class="principe" data-i18n="overzicht.c.principe"></p>
+        <p data-i18n="overzicht.c.tekst"></p>
+        <dl><dt data-i18n="overzicht.voor"></dt><dd data-i18n="overzicht.c.voor"></dd><dt data-i18n="overzicht.laatZien"></dt><dd data-i18n="overzicht.c.laatZien"></dd></dl>
+        <span class="open" data-i18n="overzicht.c.open"></span>
       </div>
     </a>
   </div>
 
-  <p class="voet">Fonds A, B en C zijn fictief, net als hun huisstijlen en alle bedragen. De varianten bevatten alleen de kernkeuzes: stopleeftijd, partnerpensioen, AOW-overbrugging (TOPAOW) en tijdelijk hoger pensioen (TOPHL). Meer of minder werken en deeltijdpensioen staan alleen in de demo.</p>
+  <p class="voet" data-i18n="overzicht.voet"></p>
 </main>
+<script src="../i18n/i18n.js"></script>
+<script src="../i18n/nl.js"></script>
+<script src="../i18n/en.js"></script>
+<script src="../i18n/da.js"></script>
+<script>I18N.vertaal();</script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fonds C · Keuzes vergelijken</title>
+<title data-i18n="fondsC.paginatitel">Fonds C · Keuzes vergelijken</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700&family=Instrument+Sans:wght@500;600&display=swap">
 <link rel="stylesheet" href="balk.css">
@@ -72,82 +72,87 @@
 </style>
 </head>
 <body>
-<div class="vbalk" role="region" aria-label="Ontwerpvariant">
-  <span class="vb-tag">Ontwerpvariant</span>
-  <span class="vb-naam"><strong>Fonds C</strong> · keuzes naast elkaar (3 van 3)</span>
-  <span class="vb-noot">Illustratief: zelfde rekenkern als de demo, fictieve huisstijl</span>
+<div class="vbalk" role="region" data-i18n-attr="aria-label:balk.label">
+  <span class="vb-tag" data-i18n="balk.tag"></span>
+  <span class="vb-naam" data-i18n="balk.c"></span>
+  <span class="vb-noot" data-i18n="balk.noot"></span>
   <span class="vb-rechts">
-    <nav aria-label="Varianten"><a href="fonds-a.html">A</a><a href="fonds-b.html">B</a><a href="fonds-c.html" aria-current="page">C</a></nav>
-    <a class="vb-link" href="index.html">Alle varianten</a>
-    <a class="vb-link" href="../index.html">&larr; Terug naar de demo</a>
+    <nav data-i18n-attr="aria-label:balk.varianten"><a href="fonds-a.html">A</a><a href="fonds-b.html">B</a><a href="fonds-c.html" aria-current="page">C</a></nav>
+    <a class="vb-link" href="index.html" data-i18n="balk.alle"></a>
+    <a class="vb-link" href="../index.html" data-i18n="balk.terug"></a>
+    <span data-taalknop></span>
   </span>
 </div>
 
 <div class="wrap">
   <header class="kop"><div class="logo"><span class="merk" aria-hidden="true">C</span> Fonds C</div></header>
-  <h1>Hoe wilt u uw pensioen verdelen?</h1>
-  <p class="intro">Drie manieren naast elkaar, met hetzelfde pensioenvermogen. Vergelijk wat u eerder extra krijgt en wat u daar later voor inlevert. Alle bedragen zijn voorbeeldbedragen.</p>
+  <h1 data-i18n="fondsC.h1"></h1>
+  <p class="intro" data-i18n="fondsC.intro"></p>
 
-  <div class="balk" role="group" aria-label="Uitgangspunten">
-    <div class="veld"><label for="deelnemer">Deelnemer</label><select id="deelnemer"></select></div>
-    <div class="veld"><label for="leeftijd">Stoppen met werken</label><select id="leeftijd"></select></div>
-    <div class="veld"><label for="partner">Partnerpensioen</label><select id="partner"></select></div>
-    <div class="veld"><span class="lbl">Bedragen</span>
-      <span class="seg" role="group" aria-label="Bruto of netto"><button type="button" data-basis="netto" aria-pressed="true">Netto</button><button type="button" data-basis="bruto" aria-pressed="false">Bruto</button></span>
+  <div class="balk" role="group" data-i18n-attr="aria-label:fondsC.uitgangspunten">
+    <div class="veld"><label for="deelnemer" data-i18n="fondsC.deelnemer"></label><select id="deelnemer"></select></div>
+    <div class="veld"><label for="leeftijd" data-i18n="fondsC.stoppen"></label><select id="leeftijd"></select></div>
+    <div class="veld"><label for="partner" data-i18n="fondsC.partner"></label><select id="partner"></select></div>
+    <div class="veld"><span class="lbl" data-i18n="fondsC.bedragen"></span>
+      <span class="seg" role="group" data-i18n-attr="aria-label:gemeen.brutoOfNetto"><button type="button" data-basis="netto" aria-pressed="true" data-i18n="gemeen.Netto"></button><button type="button" data-basis="bruto" aria-pressed="false" data-i18n="gemeen.Bruto"></button></span>
     </div>
-    <div class="veld"><span class="lbl">Waarde</span><span class="seg" role="group" aria-label="Nominaal of reëel"><button type="button" data-reeel="nom" aria-pressed="true">Nominaal</button><button type="button" data-reeel="reeel" aria-pressed="false">Reëel</button></span></div>
-    <div class="veld"><span class="lbl">AOW</span><span class="seg" role="group" aria-label="AOW meetellen"><button type="button" data-aow="ja" aria-pressed="true">Inclusief</button><button type="button" data-aow="nee" aria-pressed="false">Exclusief</button></span></div>
+    <div class="veld"><span class="lbl" data-i18n="fondsC.waarde"></span><span class="seg" role="group" data-i18n-attr="aria-label:gemeen.nominaalOfReeel"><button type="button" data-reeel="nom" aria-pressed="true" data-i18n="gemeen.Nominaal"></button><button type="button" data-reeel="reeel" aria-pressed="false" data-i18n="gemeen.Reeel"></button></span></div>
+    <div class="veld"><span class="lbl">AOW</span><span class="seg" role="group" data-i18n-attr="aria-label:fondsC.aowMeetellen"><button type="button" data-aow="ja" aria-pressed="true" data-i18n="fondsC.inclusief"></button><button type="button" data-aow="nee" aria-pressed="false" data-i18n="fondsC.exclusief"></button></span></div>
     <p class="noot" id="reeelUitleg" style="margin:0;flex-basis:100%"></p>
   </div>
 
   <div class="kaarten">
     <article class="kaart" id="k1" style="--c: var(--s1)">
-      <span class="label">Scenario 1</span>
-      <h2>Gelijkmatig</h2>
-      <p class="wat">Elke maand ongeveer hetzelfde, uw hele leven lang. Het uitgangspunt.</p>
+      <span class="label" data-i18n="fondsC.scenario1"></span>
+      <h2 data-i18n="fondsC.naam1"></h2>
+      <p class="wat" data-i18n="fondsC.wat1"></p>
       <div class="uitkomst"></div>
-      <button class="kies" type="button" data-kies="1">Dit kies ik</button>
+      <button class="kies" type="button" data-kies="1"></button>
     </article>
     <article class="kaart" id="k2" style="--c: var(--s2)">
-      <span class="label">Scenario 2</span>
-      <h2>Overbruggen tot de AOW</h2>
-      <p class="wat">Extra pensioen tot uw AOW begint (TOPAOW). Daarna een lager levenslang pensioen.</p>
+      <span class="label" data-i18n="fondsC.scenario2"></span>
+      <h2 data-i18n="fondsC.naam2"></h2>
+      <p class="wat" data-i18n="fondsC.wat2"></p>
       <div class="uitkomst"></div>
       <div class="instel">
-        <div class="boven"><label for="t1">Extra per jaar (bruto)</label><span class="num" id="t1W"></span></div>
+        <div class="boven"><label for="t1" data-i18n="fondsC.t1"></label><span class="num" id="t1W"></span></div>
         <input id="t1" type="range" min="0" step="500" value="0">
         <small id="t1S"></small>
       </div>
-      <button class="kies" type="button" data-kies="2">Dit kies ik</button>
+      <button class="kies" type="button" data-kies="2"></button>
     </article>
     <article class="kaart" id="k3" style="--c: var(--s3)">
-      <span class="label">Scenario 3</span>
-      <h2>Eerst meer, later minder</h2>
-      <p class="wat">Een tijdelijk hoger pensioen (TOPHL), tot een datum die u kiest. Daarna een lager levenslang pensioen.</p>
+      <span class="label" data-i18n="fondsC.scenario3"></span>
+      <h2 data-i18n="fondsC.naam3"></h2>
+      <p class="wat" data-i18n="fondsC.wat3"></p>
       <div class="uitkomst"></div>
       <div class="instel">
-        <div class="boven"><label for="t2">Hoeveel hoger</label><span class="num" id="t2W"></span></div>
+        <div class="boven"><label for="t2" data-i18n="fondsC.t2"></label><span class="num" id="t2W"></span></div>
         <input id="t2" type="range" min="5" step="1" value="20">
-        <div class="boven" style="margin-top:6px"><label for="t2e">Tot</label><span class="num" id="t2eW"></span></div>
+        <div class="boven" style="margin-top:6px"><label for="t2e" data-i18n="fondsC.t2e"></label><span class="num" id="t2eW"></span></div>
         <input id="t2e" type="range" step="12">
       </div>
-      <button class="kies" type="button" data-kies="3">Dit kies ik</button>
+      <button class="kies" type="button" data-kies="3"></button>
     </article>
   </div>
 
   <div class="samen">
     <section class="vlak" aria-labelledby="h-samen">
-      <h3 id="h-samen">Uw inkomen per maand, de drie scenario's over elkaar</h3>
+      <h3 id="h-samen" data-i18n="fondsC.hSamen"></h3>
       <div id="lijnen"></div>
-      <div class="legenda"><span style="--c: var(--s1)">Gelijkmatig</span><span style="--c: var(--s2)">Overbruggen</span><span style="--c: var(--s3)">Eerst meer</span></div>
+      <div class="legenda"><span style="--c: var(--s1)" data-i18n="fondsC.naam1"></span><span style="--c: var(--s2)" data-i18n="fondsC.lg2"></span><span style="--c: var(--s3)" data-i18n="fondsC.lg3"></span></div>
     </section>
     <section class="vlak advies" aria-labelledby="h-keuze" aria-live="polite">
-      <h3 id="h-keuze">Uw keuze</h3>
+      <h3 id="h-keuze" data-i18n="fondsC.hKeuze"></h3>
       <div id="keuze"></div>
     </section>
   </div>
 </div>
 
+<script src="../i18n/i18n.js"></script>
+<script src="../i18n/nl.js"></script>
+<script src="../i18n/en.js"></script>
+<script src="../i18n/da.js"></script>
 <script src="../config.js"></script>
 <script src="../config-overlay.js"></script>
 <script src="../engine.js"></script>
@@ -155,25 +160,32 @@
 <script>
 (function () {
   'use strict';
-  var K = window.VariantKern, C = K.C;
+  var K = window.VariantKern, C = K.C, I = K.I, t = K.t;
   var eur = K.eur;
   function $(id) { return document.getElementById(id); }
   var reeel = null;   // null = standaard: pensioendatum binnen 2 jaar nominaal, anders reëel
   var basis = 'netto', metAow = true, gekozen = 1, eindHandmatig = false, t1Max = true;
   var KLEUR = { 1: '#8f86b8', 2: '#5b3fd1', 3: '#18a37a' };
 
+  // Keuzelijsten (opnieuw) vullen; de gekozen waarden blijven staan.
   function vul() {
-    C.deelnemers.forEach(function (d, i) { $('deelnemer').add(new Option(d.naam + ' (' + K.deelnemer(i).leeftijdJaar + ' jaar)', i)); });
-    $('deelnemer').value = C.standaardDeelnemer;
-    for (var p = C.partnerpensioen.maxPct; p >= C.partnerpensioen.minPct; p -= 10) $('partner').add(new Option(p === 0 ? 'Geen' : p + '%', p));
-    $('partner').value = C.partnerpensioen.standaardPct;
+    var dn = $('deelnemer'), pp = $('partner');
+    var oudD = dn.value, oudP = pp.value;
+    dn.innerHTML = ''; pp.innerHTML = '';
+    C.deelnemers.forEach(function (d, i) { dn.add(new Option(t('fondsC.optieDeelnemer', { naam: K.naam(i), leeftijd: t('kern.jaar', { n: K.deelnemer(i).leeftijdJaar }) }), i)); });
+    dn.value = oudD === '' ? C.standaardDeelnemer : oudD;
+    for (var p = C.partnerpensioen.maxPct; p >= C.partnerpensioen.minPct; p -= 10) pp.add(new Option(p === 0 ? t('fondsC.geen') : p + '%', p));
+    pp.value = oudP === '' ? C.partnerpensioen.standaardPct : oudP;
     vulLeeftijd();
   }
   function vulLeeftijd() {
     var sel = $('leeftijd'), oud = Number(sel.value);
     var lijst = K.leeftijden(Number($('deelnemer').value));
     sel.innerHTML = '';
-    lijst.forEach(function (j) { sel.add(new Option(j === K.AOW_JAREN ? j + ' jaar (AOW)' : j + ' jaar', j)); });
+    lijst.forEach(function (j) {
+      var jaar = t('kern.jaar', { n: j });
+      sel.add(new Option(j === K.AOW_JAREN ? t('fondsC.optieAow', { leeftijd: jaar }) : jaar, j));
+    });
     var std = C.pensioenreglement.standaardPensioenleeftijd;
     sel.value = lijst.indexOf(oud) >= 0 ? oud : (lijst.indexOf(std) >= 0 ? std : lijst[0]);
   }
@@ -202,7 +214,7 @@
     grenzen.sort(function (a, b) { return a - b; });
     return grenzen.map(function (g, i) { return { van: g, tot: grenzen[i + 1] || null, bedrag: op(res, g) }; });
   }
-  function leeftijdKort(m) { return K.leeftijdTekst(m).replace(' en ', ' + ').replace(' maanden', ' mnd').replace(' maand', ' mnd'); }
+  var leeftijdKort = K.leeftijdKort;
 
   function mini(res, kleur, max) {
     var W = 320, H = 90, eindM = C.pensioenreglement.grafiekEindLeeftijd * 12, x0 = res.pensM;
@@ -220,8 +232,8 @@
     return '<svg viewBox="0 0 ' + W + ' ' + H + '" aria-hidden="true">' +
       (K.AOW_M > x0 ? '<line x1="' + aowX + '" x2="' + aowX + '" y1="4" y2="' + (H - 14) + '" stroke="#dcd6f2" stroke-dasharray="3 3"/><text x="' + (aowX + 3) + '" y="12" font-size="10" fill="#6a6390">AOW</text>' : '') +
       '<path d="' + pad + '" fill="none" stroke="' + kleur + '" stroke-width="3" stroke-linejoin="round"/>' +
-      '<text x="6" y="' + (H - 2) + '" font-size="10" fill="#6a6390">' + Math.floor(x0 / 12) + ' jaar</text>' +
-      '<text x="' + (W - 6) + '" y="' + (H - 2) + '" font-size="10" fill="#6a6390" text-anchor="end">' + (eindM / 12) + ' jaar</text></svg>';
+      '<text x="6" y="' + (H - 2) + '" font-size="10" fill="#6a6390">' + t('kern.jaar', { n: Math.floor(x0 / 12) }) + '</text>' +
+      '<text x="' + (W - 6) + '" y="' + (H - 2) + '" font-size="10" fill="#6a6390" text-anchor="end">' + t('kern.jaar', { n: eindM / 12 }) + '</text></svg>';
   }
 
   function render() {
@@ -235,7 +247,7 @@
     t1.max = b.maxT1;
     if (t1Max) t1.value = b.maxT1;
     $('t1W').textContent = eur(r[2].u.t1);
-    $('t1S').textContent = b.maxT1 > 0 ? 'Maximaal ' + eur(b.maxT1) + ' per jaar in deze situatie' : '';
+    $('t1S').textContent = b.maxT1 > 0 ? t('fondsC.t1Max', { bedrag: eur(b.maxT1) }) : '';
     $('t2').max = Math.round(C.tophl.maxPctOP * 100);
     $('t2W').textContent = $('t2').value + '%';
     var e = $('t2e');
@@ -259,28 +271,27 @@
     [1, 2, 3].forEach(function (n) { fasen(r[n]).forEach(function (f) { maxBedrag = Math.max(maxBedrag, f.bedrag); }); });
     maxBedrag *= 1.08;
 
-    var later1 = op(b, C.pensioenreglement.grafiekEindLeeftijd * 12 - 1);
     [1, 2, 3].forEach(function (n) {
       var res = r[n], kaart = $('k' + n);
       kaart.classList.toggle('gekozen', gekozen === n);
-      kaart.querySelector('.kies').textContent = gekozen === n ? '✓ Gekozen' : 'Dit kies ik';
+      kaart.querySelector('.kies').textContent = t(gekozen === n ? 'fondsC.gekozen' : 'fondsC.kies');
       var uit = kaart.querySelector('.uitkomst');
       if ((n === 2 && !magOverbrug) || (n === 3 && !b.tophlMogelijk)) {
-        uit.innerHTML = '<p class="noot">' + (n === 2 ? 'Kan alleen als u vóór de AOW-leeftijd stopt. Kies een eerdere stopleeftijd.' : 'Niet mogelijk bij deze stopleeftijd.') + '</p>';
+        uit.innerHTML = '<p class="noot">' + t(n === 2 ? 'fondsC.niet2' : 'fondsC.niet3') + '</p>';
         return;
       }
       var f = fasen(res);
       var eerste = f[0], laatste = f[f.length - 1];
       var html = '<div class="bedragen">' +
-        '<div class="bedrag"><div class="w num">' + eur(eerste.bedrag) + '</div><div class="t">per maand vanaf ' + leeftijdKort(eerste.van) + '</div></div>' +
-        '<div class="bedrag"><div class="w num">' + eur(laatste.bedrag) + '</div><div class="t">per maand vanaf ' + leeftijdKort(laatste.van) + ', levenslang</div></div></div>';
+        '<div class="bedrag"><div class="w num">' + eur(eerste.bedrag) + '</div><div class="t">' + t('fondsC.vanaf', { leeftijd: leeftijdKort(eerste.van) }) + '</div></div>' +
+        '<div class="bedrag"><div class="w num">' + eur(laatste.bedrag) + '</div><div class="t">' + t('fondsC.vanafLevenslang', { leeftijd: leeftijdKort(laatste.van) }) + '</div></div></div>';
       var chips = '';
-      if (n === 1) chips = '<span class="chip nul">Uitgangspunt</span>';
+      if (n === 1) chips = '<span class="chip nul">' + t('fondsC.uitgangspunt') + '</span>';
       else {
         var extra = eerste.bedrag - op(b, eerste.van);
         var minder = op(res, laatste.van) - op(b, laatste.van);
-        chips = '<span class="chip plus">+' + eur(extra) + ' p/m de eerste ' + jaren(res, n) + '</span>' +
-          '<span class="chip min">' + eur(minder).replace('-', '−') + ' p/m levenslang daarna</span>';
+        chips = '<span class="chip plus">' + t('fondsC.chipPlus', { bedrag: eur(extra), duur: duur(res, n) }) + '</span>' +
+          '<span class="chip min">' + t('fondsC.chipMin', { bedrag: eur(minder).replace('-', '−') }) + '</span>';
       }
       html += '<div class="verschil">' + chips + '</div><div class="mini">' + mini(res, KLEUR[n], maxBedrag) + '</div>';
       uit.innerHTML = html;
@@ -290,10 +301,12 @@
     keuzeTekst(r);
   }
 
-  function jaren(res, n) {
+  // Duur van de eerste fase, bijvoorbeeld '3 jaar en 4 mnd'.
+  function duur(res, n) {
     var tot = n === 2 ? K.AOW_M : res.eindKeuze;
     var mnd = tot - res.pensM, j = Math.floor(mnd / 12), m = mnd % 12;
-    return (j ? j + (j === 1 ? ' jaar' : ' jaar') : '') + (j && m ? ' en ' : '') + (m ? m + ' mnd' : '');
+    var a = j ? t('kern.jaar', { n: j }) : '', b = m ? t('fondsC.mnd', { n: m }) : '';
+    return a && b ? t('fondsC.duurEn', { a: a, b: b }) : a + b;
   }
 
   function lijnen(r) {
@@ -305,8 +318,8 @@
     var stap = max > 6000 ? 1000 : 500, top = Math.ceil(max * 1.05 / stap) * stap || stap;
     var x = function (m) { return L + (W - L - R) * (m - x0) / Math.max(1, x1 - x0); };
     var y = function (v) { return T + (H - T - B) * (1 - v / top); };
-    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Lijngrafiek van het maandinkomen per scenario, van de pensioendatum tot ' + (x1 / 12) + ' jaar">';
-    for (var g = 0; g <= top; g += stap) svg += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(g) + '" y2="' + y(g) + '" stroke="#ece7ff"/><text x="' + (L - 6) + '" y="' + (y(g) + 4) + '" font-size="11" fill="#6a6390" text-anchor="end">' + eur(g).replace(' ', ' ') + '</text>';
+    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + t('fondsC.lijnenLabel', { leeftijd: t('kern.jaar', { n: x1 / 12 }) }) + '">';
+    for (var g = 0; g <= top; g += stap) svg += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(g) + '" y2="' + y(g) + '" stroke="#ece7ff"/><text x="' + (L - 6) + '" y="' + (y(g) + 4) + '" font-size="11" fill="#6a6390" text-anchor="end">' + eur(g) + '</text>';
     for (var a = Math.ceil(x0 / 12); a <= x1 / 12; a++) if (a % 2 === 0) svg += '<text x="' + x(a * 12) + '" y="' + (H - 8) + '" font-size="11" fill="#6a6390" text-anchor="middle">' + a + '</text>';
     actief.forEach(function (n) {
       var res = r[n], pad = '', vorige = null;
@@ -324,15 +337,16 @@
 
   function keuzeTekst(r) {
     var res = r[gekozen], b = r[1];
-    var namen = { 1: 'Gelijkmatig', 2: 'Overbruggen tot de AOW', 3: 'Eerst meer, later minder' };
-    var html = '<p class="groot">' + namen[gekozen] + '</p>';
-    html += '<p>U stopt ' + res.tekst.stop + ', in ' + res.tekst.pensioendatum + '.</p>';
-    if (gekozen === 1) html += '<p>U krijgt ' + eur(res.later) + ' ' + basis + ' per maand aan pensioen' + (metAow ? ', met AOW ' + eur(res.laterInclAow) : '') + '.</p>';
+    var bas = t('gemeen.' + basis);
+    var html = '<p class="groot">' + t('fondsC.naam' + gekozen) + '</p>';
+    html += '<p>' + t('fondsC.uStopt', { stop: res.tekst.stop, datum: res.tekst.pensioendatum }) + '</p>';
+    if (gekozen === 1) html += '<p>' + t(metAow ? 'fondsC.keuze1Aow' : 'fondsC.keuze1', { bedrag: eur(res.later), basis: bas, aow: eur(res.laterInclAow) }) + '</p>';
     // Verschillen als verschil van totalen: netto van een los extra deel telt niet op tot het netto totaal.
-    if (gekozen === 2) html += '<p>Tot uw AOW krijgt u ' + eur(res.eerst) + ' per maand, ' + eur(res.eerst - b.eerst) + ' meer dan bij gelijkmatig. Daarna is uw pensioen ' + eur(b.later - res.later) + ' per maand lager.</p>';
-    if (gekozen === 3) html += '<p>Tot ' + res.tekst.tophlEind + ' krijgt u ' + eur(res.eerst) + ' per maand, ' + eur(res.eerst - b.eerst) + ' meer dan bij gelijkmatig. Daarna is uw pensioen ' + eur(b.later - res.later) + ' per maand lager.</p>';
-    html += '<p>' + (res.partnerPct > 0 ? 'Partnerpensioen: ' + eur(res.partner) + ' ' + basis + ' per maand.' : 'Geen partnerpensioen.') + '</p>';
-    html += '<p class="noot">Bedragen ' + basis + (res.reeel ? ' en reëel (euro’s van vandaag)' : ' en nominaal') + ', ' + (metAow ? 'inclusief' : 'exclusief') + ' AOW in de grafieken. Voorbeeldbedragen, geen advies.</p>';
+    var verschil = { bedrag: eur(res.eerst), extra: eur(res.eerst - b.eerst), minder: eur(b.later - res.later), eind: res.tekst.tophlEind };
+    if (gekozen === 2) html += '<p>' + t('fondsC.keuze2', verschil) + '</p>';
+    if (gekozen === 3) html += '<p>' + t('fondsC.keuze3', verschil) + '</p>';
+    html += '<p>' + (res.partnerPct > 0 ? t('fondsC.partnerBedrag', { bedrag: eur(res.partner), basis: bas }) : t('fondsC.geenPartner')) + '</p>';
+    html += '<p class="noot">' + t('fondsC.noot', { basis: bas, waarde: t(res.reeel ? 'fondsC.waardeReeel' : 'gemeen.nominaal'), aow: t(metAow ? 'fondsC.inclusiefKlein' : 'fondsC.exclusiefKlein') }) + '</p>';
     $('keuze').innerHTML = html;
   }
 
@@ -351,6 +365,8 @@
     if (b.hasAttribute('data-reeel')) { reeel = b.getAttribute('data-reeel') === 'reeel'; render(); }
     if (b.hasAttribute('data-aow')) { metAow = b.getAttribute('data-aow') === 'ja'; document.querySelectorAll('[data-aow]').forEach(function (o) { o.setAttribute('aria-pressed', String(o === b)); }); render(); }
   });
+  I.opWissel(function () { vul(); render(); });
+  I.vertaal();
   render();
 })();
 </script>

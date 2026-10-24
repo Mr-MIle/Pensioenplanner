@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fonds A · Pensioengesprek</title>
+<title data-i18n="fondsA.paginatitel">Fonds A · Pensioengesprek</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Nunito+Sans:opsz,wght@6..12,400;6..12,600;6..12,700&family=Instrument+Sans:wght@500;600&display=swap">
 <link rel="stylesheet" href="balk.css">
@@ -122,14 +122,15 @@
 </style>
 </head>
 <body>
-<div class="vbalk" role="region" aria-label="Ontwerpvariant">
-  <span class="vb-tag">Ontwerpvariant</span>
-  <span class="vb-naam"><strong>Fonds A</strong> · coachend gesprek (1 van 3)</span>
-  <span class="vb-noot">Illustratief: zelfde rekenkern als de demo, fictieve huisstijl</span>
+<div class="vbalk" role="region" data-i18n-attr="aria-label:balk.label">
+  <span class="vb-tag" data-i18n="balk.tag"></span>
+  <span class="vb-naam" data-i18n="balk.a"></span>
+  <span class="vb-noot" data-i18n="balk.noot"></span>
   <span class="vb-rechts">
-    <nav aria-label="Varianten"><a href="fonds-a.html" aria-current="page">A</a><a href="fonds-b.html">B</a><a href="fonds-c.html">C</a></nav>
-    <a class="vb-link" href="index.html">Alle varianten</a>
-    <a class="vb-link" href="../index.html">&larr; Terug naar de demo</a>
+    <nav data-i18n-attr="aria-label:balk.varianten"><a href="fonds-a.html" aria-current="page">A</a><a href="fonds-b.html">B</a><a href="fonds-c.html">C</a></nav>
+    <a class="vb-link" href="index.html" data-i18n="balk.alle"></a>
+    <a class="vb-link" href="../index.html" data-i18n="balk.terug"></a>
+    <span data-taalknop></span>
   </span>
 </div>
 
@@ -142,6 +143,10 @@
 
 <div class="pil" id="pil" hidden></div>
 
+<script src="../i18n/i18n.js"></script>
+<script src="../i18n/nl.js"></script>
+<script src="../i18n/en.js"></script>
+<script src="../i18n/da.js"></script>
 <script src="../config.js"></script>
 <script src="../config-overlay.js"></script>
 <script src="../engine.js"></script>
@@ -149,7 +154,7 @@
 <script>
 (function () {
   'use strict';
-  var K = window.VariantKern, C = K.C;
+  var K = window.VariantKern, C = K.C, I = K.I, t = K.t;
   var eur = K.eur;
   // Stappen: 0 wie, 1 doel, 2 wanneer, 3 partner, 4 verdeling, 5 resultaat, 6 wat nu.
   var WIE = 0, DOEL = 1, WANNEER = 2, PARTNER = 3, VERDELING = 4, RESULTAAT = 5, WATNU = 6;
@@ -180,52 +185,50 @@
   }
   function r() { return K.bereken(keuzes()); }
   function $(id) { return document.getElementById(id); }
-  function esc(t) { return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+  function esc(x) { return String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
 
-  function eenheid(res) { return s.basis + (res.reeel ? ', in euro’s van vandaag' : ''); }
+  function eenheid(res) { return t(res.reeel ? 'fondsA.eenheidReeel' : 'fondsA.eenheid', { basis: t('gemeen.' + s.basis) }); }
 
   function coach(tekst) {
     return '<div class="coach"><div class="avatar" aria-hidden="true">&#128075;</div><div class="wolk">' + tekst + '</div></div>';
   }
   function nav(volgende, label) {
     return '<div class="navigatie">' +
-      (stap > 0 ? '<button class="knop stil" type="button" data-naar="' + (stap - 1) + '">&larr; Vorige</button>' : '<span></span>') +
-      (volgende !== undefined ? '<button class="knop" type="button" data-naar="' + volgende + '">' + (label || 'Volgende') + ' &rarr;</button>' : '') +
+      (stap > 0 ? '<button class="knop stil" type="button" data-naar="' + (stap - 1) + '">&larr; ' + t('fondsA.vorige') + '</button>' : '<span></span>') +
+      (volgende !== undefined ? '<button class="knop" type="button" data-naar="' + volgende + '">' + (label || t('fondsA.volgende')) + ' &rarr;</button>' : '') +
       '</div>';
   }
 
   // Stap 1: voor wie rekenen we?
   function schermWie() {
-    var html = coach('Hoi! Ik help je in een paar vragen op weg. Voor deze voorbeeldberekening kies je eerst een deelnemer.') +
-      '<h1>Voor wie rekenen we?</h1><div class="keuzes twee">';
+    var html = coach(t('fondsA.wie.coach')) +
+      '<h1>' + t('fondsA.wie.h1') + '</h1><div class="keuzes twee">';
     C.deelnemers.forEach(function (d, i) {
       var p = K.deelnemer(i);
       html += '<button class="keuze" type="button" data-deelnemer="' + i + '" aria-pressed="' + (s.deelnemer === i) + '">' +
-        '<span class="titel">' + esc(d.naam) + ', ' + p.leeftijdJaar + ' jaar</span>' +
-        '<span class="uitleg">Al opgebouwd: ' + eur(d.startkapitaal) + '<br>Salaris: ' + eur(d.brutoSalaris) + ' per jaar</span></button>';
+        '<span class="titel">' + t('fondsA.wie.titel', { naam: esc(K.naam(i)), leeftijd: t('kern.jaar', { n: p.leeftijdJaar }) }) + '</span>' +
+        '<span class="uitleg">' + t('fondsA.wie.uitleg', { kapitaal: eur(d.startkapitaal), salaris: eur(d.brutoSalaris) }) + '</span></button>';
     });
-    return html + '</div>' + nav(DOEL, 'Aan de slag');
+    return html + '</div>' + nav(DOEL, t('fondsA.wie.start'));
   }
 
-  function past(ja) { return ja ? '<span class="past">Past bij wat je aangaf</span>' : ''; }
+  function past(ja) { return ja ? '<span class="past">' + t('fondsA.past') + '</span>' : ''; }
 
   // Stap 2: wat vind je belangrijk? De antwoorden bepalen welke uitleg en signalen je later ziet.
   function schermDoel() {
-    var html = coach('Voordat we gaan rekenen: wat vind je zelf belangrijk? Dan kan ik je straks wijzen op wat bij jou past, en op keuzes die misschien minder goed uitpakken. Je mag ook vragen overslaan.') +
-      '<h1>Wat vind je belangrijk?</h1>' +
-      '<p class="vraag">Wat past het best bij jou?</p><div class="keuzes">';
-    [['nu', 'Meer te besteden in de eerste jaren', 'Zolang je nog fit bent, wil je wat meer kunnen doen.'],
-     ['zeker', 'Zekerheid voor later', 'Je wilt een stabiel bedrag, ook als je 85 bent.'],
-     ['weetniet', 'Weet ik nog niet', 'Geen probleem, je ziet straks wat elke keuze doet.']].forEach(function (o) {
-      html += '<button class="keuze" type="button" data-doel="' + o[0] + '" aria-pressed="' + (s.doel === o[0]) + '">' +
-        '<span class="titel">' + o[1] + '</span><span class="uitleg">' + o[2] + '</span></button>';
+    var html = coach(t('fondsA.doel.coach')) +
+      '<h1>' + t('fondsA.doel.h1') + '</h1>' +
+      '<p class="vraag">' + t('fondsA.doel.vraag') + '</p><div class="keuzes">';
+    ['nu', 'zeker', 'weetniet'].forEach(function (o) {
+      html += '<button class="keuze" type="button" data-doel="' + o + '" aria-pressed="' + (s.doel === o) + '">' +
+        '<span class="titel">' + t('fondsA.doel.' + o) + '</span><span class="uitleg">' + t('fondsA.doel.' + o + 'Uitleg') + '</span></button>';
     });
-    html += '</div><p class="vraag">Heb je een partner?<small>Getrouwd, geregistreerd of samenwonend.</small></p><div class="chips">' +
-      '<button class="chip" type="button" data-heeftpartner="ja" aria-pressed="' + (s.partner === 'ja') + '">Ja</button>' +
-      '<button class="chip" type="button" data-heeftpartner="nee" aria-pressed="' + (s.partner === 'nee') + '">Nee</button></div>' +
-      '<p class="vraag">Wat heb je naast dit pensioen?<small>Kies alles wat van toepassing is.</small></p><div class="chips">';
-    [['huis', 'Een eigen huis'], ['spaar', 'Spaargeld of beleggingen'], ['elders', 'Pensioen bij een andere werkgever']].forEach(function (o) {
-      html += '<button class="chip" type="button" data-bezit="' + o[0] + '" aria-pressed="' + !!s.bezit[o[0]] + '">' + o[1] + '</button>';
+    html += '</div><p class="vraag">' + t('fondsA.doel.partner') + '<small>' + t('fondsA.doel.partnerUitleg') + '</small></p><div class="chips">' +
+      '<button class="chip" type="button" data-heeftpartner="ja" aria-pressed="' + (s.partner === 'ja') + '">' + t('fondsA.ja') + '</button>' +
+      '<button class="chip" type="button" data-heeftpartner="nee" aria-pressed="' + (s.partner === 'nee') + '">' + t('fondsA.nee') + '</button></div>' +
+      '<p class="vraag">' + t('fondsA.doel.bezit') + '<small>' + t('fondsA.doel.bezitUitleg') + '</small></p><div class="chips">';
+    ['huis', 'spaar', 'elders'].forEach(function (o) {
+      html += '<button class="chip" type="button" data-bezit="' + o + '" aria-pressed="' + !!s.bezit[o] + '">' + t('fondsA.doel.' + o) + '</button>';
     });
     return html + '</div>' + nav(WANNEER);
   }
@@ -234,43 +237,43 @@
   function schermWanneer() {
     var lijst = K.leeftijden(s.deelnemer);
     var aowJaar = K.AOW_M % 12 === 0 ? K.AOW_JAREN : null;
-    var html = coach('Je AOW begint op ' + K.AOW_LABEL + '. Je kunt eerder of later stoppen. Kies wat bij je past, je kunt het altijd nog aanpassen.') +
-      '<h1>Wanneer wil je stoppen met werken?</h1><div class="chips">';
-    html += '<button class="chip" type="button" data-start="aow" aria-pressed="' + (s.start === 'aow') + '">Als mijn AOW begint (' + K.AOW_LABEL + ')</button>';
+    var html = coach(t('fondsA.wanneer.coach', { leeftijd: K.aowLabel() })) +
+      '<h1>' + t('fondsA.wanneer.h1') + '</h1><div class="chips">';
+    html += '<button class="chip" type="button" data-start="aow" aria-pressed="' + (s.start === 'aow') + '">' + t('fondsA.wanneer.aow', { leeftijd: K.aowLabel() }) + '</button>';
     lijst.forEach(function (j) {
       if (j === aowJaar) return;
-      html += '<button class="chip" type="button" data-leeftijd="' + j + '" aria-pressed="' + (s.start === 'ander' && s.leeftijd === j) + '">' + j + ' jaar</button>';
+      html += '<button class="chip" type="button" data-leeftijd="' + j + '" aria-pressed="' + (s.start === 'ander' && s.leeftijd === j) + '">' + t('kern.jaar', { n: j }) + '</button>';
     });
     var res = r();
-    html += '</div><p class="tip">Dan krijg je vanaf ' + res.tekst.pensioendatum + ' ongeveer <strong>' + eur(res.eerst) + '</strong> per maand aan pensioen (' + eenheid(res) + ').</p>';
+    html += '</div><p class="tip">' + t('fondsA.wanneer.tip', { datum: res.tekst.pensioendatum, bedrag: eur(res.eerst), eenheid: eenheid(res) }) + '</p>';
     return html + nav(PARTNER);
   }
 
   // Stap 4: partner
   function schermPartner() {
     var max = C.partnerpensioen.maxPct;
-    var uitleg = 'Als je overlijdt, kan je partner een pensioen krijgen. Dat betaal je uit je eigen pensioen: hoe meer voor je partner, hoe minder voor jezelf.';
-    if (s.partner === 'ja') uitleg += ' Je gaf aan dat je een partner hebt. Kies je minder of niets, bespreek dat dan samen.';
-    if (s.partner === 'nee') uitleg += ' Je gaf aan dat je geen partner hebt. Dan heb je partnerpensioen meestal niet nodig.';
+    var uitleg = t('fondsA.partner.coach');
+    if (s.partner === 'ja') uitleg += ' ' + t('fondsA.partner.coachJa');
+    if (s.partner === 'nee') uitleg += ' ' + t('fondsA.partner.coachNee');
     var html = coach(uitleg) +
-      '<h1>Wil je dat je partner iets krijgt als je overlijdt?</h1><div class="keuzes">';
+      '<h1>' + t('fondsA.partner.h1') + '</h1><div class="keuzes">';
     var opties = [
-      ['max', 'Ja, zo veel mogelijk', max + '% van je pensioen', max],
-      ['minder', 'Ja, maar minder', 'Je kiest zelf hoeveel', null],
-      ['geen', 'Nee, niet nodig', 'Bijvoorbeeld als je geen partner hebt', 0]
+      ['max', t('fondsA.partner.max'), t('fondsA.partner.maxUitleg', { pct: max }), max],
+      ['minder', t('fondsA.partner.minder'), t('fondsA.partner.minderUitleg'), null],
+      ['geen', t('fondsA.partner.geen'), t('fondsA.partner.geenUitleg'), 0]
     ];
     opties.forEach(function (o) {
       var pct = o[3] === null ? (s.partnerKeuze === 'minder' ? s.partnerPct : Math.round(max / 2)) : o[3];
       var res = K.bereken(keuzes({ partnerPct: pct }));
       html += '<button class="keuze" type="button" data-partner="' + o[0] + '" aria-pressed="' + (s.partnerKeuze === o[0]) + '">' +
         '<span class="titel">' + o[1] + past(o[0] === 'geen' ? s.partner === 'nee' : (o[0] === 'max' && s.partner === 'ja')) + '</span><span class="uitleg">' + o[2] + '</span>' +
-        '<span class="bedrag">Jij: ' + eur(res.eerst) + ' p/m' + (pct > 0 ? ' · partner: ' + eur(res.partner) + ' p/m' : '') + '</span></button>';
+        '<span class="bedrag">' + (pct > 0 ? t('fondsA.partner.bedragMet', { jij: eur(res.eerst), partner: eur(res.partner) }) : t('fondsA.partner.bedrag', { jij: eur(res.eerst) })) + '</span></button>';
     });
     html += '</div>';
     if (s.partnerKeuze === 'minder') {
-      html += '<div class="schuif"><label for="partnerSchuif"><span>Voor je partner</span><span>' + s.partnerPct + '%</span></label>' +
+      html += '<div class="schuif"><label for="partnerSchuif"><span>' + t('fondsA.partner.schuif') + '</span><span>' + s.partnerPct + '%</span></label>' +
         '<input id="partnerSchuif" type="range" min="' + C.partnerpensioen.minPct + '" max="' + max + '" step="5" value="' + s.partnerPct + '">' +
-        '<small>Percentage van je eigen pensioen dat je partner krijgt na je overlijden.</small></div>';
+        '<small>' + t('fondsA.partner.schuifUitleg') + '</small></div>';
     }
     return html + nav(VERDELING);
   }
@@ -278,18 +281,18 @@
   // Stap 5: verdeling
   function schermVerdeling() {
     var basisRes = K.bereken(keuzes({ topaow: 0, tophlPct: 0 }));
-    var uitleg = 'Je kunt je pensioen gelijk over de jaren verdelen, of de eerste jaren wat meer krijgen. Dat laatste kan prettig zijn als je vóór je AOW stopt. Je levenslange pensioen wordt daarna wel lager. De twee manieren om eerst meer te krijgen kun je ook combineren.';
-    if (s.doel === 'zeker') uitleg += ' Je gaf aan dat zekerheid voor later belangrijk is. Let dus vooral op het bedrag ná de eerste jaren.';
-    if (s.doel === 'nu') uitleg += ' Je gaf aan dat je de eerste jaren meer wilt. Kijk ook wat er daarna overblijft.';
+    var uitleg = t('fondsA.verdeling.coach');
+    if (s.doel === 'zeker') uitleg += ' ' + t('fondsA.verdeling.coachZeker');
+    if (s.doel === 'nu') uitleg += ' ' + t('fondsA.verdeling.coachNu');
     var html = coach(uitleg) +
-      '<h1>Hoe wil je je pensioen verdelen?</h1><div class="keuzes">';
+      '<h1>' + t('fondsA.verdeling.h1') + '</h1><div class="keuzes">';
 
     function regel(res) {
       if (res.u.t1 > 0 || res.u.t2 > 0) {
-        var tot = res.u.t1 > 0 ? 'tot je AOW' : 'tot ' + res.tekst.tophlEind.split(',')[0];
-        return eur(res.eerst) + ' p/m ' + tot + ', daarna ' + eur(res.later) + ' p/m';
+        var tot = res.u.t1 > 0 ? t('fondsA.verdeling.totAow') : t('fondsA.verdeling.tot', { datum: res.tekst.tophlEindDatum });
+        return t('fondsA.verdeling.regelTwee', { eerst: eur(res.eerst), tot: tot, later: eur(res.later) });
       }
-      return eur(res.eerst) + ' p/m, elke maand hetzelfde';
+      return t('fondsA.verdeling.regelGelijk', { bedrag: eur(res.eerst) });
     }
 
     var magOverbrug = basisRes.voorAow && basisRes.maxT1 > 0;
@@ -298,41 +301,40 @@
 
     // "Gelijk verdeeld" zet beide uit. De andere twee tegels zijn schakelaars die samen aan kunnen.
     html += '<button class="keuze" type="button" data-verdeling="gelijk" aria-pressed="' + (!metOverbrug && !metTijdelijk) + '">' +
-      '<span class="titel">Gelijk verdeeld' + past(s.doel === 'zeker') + '</span><span class="uitleg">Elke maand ongeveer hetzelfde bedrag, je hele leven lang.</span>' +
+      '<span class="titel">' + t('fondsA.verdeling.gelijk') + past(s.doel === 'zeker') + '</span><span class="uitleg">' + t('fondsA.verdeling.gelijkUitleg') + '</span>' +
       '<span class="bedrag">' + regel(basisRes) + '</span></button>';
 
     // Het bedrag op een tegel laat het effect van die keuze alleen zien.
     var resO = K.bereken(keuzes({ topaow: s.overbrug ? s.topaow : 'max', tophlPct: 0 }));
     html += '<button class="keuze" type="button" data-verdeling="overbrug" aria-pressed="' + metOverbrug + '"' + (magOverbrug ? '' : ' disabled') + '>' +
-      '<span class="titel">Extra tot mijn AOW begint' + past(magOverbrug && s.doel === 'nu') + '</span><span class="uitleg">' +
-      (magOverbrug ? 'Je overbrugt de jaren zonder AOW met een hoger bedrag.' : 'Kan alleen als je vóór je AOW-leeftijd stopt.') + '</span>' +
+      '<span class="titel">' + t('fondsA.verdeling.overbrug') + past(magOverbrug && s.doel === 'nu') + '</span><span class="uitleg">' +
+      t(magOverbrug ? 'fondsA.verdeling.overbrugUitleg' : 'fondsA.verdeling.overbrugNiet') + '</span>' +
       (magOverbrug ? '<span class="bedrag">' + regel(resO) + '</span>' : '') + '</button>';
 
     var resT = K.bereken(keuzes({ topaow: 0, tophlPct: s.tijdelijk ? s.tophlPct : 33 }));
     html += '<button class="keuze" type="button" data-verdeling="tijdelijk" aria-pressed="' + metTijdelijk + '"' + (magTijdelijk ? '' : ' disabled') + '>' +
-      '<span class="titel">Eerst wat meer, daarna wat minder' + past(magTijdelijk && s.doel === 'nu') + '</span><span class="uitleg">Een tijdelijk hoger pensioen ' +
-      (basisRes.voorAow ? 'tot je AOW-leeftijd.' : 'in de eerste jaren.') + '</span>' +
+      '<span class="titel">' + t('fondsA.verdeling.tijdelijk') + past(magTijdelijk && s.doel === 'nu') + '</span><span class="uitleg">' +
+      t(basisRes.voorAow ? 'fondsA.verdeling.tijdelijkTotAow' : 'fondsA.verdeling.tijdelijkEerst') + '</span>' +
       (magTijdelijk ? '<span class="bedrag">' + regel(resT) + '</span>' : '') + '</button></div>';
 
     if (metOverbrug && metTijdelijk) {
       var samen = r();
-      html += '<p class="tip">Samen: <strong>' + regel(samen) + '</strong> (' + eenheid(samen) + '). Je levenslange pensioen is dan ' +
-        eur(basisRes.later - samen.later) + ' per maand lager dan bij gelijk verdeeld.</p>';
+      html += '<p class="tip">' + t('fondsA.verdeling.samen', { regel: regel(samen), eenheid: eenheid(samen), lager: eur(basisRes.later - samen.later) }) + '</p>';
     }
 
     if (metOverbrug) {
       var max = resO.maxT1;
       var waarde = s.topaow === 'max' ? max : s.topaow;
-      html += '<div class="schuif"><label for="t1Schuif"><span>Extra per jaar tot je AOW (bruto)</span><span>' + eur(waarde) + '</span></label>' +
+      html += '<div class="schuif"><label for="t1Schuif"><span>' + t('fondsA.verdeling.t1') + '</span><span>' + eur(waarde) + '</span></label>' +
         '<input id="t1Schuif" type="range" min="0" max="' + max + '" step="500" value="' + waarde + '">' +
-        '<small>Maximaal ' + eur(max) + ' per jaar in jouw situatie.</small></div>';
+        '<small>' + t('fondsA.verdeling.t1Max', { bedrag: eur(max) }) + '</small></div>';
     }
     if (metTijdelijk) {
-      html += '<div class="schuif"><label for="t2Schuif"><span>Hoeveel meer in die eerste jaren</span><span>' + s.tophlPct + '%</span></label>' +
+      html += '<div class="schuif"><label for="t2Schuif"><span>' + t('fondsA.verdeling.t2') + '</span><span>' + s.tophlPct + '%</span></label>' +
         '<input id="t2Schuif" type="range" min="5" max="33" step="1" value="' + s.tophlPct + '">' +
-        '<small>Tot 33% bovenop je levenslange pensioen.</small></div>';
+        '<small>' + t('fondsA.verdeling.t2Max') + '</small></div>';
     }
-    return html + nav(RESULTAAT, 'Laat mijn pensioen zien');
+    return html + nav(RESULTAAT, t('fondsA.verdeling.verder'));
   }
 
   // Stap 6: resultaat
@@ -340,17 +342,18 @@
     var res = r();
     var eindLeeftijd = C.pensioenreglement.grafiekEindLeeftijd;
     var twee = res.u.t1 > 0 || res.u.t2 > 0;
-    var html = coach('Dit is jouw pensioen met de keuzes die je hebt gemaakt. Alle bedragen zijn voorbeeldbedragen, geen advies.') +
+    var html = coach(t('fondsA.resultaat.coach')) +
       '<div class="resultaat"><div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">' +
-      '<span style="color:var(--zacht)">Vanaf ' + res.tekst.pensioendatum + ' krijg je per maand</span>' +
-      '<span style="display:flex;gap:8px;flex-wrap:wrap"><span class="wissel" role="group" aria-label="Bruto of netto">' +
-      '<button type="button" data-basis="netto" aria-pressed="' + (s.basis === 'netto') + '">netto</button>' +
-      '<button type="button" data-basis="bruto" aria-pressed="' + (s.basis === 'bruto') + '">bruto</button></span>' +
-      '<span class="wissel" role="group" aria-label="Nominaal of reëel">' +
-      '<button type="button" data-reeel="nom" aria-pressed="' + !res.reeel + '">nominaal</button>' +
-      '<button type="button" data-reeel="reeel" aria-pressed="' + res.reeel + '">reëel</button></span></span></div>' +
+      '<span style="color:var(--zacht)">' + t('fondsA.resultaat.vanaf', { datum: res.tekst.pensioendatum }) + '</span>' +
+      '<span style="display:flex;gap:8px;flex-wrap:wrap"><span class="wissel" role="group" aria-label="' + t('gemeen.brutoOfNetto') + '">' +
+      '<button type="button" data-basis="netto" aria-pressed="' + (s.basis === 'netto') + '">' + t('gemeen.netto') + '</button>' +
+      '<button type="button" data-basis="bruto" aria-pressed="' + (s.basis === 'bruto') + '">' + t('gemeen.bruto') + '</button></span>' +
+      '<span class="wissel" role="group" aria-label="' + t('gemeen.nominaalOfReeel') + '">' +
+      '<button type="button" data-reeel="nom" aria-pressed="' + !res.reeel + '">' + t('gemeen.nominaal') + '</button>' +
+      '<button type="button" data-reeel="reeel" aria-pressed="' + res.reeel + '">' + t('gemeen.reeel') + '</button></span></span></div>' +
       (s.reeel === null ? '<p class="tip" style="margin:8px 0 0;font-size:14px">' + K.reeelUitleg(res, false) + '</p>' : '') +
-      '<div class="groot">' + eur(res.eerst) + '</div><div style="color:var(--zacht)">pensioen per maand, ' + eenheid(res) + (twee ? ', de eerste jaren' : '') + '</div>';
+      '<div class="groot">' + eur(res.eerst) + '</div><div style="color:var(--zacht)">' +
+      t(twee ? 'fondsA.resultaat.onderGrootEerst' : 'fondsA.resultaat.onderGroot', { eenheid: eenheid(res) }) + '</div>';
 
     // Fasebalk: breedte = aantal jaren, hoogte = bedrag.
     var startJ = res.jaar, aowJ = K.AOW_JAREN;
@@ -364,37 +367,38 @@
     html += '<div class="fasen" aria-hidden="true">' + fasen.map(function (f) {
       return '<div class="fase ' + f.cls + '" style="flex:' + Math.max(0.6, f.tot - f.van) + ';height:' + Math.max(12, 74 * f.bedrag / hoogste) + 'px"></div>';
     }).join('') + '</div><div class="fase-labels" aria-hidden="true">' + fasen.map(function (f, i) {
-      var tot = i === fasen.length - 1 ? 'levenslang' : 'tot ' + K.leeftijdTekst(Math.round(f.tot * 12)).replace(' en 0 maanden', '');
+      var tot = i === fasen.length - 1 ? t('fondsA.resultaat.levenslang') : t('fondsA.resultaat.totLeeftijd', { leeftijd: K.leeftijdTekst(Math.round(f.tot * 12)) });
       return '<div style="flex:' + Math.max(0.6, f.tot - f.van) + '"><strong>' + eur(f.bedrag) + '</strong><br>' + tot + '</div>';
     }).join('') + '</div>';
 
     var zinnen = [];
-    zinnen.push('Je stopt met werken ' + res.tekst.stop + ', in ' + res.tekst.pensioendatum + '.');
+    var daarna = eur(res.tussen !== null ? res.tussen : res.later);
+    zinnen.push(t('fondsA.resultaat.stop', { stop: res.tekst.stop, datum: res.tekst.pensioendatum }));
     // Totaalbedragen per fase: netto van een los extra deel telt niet op tot het netto totaal.
     // Met beide keuzes stopt het tijdelijk hogere pensioen hier altijd op de AOW-datum (standaard einde), dus één zin.
-    if (res.u.t1 > 0 && res.u.t2 > 0) zinnen.push('Met de AOW-overbrugging en het tijdelijk hogere pensioen samen krijg je tot je AOW ' + eur(res.eerst) + ' per maand. Daarna gaat je pensioen naar ' + eur(res.tussen !== null ? res.tussen : res.later) + ' per maand.');
-    else if (res.u.t1 > 0) zinnen.push('Tot je AOW krijg je ' + eur(res.eerst) + ' per maand. Daarna gaat je pensioen naar ' + eur(res.later) + ' per maand.');
-    else if (res.u.t2 > 0) zinnen.push('Tot ' + res.tekst.tophlEind + ' krijg je ' + eur(res.eerst) + ' per maand. Daarna is je pensioen ' + eur(res.tussen !== null ? res.tussen : res.later) + ' per maand.');
-    if (!twee) zinnen.push('Je krijgt elke maand ongeveer hetzelfde bedrag, je hele leven lang.');
-    zinnen.push('Samen met je AOW krijg je later ' + eur(res.laterInclAow) + ' per maand (' + eenheid(res) + ').');
-    zinnen.push(res.partnerPct > 0 ? 'Als je overlijdt, krijgt je partner ' + eur(res.partner) + ' per maand (' + eenheid(res) + ').' : 'Je hebt geen partnerpensioen gekozen.');
+    if (res.u.t1 > 0 && res.u.t2 > 0) zinnen.push(t('fondsA.resultaat.beide', { eerst: eur(res.eerst), daarna: daarna }));
+    else if (res.u.t1 > 0) zinnen.push(t('fondsA.resultaat.overbrug', { eerst: eur(res.eerst), daarna: eur(res.later) }));
+    else if (res.u.t2 > 0) zinnen.push(t('fondsA.resultaat.tijdelijk', { eind: res.tekst.tophlEind, eerst: eur(res.eerst), daarna: daarna }));
+    if (!twee) zinnen.push(t('fondsA.resultaat.gelijk'));
+    zinnen.push(t('fondsA.resultaat.metAow', { bedrag: eur(res.laterInclAow), eenheid: eenheid(res) }));
+    zinnen.push(res.partnerPct > 0 ? t('fondsA.resultaat.partner', { bedrag: eur(res.partner), eenheid: eenheid(res) }) : t('fondsA.resultaat.geenPartner'));
     html += '<ul class="zinnen">' + zinnen.map(function (z) { return '<li>' + z + '</li>'; }).join('') + '</ul>';
 
-    html += '<div class="wijzig"><span style="color:var(--zacht);align-self:center;font-size:15px">Iets anders proberen?</span>' +
-      '<button type="button" data-naar="' + WANNEER + '">Stopmoment</button><button type="button" data-naar="' + PARTNER + '">Partner</button>' +
-      '<button type="button" data-naar="' + VERDELING + '">Verdeling</button><button type="button" data-naar="' + DOEL + '">Wat ik belangrijk vind</button>' +
-      '<button type="button" data-naar="' + WIE + '">Andere deelnemer</button></div></div>';
+    html += '<div class="wijzig"><span style="color:var(--zacht);align-self:center;font-size:15px">' + t('fondsA.resultaat.anders') + '</span>' +
+      '<button type="button" data-naar="' + WANNEER + '">' + t('fondsA.resultaat.naarWanneer') + '</button><button type="button" data-naar="' + PARTNER + '">' + t('fondsA.resultaat.naarPartner') + '</button>' +
+      '<button type="button" data-naar="' + VERDELING + '">' + t('fondsA.resultaat.naarVerdeling') + '</button><button type="button" data-naar="' + DOEL + '">' + t('fondsA.resultaat.naarDoel') + '</button>' +
+      '<button type="button" data-naar="' + WIE + '">' + t('fondsA.resultaat.naarWie') + '</button></div></div>';
 
     var sig = signalen(res);
-    html += '<h2>Let op bij jouw keuzes</h2>' + (sig.length
+    html += '<h2>' + t('fondsA.signaal.h2') + '</h2>' + (sig.length
       ? '<div class="signalen">' + sig.map(function (g) {
           return '<div class="signaal' + (g.info ? ' info' : '') + '"><strong>' + g.titel + '</strong><p>' + g.tekst + '</p>' +
             (g.naar !== undefined ? '<button type="button" data-naar="' + g.naar + '">' + g.knop + '</button>' : '') + '</div>';
         }).join('') + '</div>'
-      : '<div class="geen-signaal">We zien geen opvallende gevolgen in de combinatie van je keuzes.</div>');
+      : '<div class="geen-signaal">' + t('fondsA.signaal.geen') + '</div>');
 
     html += vergelijkSalaris();
-    return html + nav(WATNU, 'Wat kan ik nu doen?');
+    return html + nav(WATNU, t('fondsA.resultaat.verder'));
   }
 
   // Salaris vlak vóór de pensioendatum naast het pensioen, in dezelfde weergave als de rest van het resultaat
@@ -409,9 +413,9 @@
     var salaris = res.maand(salarisJaar, res.jaar);
     var aowJaar = C.aowBrutoMaand * 12;
     var fasen = [];
-    if (res.voorAow) fasen.push({ label: 'Tot je AOW', bedrag: res.eerst, noot: 'zonder AOW' });
-    else if (res.u.t2 > 0) fasen.push({ label: 'De eerste jaren', bedrag: res.maand(res.u.pre + aowJaar, res.jaar), noot: 'met AOW' });
-    fasen.push({ label: res.voorAow || res.u.t2 > 0 ? 'Daarna, levenslang' : 'Levenslang', bedrag: res.laterInclAow, noot: 'met AOW' });
+    if (res.voorAow) fasen.push({ label: t('fondsA.vergelijk.totAow'), bedrag: res.eerst, noot: t('fondsA.vergelijk.zonderAow') });
+    else if (res.u.t2 > 0) fasen.push({ label: t('fondsA.vergelijk.eersteJaren'), bedrag: res.maand(res.u.pre + aowJaar, res.jaar), noot: t('fondsA.vergelijk.metAow') });
+    fasen.push({ label: t(res.voorAow || res.u.t2 > 0 ? 'fondsA.vergelijk.daarna' : 'fondsA.vergelijk.levenslang'), bedrag: res.laterInclAow, noot: t('fondsA.vergelijk.metAow') });
     fasen.forEach(function (f) { f.pct = salaris > 0 ? f.bedrag / salaris : 0; });
     return { res: res, salaris: salaris, salarisJaarBruto: res.reeel ? salarisJaar * res.reeelFactor(res.jaar) : salarisJaar, parttime: parttime, fasen: fasen };
   }
@@ -423,11 +427,10 @@
       return '<div class="vg-rij ' + cls + '"><span>' + label + '</span><span class="vg-balk"><i style="width:' + (100 * bedrag / max).toFixed(1) + '%"></i></span>' +
         '<span class="r">' + eur(bedrag) + '<small>' + sub + '</small></span></div>';
     }
-    return '<h2>Vergeleken met je laatste salaris</h2>' +
-      '<p class="tip" style="margin-top:0">Per maand, ' + eenheid(v.res) + '. Je laatste salaris vóór ' + v.res.tekst.pensioendatum + ' is ' +
-      eur(v.salarisJaarBruto) + ' bruto per jaar' + (v.parttime < 1 ? ' (' + Math.round(v.parttime * 100) + '% parttime)' : '') +
-      '. Zet het naast je vaste lasten van straks.</p>' +
-      '<div class="vergelijk">' + rij('nu', 'Laatste salaris', v.salaris, '100%') +
+    return '<h2>' + t('fondsA.vergelijk.h2') + '</h2>' +
+      '<p class="tip" style="margin-top:0">' + t(v.parttime < 1 ? 'fondsA.vergelijk.uitlegParttime' : 'fondsA.vergelijk.uitleg',
+        { eenheid: eenheid(v.res), datum: v.res.tekst.pensioendatum, salaris: eur(v.salarisJaarBruto), pct: Math.round(v.parttime * 100) }) + '</p>' +
+      '<div class="vergelijk">' + rij('nu', t('fondsA.vergelijk.salaris'), v.salaris, '100%') +
       v.fasen.map(function (f) { return rij('', f.label, f.bedrag, Math.round(f.pct * 100) + '% · ' + f.noot); }).join('') + '</div>';
   }
 
@@ -437,46 +440,38 @@
     var uit = [];
     var gelijk = K.bereken(keuzes({ topaow: 0, tophlPct: 0 }));
     var lagerLevenslang = gelijk.later - res.later;
+    var naarVerdeling = { naar: VERDELING, knop: t('fondsA.signaal.knopVerdeling') };
+    var naarPartner = { naar: PARTNER, knop: t('fondsA.signaal.knopPartner') };
 
     if (res.u.t1 > 0 && res.u.t2 > 0) {
-      uit.push({ titel: 'Je stapelt twee manieren om eerst meer te krijgen',
-        tekst: 'Met de AOW-overbrugging én het tijdelijk hogere pensioen krijg je tot je AOW ' + eur(res.eerst) + ' per maand. ' +
-          'Daarna is je levenslange pensioen ' + eur(res.later) + ', dat is ' + eur(lagerLevenslang) + ' per maand minder dan bij gelijk verdelen. Dat verschil blijft je hele leven.' +
-          (s.doel === 'zeker' ? ' Je gaf aan dat zekerheid voor later belangrijk is: past dit daarbij?' : ''),
-        naar: VERDELING, knop: 'Verdeling aanpassen' });
+      uit.push(Object.assign({ titel: t('fondsA.signaal.stapelTitel'),
+        tekst: t('fondsA.signaal.stapel', { eerst: eur(res.eerst), later: eur(res.later), lager: eur(lagerLevenslang) }) +
+          (s.doel === 'zeker' ? ' ' + t('fondsA.signaal.stapelZeker') : '') }, naarVerdeling));
     } else if ((res.u.t1 > 0 || res.u.t2 > 0) && res.eerst > 0 && 1 - res.later / res.eerst >= 0.2) {
-      uit.push({ titel: 'Na de eerste jaren gaat je pensioen ' + Math.round((1 - res.later / res.eerst) * 100) + '% omlaag',
-        tekst: 'Van ' + eur(res.eerst) + ' naar ' + eur(res.later) + ' per maand, zonder AOW. Met AOW wordt het ' + eur(res.laterInclAow) + '. Kun je dan je vaste lasten nog betalen?',
-        naar: VERDELING, knop: 'Verdeling aanpassen' });
+      uit.push(Object.assign({ titel: t('fondsA.signaal.dalingTitel', { pct: Math.round((1 - res.later / res.eerst) * 100) }),
+        tekst: t('fondsA.signaal.daling', { eerst: eur(res.eerst), later: eur(res.later), metAow: eur(res.laterInclAow) }) }, naarVerdeling));
     }
     if (s.doel === 'zeker' && lagerLevenslang > 0.5 && !(res.u.t1 > 0 && res.u.t2 > 0)) {
-      uit.push({ titel: 'Je vindt zekerheid voor later belangrijk',
-        tekst: 'Met deze verdeling is je levenslange pensioen ' + eur(lagerLevenslang) + ' per maand lager dan bij gelijk verdelen. Past dat bij wat je wilt?',
-        naar: VERDELING, knop: 'Verdeling aanpassen' });
+      uit.push(Object.assign({ titel: t('fondsA.signaal.zekerTitel'), tekst: t('fondsA.signaal.zeker', { lager: eur(lagerLevenslang) }) }, naarVerdeling));
     }
     if (res.voorAow && res.u.t1 === 0 && res.u.t2 === 0) {
-      uit.push({ titel: 'Tot je AOW heb je alleen dit pensioen',
-        tekst: 'Je stopt vóór je AOW-leeftijd. Tot je AOW krijg je ' + eur(res.eerst) + ' per maand, zonder AOW erbij.' +
-          (s.bezit.spaar ? ' Je gaf aan spaargeld te hebben; dat kan meetellen in deze jaren.' : ' Je kunt die jaren ook overbruggen met een hoger bedrag.'),
-        naar: VERDELING, knop: 'Bekijk de verdeling' });
+      uit.push({ titel: t('fondsA.signaal.voorAowTitel'),
+        tekst: t('fondsA.signaal.voorAow', { bedrag: eur(res.eerst) }) + ' ' + t(s.bezit.spaar ? 'fondsA.signaal.voorAowSpaar' : 'fondsA.signaal.voorAowOverbrug'),
+        naar: VERDELING, knop: t('fondsA.signaal.knopBekijk') });
     }
     if (s.partner === 'ja' && res.partnerPct === 0) {
-      uit.push({ titel: 'Je hebt een partner, maar kiest geen partnerpensioen',
-        tekst: 'Als je overlijdt, krijgt je partner van Fonds A niets. Bespreek dit samen, misschien is je partner op een andere manier goed verzorgd.',
-        naar: PARTNER, knop: 'Partnerpensioen aanpassen' });
+      uit.push(Object.assign({ titel: t('fondsA.signaal.partnerGeenTitel'), tekst: t('fondsA.signaal.partnerGeen') }, naarPartner));
     }
     if (s.partner === 'nee' && res.partnerPct > 0) {
       var zonder = K.bereken(keuzes({ partnerPct: 0 }));
-      uit.push({ info: true, titel: 'Je hebt geen partner, maar kiest wel partnerpensioen',
-        tekst: 'Dat kost je ' + eur(zonder.eerst - res.eerst) + ' per maand. Het kan zinvol zijn als je later toch een partner krijgt; anders heb je het niet nodig.',
-        naar: PARTNER, knop: 'Partnerpensioen aanpassen' });
+      uit.push(Object.assign({ info: true, titel: t('fondsA.signaal.partnerWelTitel'), tekst: t('fondsA.signaal.partnerWel', { kosten: eur(zonder.eerst - res.eerst) }) }, naarPartner));
     }
     var v = salarisEnPensioen();
     var levenslang = v.fasen[v.fasen.length - 1];
     if (levenslang.pct < GRENS_INKOMEN) {
-      uit.push({ info: true, titel: 'Later heb je ' + Math.round(levenslang.pct * 100) + '% van je laatste salaris',
-        tekst: 'Levenslang, met AOW, krijg je ' + eur(levenslang.bedrag) + ' per maand, tegen ' + eur(v.salaris) + ' salaris vlak voor je pensioen (' + eenheid(res) + ').' +
-          (s.bezit.elders ? ' Je gaf aan ook pensioen bij een andere werkgever te hebben; dat komt hier nog bij.' : ' Kijk of je vaste lasten dan ook lager zijn.') });
+      uit.push({ info: true, titel: t('fondsA.signaal.salarisTitel', { pct: Math.round(levenslang.pct * 100) }),
+        tekst: t('fondsA.signaal.salaris', { bedrag: eur(levenslang.bedrag), salaris: eur(v.salaris), eenheid: eenheid(res) }) + ' ' +
+          t(s.bezit.elders ? 'fondsA.signaal.salarisElders' : 'fondsA.signaal.salarisLasten') });
     }
     return uit;
   }
@@ -486,33 +481,34 @@
     var res = r();
     var twee = res.u.t1 > 0 || res.u.t2 > 0;
     var acties = [];
-    acties.push(['Bewaar je keuzes', 'Print deze pagina of sla hem op als pdf. Dan heb je je voorbeeldberekening bij de hand als je verder praat.']);
-    if (s.partner === 'ja') acties.push(['Bespreek het met je partner', 'Vooral het partnerpensioen en de verdeling raken jullie allebei.']);
-    acties.push(['Bekijk je hele pensioen', 'Op <a href="https://www.mijnpensioenoverzicht.nl" target="_blank" rel="noopener">mijnpensioenoverzicht.nl</a> zie je je AOW en het pensioen bij al je werkgevers.' +
-      (s.bezit.elders ? ' Je gaf aan ook elders pensioen te hebben: tel dat mee.' : '')]);
+    acties.push([t('fondsA.watnu.bewaar'), t('fondsA.watnu.bewaarTekst')]);
+    if (s.partner === 'ja') acties.push([t('fondsA.watnu.partner'), t('fondsA.watnu.partnerTekst')]);
+    acties.push([t('fondsA.watnu.overzicht'), t('fondsA.watnu.overzichtTekst', { link: '<a href="https://www.mijnpensioenoverzicht.nl" target="_blank" rel="noopener">mijnpensioenoverzicht.nl</a>' }) +
+      (s.bezit.elders ? ' ' + t('fondsA.watnu.overzichtElders') : '')]);
     if (s.bezit.huis || s.bezit.spaar) {
-      acties.push(['Zet je andere geld ernaast', 'Je gaf aan ' + [s.bezit.huis ? 'een eigen huis' : '', s.bezit.spaar ? 'spaargeld of beleggingen' : ''].filter(Boolean).join(' en ') +
-        ' te hebben. Neem dat mee als je kiest hoe je je pensioen verdeelt.']);
+      var welk = s.bezit.huis && s.bezit.spaar ? 'fondsA.watnu.geldHuisSpaar' : (s.bezit.huis ? 'fondsA.watnu.geldHuis' : 'fondsA.watnu.geldSpaar');
+      acties.push([t('fondsA.watnu.geld'), t(welk)]);
     }
-    acties.push(['Twijfel je? Vraag advies', 'Een financieel adviseur kan je hele situatie bekijken, ook wat buiten dit pensioen valt.']);
-    acties.push(['Geef je keuzes op tijd door', 'In het echt kies je definitief vlak voor je pensioendatum. Tot die tijd kun je alles nog veranderen.' +
-      (twee ? ' Omdat je eerst meer krijgt, stuurt Fonds A je ruim voordat je pensioen lager wordt een herinnering.' : '')]);
+    acties.push([t('fondsA.watnu.advies'), t('fondsA.watnu.adviesTekst')]);
+    acties.push([t('fondsA.watnu.doorgeven'), t('fondsA.watnu.doorgevenTekst') + (twee ? ' ' + t('fondsA.watnu.herinnering') : '')]);
 
+    var verdeling = res.u.t1 > 0 && res.u.t2 > 0 ? t('fondsA.watnu.vdBeide') : res.u.t1 > 0 ? t('fondsA.watnu.vdOverbrug')
+      : res.u.t2 > 0 ? t('fondsA.watnu.vdTijdelijk', { pct: Math.round(res.pctHL * 100) }) : t('fondsA.verdeling.gelijk');
     var samen = [
-      ['Deelnemer', esc(C.deelnemers[s.deelnemer].naam)],
-      ['Stoppen met werken', res.tekst.stop + ', ' + res.tekst.pensioendatum],
-      ['Partnerpensioen', res.partnerPct + '%'],
-      ['Verdeling', res.u.t1 > 0 && res.u.t2 > 0 ? 'AOW-overbrugging en tijdelijk hoger pensioen' : res.u.t1 > 0 ? 'AOW-overbrugging' : res.u.t2 > 0 ? 'Tijdelijk hoger pensioen (' + Math.round(res.pctHL * 100) + '%)' : 'Gelijk verdeeld'],
-      ['Pensioen vanaf ' + res.tekst.pensioendatum, eur(res.eerst) + ' per maand (' + eenheid(res) + ')'],
-      ['Later, met AOW', eur(res.laterInclAow) + ' per maand (' + eenheid(res) + ')']
+      [t('fondsA.watnu.smDeelnemer'), esc(K.naam(s.deelnemer))],
+      [t('fondsA.watnu.smStoppen'), res.tekst.stop + ', ' + res.tekst.pensioendatum],
+      [t('fondsA.watnu.smPartner'), res.partnerPct + '%'],
+      [t('fondsA.watnu.smVerdeling'), verdeling],
+      [t('fondsA.watnu.smVanaf', { datum: res.tekst.pensioendatum }), t('fondsA.watnu.smBedrag', { bedrag: eur(res.eerst), eenheid: eenheid(res) })],
+      [t('fondsA.watnu.smLater'), t('fondsA.watnu.smBedrag', { bedrag: eur(res.laterInclAow), eenheid: eenheid(res) })]
     ];
 
-    var html = coach('Je hebt nu een beeld van je pensioen. Dit zijn de stappen die je daarna kunt zetten. Het blijft een voorbeeldberekening, geen advies.') +
-      '<h1>Wat kun je nu doen?</h1><ol class="acties">' +
+    var html = coach(t('fondsA.watnu.coach')) +
+      '<h1>' + t('fondsA.watnu.h1') + '</h1><ol class="acties">' +
       acties.map(function (a, i) { return '<li data-nr="' + (i + 1) + '"><strong>' + a[0] + '</strong><span>' + a[1] + '</span></li>'; }).join('') + '</ol>' +
-      '<h2>Jouw keuzes op een rij</h2><div class="resultaat"><ul class="samenvatting">' +
+      '<h2>' + t('fondsA.watnu.h2') + '</h2><div class="resultaat"><ul class="samenvatting">' +
       samen.map(function (x) { return '<li><span>' + x[0] + '</span><span>' + x[1] + '</span></li>'; }).join('') + '</ul>' +
-      '<p class="geen-print" style="margin:18px 0 0"><button class="knop" type="button" data-print>Print of bewaar als pdf</button></p></div>';
+      '<p class="geen-print" style="margin:18px 0 0"><button class="knop" type="button" data-print>' + t('fondsA.watnu.print') + '</button></p></div>';
     return html + nav();
   }
 
@@ -530,7 +526,7 @@
     if (stap >= WANNEER && stap <= VERDELING) {
       var res = r();
       pil.hidden = false;
-      pil.innerHTML = '<span>Jouw pensioen nu</span><strong>' + eur(res.eerst) + '</strong><span>per maand, ' + eenheid(res) + '</span>';
+      pil.innerHTML = '<span>' + t('fondsA.pil') + '</span><strong>' + eur(res.eerst) + '</strong><span>' + t('fondsA.pilSub', { eenheid: eenheid(res) }) + '</span>';
     } else pil.hidden = true;
     if (focus) { var h = $('podium').querySelector('h1, .groot'); if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); } window.scrollTo(0, 0); }
   }
@@ -576,10 +572,10 @@
     if (b.hasAttribute('data-reeel')) { s.reeel = b.getAttribute('data-reeel') === 'reeel'; teken(false); return; }
   });
   // Tijdens het slepen alleen de waarde en het meelopende bedrag bijwerken; bij loslaten alles opnieuw tekenen.
-  function leesSchuif(t) {
-    if (t.id === 'partnerSchuif') { s.partnerPct = Number(t.value); return s.partnerPct + '%'; }
-    if (t.id === 't1Schuif') { s.topaow = Number(t.value) >= Number(t.max) ? 'max' : Number(t.value); return eur(Number(t.value)); }
-    if (t.id === 't2Schuif') { s.tophlPct = Number(t.value); return s.tophlPct + '%'; }
+  function leesSchuif(el) {
+    if (el.id === 'partnerSchuif') { s.partnerPct = Number(el.value); return s.partnerPct + '%'; }
+    if (el.id === 't1Schuif') { s.topaow = Number(el.value) >= Number(el.max) ? 'max' : Number(el.value); return eur(Number(el.value)); }
+    if (el.id === 't2Schuif') { s.tophlPct = Number(el.value); return s.tophlPct + '%'; }
     return null;
   }
   document.addEventListener('input', function (e) {
@@ -593,6 +589,8 @@
     if (leesSchuif(e.target) !== null) tekenSchuif(e.target.id);
   });
 
+  I.opWissel(function () { teken(false); });
+  I.vertaal();
   teken(false);
 })();
 </script>

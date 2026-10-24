@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fonds B · Pensioendashboard</title>
+<title data-i18n="fondsB.paginatitel">Fonds B · Pensioendashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Instrument+Sans:wght@500;600&display=swap">
 <link rel="stylesheet" href="balk.css">
@@ -67,64 +67,65 @@
 </style>
 </head>
 <body>
-<div class="vbalk" role="region" aria-label="Ontwerpvariant">
-  <span class="vb-tag">Ontwerpvariant</span>
-  <span class="vb-naam"><strong>Fonds B</strong> · dashboard (2 van 3)</span>
-  <span class="vb-noot">Illustratief: zelfde rekenkern als de demo, fictieve huisstijl</span>
+<div class="vbalk" role="region" data-i18n-attr="aria-label:balk.label">
+  <span class="vb-tag" data-i18n="balk.tag"></span>
+  <span class="vb-naam" data-i18n="balk.b"></span>
+  <span class="vb-noot" data-i18n="balk.noot"></span>
   <span class="vb-rechts">
-    <nav aria-label="Varianten"><a href="fonds-a.html">A</a><a href="fonds-b.html" aria-current="page">B</a><a href="fonds-c.html">C</a></nav>
-    <a class="vb-link" href="index.html">Alle varianten</a>
-    <a class="vb-link" href="../index.html">&larr; Terug naar de demo</a>
+    <nav data-i18n-attr="aria-label:balk.varianten"><a href="fonds-a.html">A</a><a href="fonds-b.html" aria-current="page">B</a><a href="fonds-c.html">C</a></nav>
+    <a class="vb-link" href="index.html" data-i18n="balk.alle"></a>
+    <a class="vb-link" href="../index.html" data-i18n="balk.terug"></a>
+    <span data-taalknop></span>
   </span>
 </div>
 
 <header class="kop">
   <div class="logo"><span class="merk" aria-hidden="true">B</span> Fonds B</div>
-  <span class="titel">Pensioendashboard</span>
+  <span class="titel" data-i18n="fondsB.titel"></span>
   <span class="reeel-uitleg" id="reeelUitleg"></span>
   <div class="rechts">
-    <span class="seg" role="group" aria-label="Bruto of netto">
-      <button type="button" data-basis="netto" aria-pressed="true">Netto</button>
-      <button type="button" data-basis="bruto" aria-pressed="false">Bruto</button>
+    <span class="seg" role="group" data-i18n-attr="aria-label:gemeen.brutoOfNetto">
+      <button type="button" data-basis="netto" aria-pressed="true" data-i18n="gemeen.Netto"></button>
+      <button type="button" data-basis="bruto" aria-pressed="false" data-i18n="gemeen.Bruto"></button>
     </span>
-    <span class="seg" role="group" aria-label="Nominaal of reëel">
-      <button type="button" data-reeel="nom" aria-pressed="true">Nominaal</button>
-      <button type="button" data-reeel="reeel" aria-pressed="false">Reëel</button>
+    <span class="seg" role="group" data-i18n-attr="aria-label:gemeen.nominaalOfReeel">
+      <button type="button" data-reeel="nom" aria-pressed="true" data-i18n="gemeen.Nominaal"></button>
+      <button type="button" data-reeel="reeel" aria-pressed="false" data-i18n="gemeen.Reeel"></button>
     </span>
   </div>
 </header>
 
 <div class="raster">
-  <aside class="paneel stuur" aria-label="Keuzes">
-    <h2>Deelnemer</h2>
+  <aside class="paneel stuur" data-i18n-attr="aria-label:fondsB.keuzes">
+    <h2 data-i18n="fondsB.deelnemer"></h2>
     <div class="regel" style="margin-top:-12px">
-      <select id="deelnemer" aria-label="Deelnemer"></select>
+      <select id="deelnemer" data-i18n-attr="aria-label:fondsB.deelnemer"></select>
       <small id="deelnemerInfo" class="num"></small>
     </div>
     <hr class="scheiding">
-    <h2>Keuzes</h2>
+    <h2 data-i18n="fondsB.keuzes"></h2>
     <div class="regel" style="margin-top:-12px">
-      <div class="boven"><label for="leeftijd">Stopleeftijd</label><span class="waarde num" id="leeftijdW"></span></div>
+      <div class="boven"><label for="leeftijd" data-i18n="fondsB.stopleeftijd"></label><span class="waarde num" id="leeftijdW"></span></div>
       <input id="leeftijd" type="range" step="1">
       <small id="leeftijdS"></small>
     </div>
     <div class="regel">
-      <div class="boven"><label for="partner">Partnerpensioen</label><span class="waarde num" id="partnerW"></span></div>
+      <div class="boven"><label for="partner" data-i18n="fondsB.partner"></label><span class="waarde num" id="partnerW"></span></div>
       <input id="partner" type="range" step="5">
-      <small>Percentage van het OP vóór TOPAOW en TOPHL</small>
+      <small data-i18n="fondsB.partnerUitleg"></small>
     </div>
     <div class="regel">
-      <div class="boven"><label for="topaow">AOW-overbrugging (TOPAOW)</label><span class="waarde num" id="topaowW"></span></div>
+      <div class="boven"><label for="topaow" data-i18n="fondsB.topaow"></label><span class="waarde num" id="topaowW"></span></div>
       <input id="topaow" type="range" min="0" step="100" value="0">
       <small id="topaowS"></small>
     </div>
     <div class="regel">
-      <div class="boven"><label for="tophl">Tijdelijk hoger (TOPHL)</label><span class="waarde num" id="tophlW"></span></div>
+      <div class="boven"><label for="tophl" data-i18n="fondsB.tophl"></label><span class="waarde num" id="tophlW"></span></div>
       <input id="tophl" type="range" min="0" step="1" value="0">
       <small id="tophlS"></small>
     </div>
     <div class="regel">
-      <div class="boven"><label for="tophlEind">Einde TOPHL</label><span class="waarde num" id="tophlEindW"></span></div>
+      <div class="boven"><label for="tophlEind" data-i18n="fondsB.tophlEind"></label><span class="waarde num" id="tophlEindW"></span></div>
       <input id="tophlEind" type="range" step="1">
       <small id="tophlEindS"></small>
     </div>
@@ -133,11 +134,11 @@
   <main class="hoofd">
     <div class="kpis" id="kpis"></div>
     <section class="paneel grafiek" aria-labelledby="h-inkomen">
-      <h2 id="h-inkomen">Inkomen per maand, per leeftijd</h2>
+      <h2 id="h-inkomen" data-i18n="fondsB.hInkomen"></h2>
       <div id="grafiek"></div>
       <div class="legenda">
-        <span style="--c: var(--werk)">Werkinkomen</span>
-        <span style="--c: var(--op)">Levenslang OP</span>
+        <span style="--c: var(--werk)" data-i18n="fondsB.lgWerk"></span>
+        <span style="--c: var(--op)" data-i18n="fondsB.lgOp"></span>
         <span style="--c: var(--t1)">TOPAOW</span>
         <span style="--c: var(--t2)">TOPHL</span>
         <span style="--c: var(--aow)">AOW</span>
@@ -145,17 +146,21 @@
     </section>
     <div class="twee">
       <section class="paneel" aria-labelledby="h-kapitaal">
-        <h2 id="h-kapitaal">Waar gaat het kapitaal heen?</h2>
+        <h2 id="h-kapitaal" data-i18n="fondsB.hKapitaal"></h2>
         <div id="verdeling"></div>
       </section>
       <section class="paneel" aria-labelledby="h-param">
-        <h2 id="h-param">Rekenparameters</h2>
+        <h2 id="h-param" data-i18n="fondsB.hParam"></h2>
         <div id="parameters"></div>
       </section>
     </div>
   </main>
 </div>
 
+<script src="../i18n/i18n.js"></script>
+<script src="../i18n/nl.js"></script>
+<script src="../i18n/en.js"></script>
+<script src="../i18n/da.js"></script>
 <script src="../config.js"></script>
 <script src="../config-overlay.js"></script>
 <script src="../engine.js"></script>
@@ -163,23 +168,23 @@
 <script>
 (function () {
   'use strict';
-  var K = window.VariantKern, C = K.C, E = K.E;
+  var K = window.VariantKern, C = K.C, I = K.I, t = K.t;
   var eur = K.eur;
   function $(id) { return document.getElementById(id); }
-  function subkop(t) { return '<tr class="subkop"><th colspan="2" scope="colgroup">' + t + '</th></tr>'; }
-  var nf2 = new Intl.NumberFormat('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
-  var nf0 = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 1 });
-  var rekendatum = '01-' + C.calculatiedatum.split('-').reverse().join('-');
-  var pct3 = new Intl.NumberFormat('nl-NL', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
+  function subkop(tekst) { return '<tr class="subkop"><th colspan="2" scope="colgroup">' + tekst + '</th></tr>'; }
+  function rij(label, waarde) { return '<tr><td>' + label + '</td><td class="r num">' + waarde + '</td></tr>'; }
+  function pj(v) { return t('fondsB.perJaarKort', { bedrag: eur(v) }); }
   var basis = 'netto';
   var reeel = null;   // null = standaard: pensioendatum binnen 2 jaar nominaal, anders reëel
   var eindHandmatig = false;
 
   function vulDeelnemers() {
+    var sel = $('deelnemer'), oud = sel.value;
+    sel.innerHTML = '';
     C.deelnemers.forEach(function (d, i) {
-      $('deelnemer').add(new Option(d.naam + ' · ' + K.deelnemer(i).leeftijdJaar + ' jaar · ' + eur(d.startkapitaal), i));
+      sel.add(new Option(K.naam(i) + ' · ' + t('kern.jaar', { n: K.deelnemer(i).leeftijdJaar }) + ' · ' + eur(d.startkapitaal), i));
     });
-    $('deelnemer').value = C.standaardDeelnemer;
+    sel.value = oud === '' ? C.standaardDeelnemer : oud;
   }
 
   function zetLeeftijdBereik() {
@@ -204,7 +209,7 @@
     };
   }
 
-  function grafiek(res) {
+  function grafiek(res, eenheid) {
     var serie = K.jaarSerie(res);
     var W = 900, H = 300, L = 54, R = 10, T = 12, B = 30;
     var max = Math.max.apply(null, serie.map(function (d) { return d.w + d.op + d.t1 + d.t2 + d.a; })) || 1;
@@ -212,16 +217,15 @@
     var top = Math.ceil(max / stap) * stap;
     var bw = (W - L - R) / serie.length;
     var y = function (v) { return T + (H - T - B) * (1 - v / top); };
-    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Gestapelde staafgrafiek van het maandinkomen per leeftijd">';
+    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + t('fondsB.grafiekLabel') + '">';
     for (var g = 0; g <= top; g += stap) {
       svg += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(g) + '" y2="' + y(g) + '" stroke="#24365a"/>' +
-        '<text x="' + (L - 8) + '" y="' + (y(g) + 4) + '" fill="#8ea2c0" font-size="11" text-anchor="end" font-family="IBM Plex Mono">' + (g / 1000) + 'k</text>';
+        '<text x="' + (L - 8) + '" y="' + (y(g) + 4) + '" fill="#8ea2c0" font-size="11" text-anchor="end" font-family="IBM Plex Mono">' + I.getal(g / 1000, 0, 1) + 'k</text>';
     }
     var kleuren = [['w', '#3a4d6e'], ['op', '#3ec5c1'], ['t1', '#a98bf0'], ['t2', '#e8b04a'], ['a', '#6f86ab']];
     serie.forEach(function (d, i) {
       var x = L + i * bw + bw * 0.12, bww = bw * 0.76, acc = 0;
-      var titel = d.leeftijd + ' jaar: ' + eur(d.totaal) + ' ' + basis + (res.reeel ? ' · reëel' : '') + ' per maand';
-      svg += '<g><title>' + titel + '</title>';
+      svg += '<g><title>' + t('fondsB.staafTitel', { leeftijd: t('kern.jaar', { n: d.leeftijd }), bedrag: eur(d.totaal), eenheid: eenheid }) + '</title>';
       kleuren.forEach(function (k) {
         var v = d[k[0]];
         if (v <= 0) return;
@@ -232,7 +236,7 @@
       if (d.leeftijd % 5 === 0) svg += '<text x="' + (x + bww / 2) + '" y="' + (H - 10) + '" fill="#8ea2c0" font-size="11" text-anchor="middle" font-family="IBM Plex Mono">' + d.leeftijd + '</text>';
     });
     // Markering van de pensioendatum en de AOW-leeftijd.
-    [[res.jaar, 'stop'], [K.AOW_JAREN, 'AOW']].forEach(function (m, n) {
+    [[res.jaar, t('fondsB.stop')], [K.AOW_JAREN, 'AOW']].forEach(function (m, n) {
       var idx = serie.findIndex(function (d) { return d.leeftijd >= Math.floor(m[0]); });
       if (idx < 0 || (n === 1 && Math.floor(m[0]) === Math.floor(res.jaar))) return;
       var x = L + idx * bw + (m[0] % 1) * bw;
@@ -250,6 +254,7 @@
     var res = K.bereken(keuzes());
     var u = res.u;
     var d = res.deelnemer;
+    var rekendatum = I.datum(C.calculatiedatum);
 
     // Schuiven bijwerken op de grenzen van de rekenkern.
     var t1 = $('topaow');
@@ -265,45 +270,47 @@
       eind.value = res.eindKeuze;
     }
 
-    $('deelnemerInfo').textContent = 'Geboren ' + d.geboortedatum.split('-').reverse().join('-') + ' · salaris ' + eur(d.brutoSalaris) + ' · leeftijd ' + d.leeftijdJaar + ' op ' + rekendatum;
-    $('leeftijdW').textContent = res.jaar + ' jaar';
-    $('leeftijdS').textContent = 'Pensioendatum ' + res.tekst.pensioendatum + (res.voorAow ? ' · vóór de AOW-leeftijd' : (res.pensM === K.AOW_M ? ' · op de AOW-leeftijd' : ' · na de AOW-leeftijd'));
+    $('deelnemerInfo').textContent = t('fondsB.deelnemerInfo', { geboren: I.datum(d.geboortedatum), salaris: eur(d.brutoSalaris), leeftijd: d.leeftijdJaar, datum: rekendatum });
+    $('leeftijdW').textContent = t('kern.jaar', { n: res.jaar });
+    $('leeftijdS').textContent = t(res.voorAow ? 'fondsB.datumVoorAow' : (res.pensM === K.AOW_M ? 'fondsB.datumOpAow' : 'fondsB.datumNaAow'), { datum: res.tekst.pensioendatum });
     $('partnerW').textContent = res.partnerPct + '%';
-    $('topaowW').textContent = eur(u.t1) + '/jr';
-    $('topaowS').textContent = res.maxT1 > 0 ? 'Max ' + eur(res.maxT1) + ' per jaar (bruto) · tot de AOW-leeftijd' : 'Alleen bij stoppen vóór de AOW-leeftijd';
-    $('tophlW').textContent = Math.round(res.pctHL * 100) + '% · ' + eur(u.t2) + '/jr';
-    $('tophlS').textContent = res.tophlMogelijk ? 'Max 33% van het OP na TOPAOW · samen max 133%' : 'Niet mogelijk bij deze stopleeftijd';
-    $('tophlEindW').textContent = res.tophlMogelijk ? K.leeftijdTekst(res.eindKeuze).replace(' jaar en ', 'j ').replace(' maanden', 'm').replace(' maand', 'm') : '–';
-    $('tophlEindS').textContent = u.t2 > 0 ? res.tekst.tophlEind + (eindHandmatig ? '' : ' (standaard)') : 'Kies eerst een percentage TOPHL';
+    $('topaowW').textContent = pj(u.t1);
+    $('topaowS').textContent = res.maxT1 > 0 ? t('fondsB.topaowMax', { bedrag: eur(res.maxT1) }) : t('fondsB.topaowNiet');
+    $('tophlW').textContent = Math.round(res.pctHL * 100) + '% · ' + pj(u.t2);
+    $('tophlS').textContent = res.tophlMogelijk ? t('fondsB.tophlMax') : t('fondsB.tophlNiet');
+    $('tophlEindW').textContent = res.tophlMogelijk ? K.leeftijdCompact(res.eindKeuze) : '–';
+    $('tophlEindS').textContent = u.t2 > 0 ? (eindHandmatig ? res.tekst.tophlEind : t('fondsB.standaard', { tekst: res.tekst.tophlEind })) : t('fondsB.tophlEerst');
 
     document.querySelectorAll('[data-reeel]').forEach(function (o) { o.setAttribute('aria-pressed', String((o.getAttribute('data-reeel') === 'reeel') === res.reeel)); });
     $('reeelUitleg').textContent = K.reeelUitleg(res, reeel !== null);
-    var eenheid = basis + (res.reeel ? ' · reëel' : '');
+    var eenheid = t('gemeen.' + basis) + (res.reeel ? ' · ' + t('gemeen.reeel') : '');
 
     var twee = u.t1 > 0 || u.t2 > 0;
     $('kpis').innerHTML =
-      kpi('var(--op)', 'Vanaf ' + res.tekst.pensioendatum, eur(res.eerst), eenheid + ' per maand' + (twee ? ', inclusief tijdelijke delen' : '')) +
-      kpi('var(--aow)', twee ? 'Daarna, levenslang' : 'Levenslang, inclusief AOW', eur(twee ? res.later : res.laterInclAow), twee ? 'Inclusief AOW: ' + eur(res.laterInclAow) + ' · ' + eenheid : eenheid + ' per maand vanaf de AOW-leeftijd') +
-      kpi('var(--partner)', 'Partnerpensioen', eur(res.partner), res.partnerPct + '% · ' + eenheid + ' per maand') +
-      kpi('var(--t2)', 'Kapitaal op pensioendatum', eur(res.kapitaal), res.reeel ? 'Reëel · nominaal ' + eur(res.kapitaalNominaal) : 'Nominaal · start ' + eur(d.startkapitaal));
+      kpi('var(--op)', t('fondsB.kpiVanaf', { datum: res.tekst.pensioendatum }), eur(res.eerst), t(twee ? 'fondsB.kpiVanafSubTijdelijk' : 'fondsB.kpiVanafSub', { eenheid: eenheid })) +
+      kpi('var(--aow)', t(twee ? 'fondsB.kpiDaarna' : 'fondsB.kpiLevenslang'), eur(twee ? res.later : res.laterInclAow),
+        twee ? t('fondsB.kpiDaarnaSub', { bedrag: eur(res.laterInclAow), eenheid: eenheid }) : t('fondsB.kpiLevenslangSub', { eenheid: eenheid })) +
+      kpi('var(--partner)', t('fondsB.partner'), eur(res.partner), t('fondsB.kpiPartnerSub', { pct: res.partnerPct, eenheid: eenheid })) +
+      kpi('var(--t2)', t('fondsB.kpiKapitaal'), eur(res.kapitaal),
+        res.reeel ? t('fondsB.kpiKapitaalReeel', { bedrag: eur(res.kapitaalNominaal) }) : t('fondsB.kpiKapitaalNominaal', { bedrag: eur(d.startkapitaal) }));
 
-    $('grafiek').innerHTML = grafiek(res);
+    $('grafiek').innerHTML = grafiek(res, eenheid);
 
     var v = res.verdeling;
     var totaal = v.levenslang + v.topaow + v.tophl + v.partner;
     var delen = [
-      ['Levenslang ouderdomspensioen', v.levenslang, 'var(--op)'],
-      ['Inkoop AOW-overbrugging', v.topaow, 'var(--t1)'],
-      ['Inkoop TOPHL', v.tophl, 'var(--t2)'],
-      ['Inkoop partnerpensioen', v.partner, 'var(--partner)']
+      [t('fondsB.vdLevenslang'), v.levenslang, 'var(--op)'],
+      [t('fondsB.vdTopaow'), v.topaow, 'var(--t1)'],
+      [t('fondsB.vdTophl'), v.tophl, 'var(--t2)'],
+      [t('fondsB.vdPartner'), v.partner, 'var(--partner)']
     ];
     $('verdeling').innerHTML = '<div class="verdeelbalk" aria-hidden="true">' + delen.map(function (p) {
       return '<div style="--c:' + p[2] + ';flex:' + Math.max(0, p[1]) + '"></div>';
-    }).join('') + '</div><table><thead><tr><th>Onderdeel</th><th class="r">Kapitaal</th><th class="r">Aandeel</th></tr></thead><tbody>' +
+    }).join('') + '</div><table><thead><tr><th>' + t('fondsB.vdOnderdeel') + '</th><th class="r">' + t('fondsB.vdKapitaal') + '</th><th class="r">' + t('fondsB.vdAandeel') + '</th></tr></thead><tbody>' +
       delen.map(function (p) {
-        return '<tr><td><span class="stip" style="--c:' + p[2] + '"></span>' + p[0] + '</td><td class="r num">' + eur(p[1]) + '</td><td class="r num">' + nf2.format(totaal ? p[1] / totaal * 100 : 0) + '%</td></tr>';
+        return '<tr><td><span class="stip" style="--c:' + p[2] + '"></span>' + p[0] + '</td><td class="r num">' + eur(p[1]) + '</td><td class="r num">' + I.getal(totaal ? p[1] / totaal * 100 : 0, 1, 2) + '%</td></tr>';
       }).join('') +
-      '<tr class="totaal"><td>Kapitaal op ' + res.tekst.pensioendatum + ' (nominaal)</td><td class="r num">' + eur(res.kapitaalNominaal) + '</td><td class="r num">100%</td></tr></tbody></table>';
+      '<tr class="totaal"><td>' + t('fondsB.vdTotaal', { datum: res.tekst.pensioendatum }) + '</td><td class="r num">' + eur(res.kapitaalNominaal) + '</td><td class="r num">100%</td></tr></tbody></table>';
 
     var o = res.overrendement;
     // Salaris en parttimepercentage op de rekendatum, zoals de rekenkern ze in de eerste maand gebruikt.
@@ -312,31 +319,32 @@
     var parttime = rij0 ? rij0.schema : 1;
     var wijzigtLater = res.sim.rows.some(function (r, i) { return i > 0 && r.wijziging; });
     var grondslag = Math.max(0, Math.min(d.brutoSalaris, reg.maxPensioengevendSalaris) - reg.franchise) * parttime;
+    var pct3 = function (x) { return I.getal(x * 100, 3, 3) + '%'; };
     $('parameters').innerHTML = '<table><tbody>' +
-      subkop('Gegevens deelnemer') +
-      '<tr><td>Rekendatum</td><td class="r num">' + rekendatum + '</td></tr>' +
-      '<tr><td>Geboortedatum</td><td class="r num">' + d.geboortedatum.split('-').reverse().join('-') + '</td></tr>' +
-      '<tr><td>Leeftijd op de rekendatum</td><td class="r num">' + K.leeftijdTekst(d.leeftijdMaanden) + '</td></tr>' +
-      '<tr><td>Bruto salaris (voltijd)</td><td class="r num">' + eur(d.brutoSalaris) + '/jr</td></tr>' +
-      '<tr><td>Parttimepercentage' + (wijzigtLater ? ' (wijzigt later volgens schema)' : '') + '</td><td class="r num">' + nf0.format(parttime * 100) + '%</td></tr>' +
-      '<tr><td>Startkapitaal op de rekendatum</td><td class="r num">' + eur(d.startkapitaal) + '</td></tr>' +
-      subkop('Actuariële waarden') +
-      '<tr><td>Inkoopfactor OP (' + res.jaar + ' jaar)</td><td class="r num">' + nf2.format(res.aOP) + '</td></tr>' +
-      '<tr><td>Inkoopfactor partnerpensioen</td><td class="r num">' + nf2.format(C.partnerpensioen.inkoopfactorNP) + '</td></tr>' +
-      '<tr><td>OP vóór uitruil</td><td class="r num">' + eur(u.standaard) + '/jr</td></tr>' +
-      '<tr><td>Inkoopfactor TOPAOW</td><td class="r num">' + nf2.format(C.topaow.inkoopfactor) + '</td></tr>' +
-      '<tr><td>Looptijd TOPHL</td><td class="r num">' + (u.t2 > 0 ? nf2.format(u.looptijdHL) + ' jr' : '–') + '</td></tr>' +
-      '<tr><td>Inkoopfactor TOPHL (' + nf2.format(C.tophl.inkoopfactorPerJaar) + ' × looptijd)</td><td class="r num">' + (u.t2 > 0 ? nf2.format(u.inkoopHL) : '–') + '</td></tr>' +
-      '<tr><td>Verlaging OP na einde TOPHL</td><td class="r num">' + (u.R > 0 ? eur(u.R) + '/jr' : '–') + '</td></tr>' +
-      subkop('Premie en rendement') +
-      '<tr><td>Franchise (voltijd)</td><td class="r num">' + eur(reg.franchise) + '/jr</td></tr>' +
-      '<tr><td>Pensioengrondslag (salaris − franchise) × parttime</td><td class="r num">' + eur(grondslag) + '/jr</td></tr>' +
-      '<tr><td>Premie (' + nf0.format(reg.premiepercentage * 100) + '% van de grondslag)</td><td class="r num">' + eur(grondslag * reg.premiepercentage) + '/jr</td></tr>' +
-      '<tr><td>Nominaal rendement</td><td class="r num">' + pct3.format(o.nominaal * 100) + '%</td></tr>' +
-      '<tr><td>Looptijd RTS (AOW-jaar ' + o.aowJaar + ' − ' + o.calcJaar + ')</td><td class="r num">' + o.looptijd + ' jr</td></tr>' +
-      '<tr><td>Spotrate RTS bij ' + Math.max(1, o.looptijd) + ' jr (peildatum ' + C.rts.peildatum.split('-').reverse().join('-') + ')</td><td class="r num">− ' + pct3.format(o.spot * 100) + '%</td></tr>' +
-      '<tr class="totaal"><td>Overrendement na RTS</td><td class="r num">' + pct3.format(o.rente * 100) + '%</td></tr>' +
-      '</tbody></table><p class="noot">Bedragen in de tabel zijn bruto per jaar; salaris, franchise en premie gelden op de rekendatum en groeien daarna mee met de inflatie. De rekendatum volgt uit de datum van vandaag: vanaf de 15e de eerste van de lopende maand, daarvoor de eerste van de vorige maand. Spotrates uit de RTS van DNB; overige parameters fictief, uit config.js.</p>';
+      subkop(t('fondsB.pmDeelnemer')) +
+      rij(t('fondsB.pmRekendatum'), rekendatum) +
+      rij(t('fondsB.pmGeboortedatum'), I.datum(d.geboortedatum)) +
+      rij(t('fondsB.pmLeeftijd'), K.leeftijdTekst(d.leeftijdMaanden)) +
+      rij(t('fondsB.pmSalaris'), pj(d.brutoSalaris)) +
+      rij(t(wijzigtLater ? 'fondsB.pmParttimeLater' : 'fondsB.pmParttime'), I.getal(parttime * 100, 0, 1) + '%') +
+      rij(t('fondsB.pmStartkapitaal'), eur(d.startkapitaal)) +
+      subkop(t('fondsB.pmActuarieel')) +
+      rij(t('fondsB.pmInkoopOP', { leeftijd: t('kern.jaar', { n: res.jaar }) }), I.getal(res.aOP, 1, 2)) +
+      rij(t('fondsB.pmInkoopNP'), I.getal(C.partnerpensioen.inkoopfactorNP, 1, 2)) +
+      rij(t('fondsB.pmOpVoor'), pj(u.standaard)) +
+      rij(t('fondsB.pmInkoopTopaow'), I.getal(C.topaow.inkoopfactor, 1, 2)) +
+      rij(t('fondsB.pmLooptijdHL'), u.t2 > 0 ? t('fondsB.jrKort', { n: I.getal(u.looptijdHL, 1, 2) }) : '–') +
+      rij(t('fondsB.pmInkoopHL', { factor: I.getal(C.tophl.inkoopfactorPerJaar, 1, 2) }), u.t2 > 0 ? I.getal(u.inkoopHL, 1, 2) : '–') +
+      rij(t('fondsB.pmVerlaging'), u.R > 0 ? pj(u.R) : '–') +
+      subkop(t('fondsB.pmPremie')) +
+      rij(t('fondsB.pmFranchise'), pj(reg.franchise)) +
+      rij(t('fondsB.pmGrondslag'), pj(grondslag)) +
+      rij(t('fondsB.pmPremieRegel', { pct: I.getal(reg.premiepercentage * 100, 0, 1) }), pj(grondslag * reg.premiepercentage)) +
+      rij(t('fondsB.pmNominaal'), pct3(o.nominaal)) +
+      rij(t('fondsB.pmLooptijdRts', { aow: o.aowJaar, calc: o.calcJaar }), t('fondsB.jrKort', { n: o.looptijd })) +
+      rij(t('fondsB.pmSpot', { n: Math.max(1, o.looptijd), datum: I.datum(C.rts.peildatum) }), '− ' + pct3(o.spot)) +
+      '<tr class="totaal"><td>' + t('fondsB.pmOverrendement') + '</td><td class="r num">' + pct3(o.rente) + '</td></tr>' +
+      '</tbody></table><p class="noot">' + t('fondsB.pmNoot') + '</p>';
   }
 
   vulDeelnemers();
@@ -359,6 +367,8 @@
       render();
     });
   });
+  I.opWissel(function () { vulDeelnemers(); render(); });
+  I.vertaal();
   render();
 })();
 </script>

@@ -19,8 +19,10 @@
     return d[0] * 12 + (d[1] - 1);
   }
 
+  // Korte maandnamen uit de gekozen taal (i18n/i18n.js) als die geladen is; anders Nederlands.
   function maandLabel(i) {
-    return MAANDEN[i % 12] + ' ' + Math.floor(i / 12);
+    const namen = global.I18N ? global.I18N.maanden() : MAANDEN;
+    return namen[i % 12] + ' ' + Math.floor(i / 12);
   }
 
   function leeftijdLabel(m) {
