@@ -366,9 +366,14 @@
               <span><strong id="optieAnderTitel"></strong><small data-i18n="demo.stap1.anderUitleg"></small></span></label>
           </div>
           <div class="sub" id="startAnder" hidden>
-            <div class="rij">
+            <label for="leeftijdSchuif"><span data-i18n="demo.stap1.schuif"></span> <strong id="leeftijdSchuifWaarde"></strong></label>
+            <input id="leeftijdSchuif" type="range" step="1">
+            <div class="rij" style="margin-top: 10px">
               <label for="leeftijd" data-i18n="demo.stap1.leeftijd"></label>
-              <select id="leeftijd"></select>
+              <span style="display: inline-flex; gap: 8px">
+                <select id="leeftijd"></select>
+                <select id="leeftijdMnd" data-i18n-attr="aria-label:demo.stap1.maanden"></select>
+              </span>
             </div>
           </div>
         </div>
@@ -767,6 +772,8 @@
     reeelHandmatig = false;
     var std = C.pensioenreglement.standaardPensioenleeftijd;
     $('leeftijd').value = $('leeftijd').querySelector('option[value="' + std + '"]') ? std : $('leeftijd').options[0].value;
+    $('leeftijdMnd').value = 0;
+    vulMaanden();
     $('deelPct').value = 40;
     parttimeRows = C.parttimepercentages.map(function (r) { return { vanaf: r.vanaf, pct: r.percentage }; });
     renderWerk();
@@ -801,9 +808,32 @@
     var oud = sel.value;
     sel.innerHTML = '';
     for (var j = lo; j <= hi; j++) {
-      if (birthIdx + j * 12 > calcIdx) sel.add(new Option(t('kern.jaar', { n: j }), j));
+      // Een jaar telt mee zolang er nog een maand in ligt na de calculatiedatum. 70 jaar is het maximum, zonder maanden.
+      if (birthIdx + j * 12 + (j < hi ? 11 : 0) > calcIdx) sel.add(new Option(t('kern.jaar', { n: j }), j));
     }
     if (oud && sel.querySelector('option[value="' + oud + '"]')) sel.value = oud;
+    vulMaanden();
+    // Schuifregelaar in maanden, over hetzelfde bereik als de keuzelijsten.
+    var schuif = $('leeftijdSchuif');
+    schuif.min = Math.max(lo * 12, calcIdx - birthIdx + 1);
+    schuif.max = hi * 12;
+  }
+  // Keuzelijst maanden bij het gekozen jaar: alleen maanden na de calculatiedatum, en geen maanden bij 70 jaar.
+  function vulMaanden() {
+    var sel = $('leeftijdMnd');
+    var j = Number($('leeftijd').value);
+    var birthIdx = E.maandIndex(C.deelnemer.geboortedatum);
+    var calcIdx = E.maandIndex(C.calculatiedatum);
+    var oud = sel.value;
+    sel.innerHTML = '';
+    for (var m = 0; m <= (j < 70 ? 11 : 0); m++) {
+      if (birthIdx + j * 12 + m > calcIdx) sel.add(new Option(t('kern.maanden', { n: m }), m));
+    }
+    if (oud && sel.querySelector('option[value="' + oud + '"]')) sel.value = oud;
+  }
+  // Gekozen stopleeftijd uit stap 1, in maanden.
+  function gekozenLeeftijdMaanden() {
+    return Number($('leeftijd').value) * 12 + (Number($('leeftijdMnd').value) || 0);
   }
 
   // Kies een demo-deelnemer: die wordt het uitgangspunt (geboortedatum, startkapitaal, salaris).
@@ -917,7 +947,16 @@
     });
     document.querySelector('input[name="start"][value="ander"]').addEventListener('change', function () { vulLeeftijd(); });
     // Vóór de algemene render-luisteraar hieronder, zodat de titel van optie 2 meteen de gekozen leeftijd toont.
-    $('leeftijd').addEventListener('change', function () { leeftijdGekozen = true; });
+    $('leeftijd').addEventListener('change', function () { leeftijdGekozen = true; vulMaanden(); });
+    $('leeftijdMnd').addEventListener('change', function () { leeftijdGekozen = true; });
+    // De schuifregelaar zet de keuzelijsten; andersom zet render de schuif op de gekozen leeftijd.
+    $('leeftijdSchuif').addEventListener('input', function () {
+      var m = Number(this.value);
+      $('leeftijd').value = Math.floor(m / 12);
+      vulMaanden();
+      $('leeftijdMnd').value = m % 12;
+      leeftijdGekozen = true;
+    });
 
     var inputs = document.querySelectorAll('input, select');
     for (var i = 0; i < inputs.length; i++) {
@@ -967,6 +1006,7 @@
     });
     I.opWissel(function () {
       vasteTeksten();
+      vulLeeftijd();
       toonDeelnemerInfo();
       renderWerk();
       $('planMelding').textContent = '';
@@ -1017,12 +1057,15 @@
     var partnerPct = Number($('partnerPct').value);
     $('startAnder').hidden = start !== 'ander';
     $('optieAnderTitel').textContent = start === 'ander' && leeftijdGekozen
-      ? t('demo.stap1.anderGekozen', { n: $('leeftijd').value }) : t('demo.stap1.ander');
+      ? t('demo.stap1.anderGekozen', { leeftijd: leeftijdTekst(gekozenLeeftijdMaanden()) }) : t('demo.stap1.ander');
     $('deelSub').hidden = !deelAan;
     $('partnerPctWaarde').textContent = partnerPct + '%';
 
     // Bij deeltijdpensioen gaat u volledig met pensioen op de AOW-datum.
-    var gekozenJaar = start === 'aow' ? AOW_JAREN : Number($('leeftijd').value);
+    var gekozenJaar = start === 'aow' ? AOW_JAREN : gekozenLeeftijdMaanden() / 12;
+    $('leeftijdSchuif').value = gekozenLeeftijdMaanden();
+    $('leeftijdSchuifWaarde').textContent = t('demo.stap1.schuifWaarde', { leeftijd: leeftijdTekst(gekozenLeeftijdMaanden()),
+      datum: E.maandLabel(E.maandIndex(C.deelnemer.geboortedatum) + gekozenLeeftijdMaanden()) });
     var dLo = Math.round(AOW_JAREN) - 10, dHi = Math.round(AOW_JAREN) - 1;
     var deelGeldig = deelAan && start === 'ander' && gekozenJaar >= dLo && gekozenJaar <= dHi;
     // Met deeltijd loopt het volledige pensioen door tot de AOW-datum. De gekozen leeftijd blijft de ingangsdatum van het deeltijdpensioen.
@@ -1152,8 +1195,8 @@
       : t('demo.werk.geen', { pct: basisPct() });
 
     // Stap-samenvattingen
-    $('k1').textContent = start === 'aow' ? t('demo.k1Aow', { leeftijd: aowLabel() }) : t('demo.k1', { n: jaar });
-    $('k2').textContent = deelGeldig ? t('demo.k2Deels', { pct: $('deelPct').value, n: Number($('leeftijd').value) }) : t('demo.k2Volledig');
+    $('k1').textContent = start === 'aow' ? t('demo.k1Aow', { leeftijd: aowLabel() }) : t('demo.k1', { leeftijd: leeftijdTekst(pensMaanden) });
+    $('k2').textContent = deelGeldig ? t('demo.k2Deels', { pct: $('deelPct').value, leeftijd: leeftijdTekst(gekozenMaanden) }) : t('demo.k2Volledig');
     $('k3').textContent = partnerPct > 0 ? t('demo.k3', { pct: partnerPct }) : t('demo.k3Geen');
     $('k4').textContent = u.t1 > 0 ? t('demo.k4', { bedrag: eur0.format(u.t1) }) : t('demo.k4Geen');
     $('k5').textContent = u.t2 > 0 ? t('demo.k5', { pct: Math.round(pctHL * 100), datum: E.maandLabel(birthIdx + eindKeuze) }) : t('demo.k5Geen');
@@ -1501,6 +1544,7 @@
       naam: naam,
       start: radio('start'),
       leeftijd: Number($('leeftijd').value),
+      leeftijdMnd: Number($('leeftijdMnd').value) || 0,
       deel: radio('deel') === 'ja',
       deelPct: $('deelPct').value,
       parttime: parttimeLijst().map(function (r) { return { vanaf: r.vanaf, percentage: r.percentage }; }),
@@ -1514,7 +1558,8 @@
   // Uitkomsten van één plan, met dezelfde regels als de wizard.
   function planUitkomst(p, rente, sk) {
     var birthIdx = E.maandIndex(C.deelnemer.geboortedatum);
-    var gekozenJaar = p.start === 'aow' ? AOW_JAREN : Number(p.leeftijd);
+    // Scenario's van vóór de maandkeuze hebben geen leeftijdMnd: die rekenen met hele jaren.
+    var gekozenJaar = p.start === 'aow' ? AOW_JAREN : Number(p.leeftijd) + (Number(p.leeftijdMnd) || 0) / 12;
     var dLo = Math.round(AOW_JAREN) - 10, dHi = Math.round(AOW_JAREN) - 1;
     // Deeltijd alleen met een ingangsleeftijd tussen 10 jaar en 1 jaar vóór de AOW. Met de AOW-leeftijd als keuze is er geen deeltijd.
     var deelGeldig = !!p.deel && p.start === 'ander' && gekozenJaar >= dLo && gekozenJaar <= dHi;
@@ -1555,7 +1600,13 @@
     wijzigd = true;
     radioSet('start', p.start);
     radioSet('deel', p.deel ? 'ja' : 'nee');
-    if (p.start === 'ander' && $('leeftijd').querySelector('option[value="' + p.leeftijd + '"]')) { $('leeftijd').value = String(p.leeftijd); leeftijdGekozen = true; }
+    if (p.start === 'ander' && $('leeftijd').querySelector('option[value="' + p.leeftijd + '"]')) {
+      $('leeftijd').value = String(p.leeftijd);
+      vulMaanden();
+      $('leeftijdMnd').value = String(p.leeftijdMnd || 0);
+      if ($('leeftijdMnd').selectedIndex < 0) $('leeftijdMnd').selectedIndex = 0;
+      leeftijdGekozen = true;
+    }
     $('deelPct').value = p.deelPct;
     $('partnerPct').value = p.partnerPct;
     parttimeRows = p.parttime.map(function (r) { return { vanaf: r.vanaf, pct: r.percentage }; });
