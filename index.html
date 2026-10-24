@@ -196,7 +196,7 @@
   #vergelijk .link-knop { margin-top: 8px; justify-self: start; }
   @media (max-width: 600px) {
     #deelnemerKeuze { min-width: 0 !important; width: 100%; }
-    #startkapitaal { width: 100% !important; }
+    #startkapitaal, #salaris, #basisParttime { width: 100% !important; }
     .resultaat .bedrag { font-size: 30px; }
   }
   .as-titel { font-size: 12px; font-weight: 600; }
@@ -306,6 +306,15 @@
       <label for="startkapitaal" style="font-weight: 600"><span data-i18n="demo.opgebouwd"></span> <span id="kapDatum"></span></label>
       <span class="rij" style="gap: 6px"><span>€</span><input id="startkapitaal" type="number" min="0" step="1000" style="width: 160px"></span>
     </div>
+    <div class="rij" style="justify-content: space-between; gap: 12px">
+      <label for="salaris" style="font-weight: 600" data-i18n="demo.salaris"></label>
+      <span class="rij" style="gap: 6px"><span>€</span><input id="salaris" type="number" min="0" step="500" style="width: 160px"></span>
+    </div>
+    <div class="rij" style="justify-content: space-between; gap: 12px">
+      <label for="basisParttime" style="font-weight: 600" data-i18n="demo.basisParttime"></label>
+      <select id="basisParttime" style="width: 160px"></select>
+    </div>
+    <p class="muted" style="margin: -6px 0 0; font-size: 13px" data-i18n="demo.uitgangspuntUitleg"></p>
   </div>
 
   <div class="opzet">
@@ -668,6 +677,13 @@
       .map(function (r) { return { vanaf: r.vanaf, percentage: r.pct }; });
   }
 
+  // Uitgangspunt bovenaan de pagina: het parttimepercentage van nu. De wijzigingen uit stap 2
+  // komen erna; een wijziging in dezelfde maand gaat voor.
+  function basisPct() { return Number($('basisParttime').value) || 100; }
+  function metUitgangspunt(lijst) {
+    return [{ vanaf: '1900-01', percentage: basisPct() }].concat(lijst);   // geldt al vóór de eerste maand: geen 'wijziging' in maand 1
+  }
+
   function formatMaand(idx) {
     var j = Math.floor(idx / 12), m = idx % 12;
     return j + '-' + (m + 1 < 10 ? '0' + (m + 1) : String(m + 1));
@@ -718,6 +734,8 @@
     renderWerk();
     setBasis('netto');
     $('startkapitaal').value = C.deelnemer.startkapitaal;
+    $('salaris').value = C.deelnemers[huidigDeel].brutoSalaris;
+    $('basisParttime').value = 100;
     $('lhk').checked = true;
     render();
   }
@@ -790,6 +808,8 @@
     dk.addEventListener('change', function () { kiesDeelnemer(Number(dk.value)); });
     var dsel = $('deelPct');
     for (var p = 10; p <= 90; p += 10) dsel.add(new Option(p + '%', p));
+    var bsel = $('basisParttime');
+    for (var bp = 100; bp >= 5; bp -= 5) bsel.add(new Option(bp + '%', bp));
 
     // Stappen openen en sluiten: één tegelijk open
     var knoppen = document.querySelectorAll('.stap-kop');
@@ -952,6 +972,8 @@
 
   function render() {
     var start = radio('start');
+    // Salaris uit het invoerveld bovenaan; de rekenkern, de tijdlijn en de scenario's lezen het uit C.deelnemer.
+    C.deelnemer.brutoSalaris = Math.max(0, Number($('salaris').value) || 0);
     var deelAan = radio('deel') === 'ja';
     var partnerPct = Number($('partnerPct').value);
     $('startAnder').hidden = start !== 'ander';
@@ -1004,9 +1026,9 @@
     var wl = parttimeLijst();
     var sk = Math.max(0, Number($('startkapitaal').value) || 0);
     var marge = E.scenarioMarge(C, pensMaanden);
-    var sim = E.simuleer(C, { pensioenLeeftijdMaanden: pensMaanden, rente: rente, deeltijd: deel, parttimepercentages: wl, startkapitaal: sk });
-    var simLo = E.simuleer(C, { pensioenLeeftijdMaanden: pensMaanden, rente: rente - marge, deeltijd: deel, parttimepercentages: wl, startkapitaal: sk });
-    var simHi = E.simuleer(C, { pensioenLeeftijdMaanden: pensMaanden, rente: rente + marge, deeltijd: deel, parttimepercentages: wl, startkapitaal: sk });
+    var sim = E.simuleer(C, { pensioenLeeftijdMaanden: pensMaanden, rente: rente, deeltijd: deel, parttimepercentages: metUitgangspunt(wl), startkapitaal: sk });
+    var simLo = E.simuleer(C, { pensioenLeeftijdMaanden: pensMaanden, rente: rente - marge, deeltijd: deel, parttimepercentages: metUitgangspunt(wl), startkapitaal: sk });
+    var simHi = E.simuleer(C, { pensioenLeeftijdMaanden: pensMaanden, rente: rente + marge, deeltijd: deel, parttimepercentages: metUitgangspunt(wl), startkapitaal: sk });
     // AOW-overbrugging (TOPAOW): alleen vóór de AOW-leeftijd. De werkfractie op de pensioendatum bepaalt het maximum.
     // TOPHL: van de pensioendatum tot een gekozen eerste van de maand, uiterlijk 10 jaar na de AOW-leeftijd.
     var aowM = C.pensioenreglement.aowLeeftijdMaanden;
@@ -1088,7 +1110,7 @@
     $('parttimeMelding').hidden = !wMeld;
     $('kW').textContent = wsorted.length
       ? wsorted.map(function (r) { return t('demo.werk.samenvatting', { pct: r.percentage, datum: E.maandLabel(E.maandIndex(r.vanaf)) }); }).join(' · ')
-      : t('demo.werk.geen');
+      : t('demo.werk.geen', { pct: basisPct() });
 
     // Stap-samenvattingen
     $('k1').textContent = start === 'aow' ? t('demo.k1Aow', { leeftijd: aowLabel() }) : t('demo.k1', { n: jaar });
@@ -1413,7 +1435,8 @@
   }
 
   // Bewaar de keuzes uit de invoer onder een eigen naam. Een bestaande naam wordt overschreven.
-  // Deelnemer en startkapitaal horen niet bij een scenario: die gelden altijd zoals ze op het scherm staan.
+  // Deelnemer, startkapitaal, salaris en het parttimepercentage als uitgangspunt horen niet bij een scenario:
+  // die gelden altijd zoals ze op het scherm staan.
   function bewaarScenario() {
     var naam = $('planNaam').value.trim();
     if (!naam) { $('planMelding').textContent = t('demo.bewaar.geenNaam'); $('planNaam').focus(); return; }
@@ -1462,7 +1485,7 @@
     var voorAow = pensM < C.pensioenreglement.aowLeeftijdMaanden;
     var deel = deelGeldig ? { idx: birthIdx + Math.round(gekozenJaar * 12), pct: Number(p.deelPct) / 100 } : null;
     var partnerPct = Number(p.partnerPct);
-    var sim = E.simuleer(C, { pensioenLeeftijdMaanden: pensM, rente: rente, deeltijd: deel, parttimepercentages: p.parttime, startkapitaal: sk });
+    var sim = E.simuleer(C, { pensioenLeeftijdMaanden: pensM, rente: rente, deeltijd: deel, parttimepercentages: metUitgangspunt(p.parttime), startkapitaal: sk });
     var werk = sim.rows.length ? sim.rows[sim.rows.length - 1].werk : 1;
     var maxT1 = E.uitkeringen(C, sim, { partnerPct: partnerPct, topaow: Infinity, werkfractie: werk }, jaar).maxT1;
     var maxHeel = Math.floor(maxT1);
@@ -1486,7 +1509,7 @@
   }
 
   // Zet een opgeslagen scenario in de invoer. Daarna rekent de hele pagina met de keuzes van dat scenario,
-  // voor de deelnemer en het startkapitaal die nu op het scherm staan.
+  // voor de deelnemer, het startkapitaal, het salaris en het uitgangspunt voor parttime die nu op het scherm staan.
   function laadPlan(i) {
     var p = opgeslagenPlannen()[i];
     if (!p) return;
