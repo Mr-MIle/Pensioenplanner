@@ -3,10 +3,12 @@
     node i18n/i18n-check.js               controleren
     node i18n/i18n-check.js --bijgewerkt  na het bijwerken van en.js en da.js: legt vast op welke Nederlandse tekst
                                           de vertalingen nu gebaseerd zijn (i18n/bron-hash.json)
+    node i18n/i18n-check.js --bijgewerkt en   idem, alleen voor die taal (de andere talen blijven zoals ze waren)
   Meldt per taal: ontbrekende sleutels, sleutels die niet in nl.js staan, verschillen in {plekken} of enkelvoud/meervoud,
   en vertalingen waarvan de Nederlandse bron sinds de vorige --bijgewerkt is veranderd (verouderd).
-  Meldt ook sleutels uit nl.js die nergens in de pagina's gebruikt worden.
-  Eindigt met code 1 bij ontbrekende sleutels of verschillende plekken.
+  Meldt ook sleutels uit nl.js die nergens in de pagina's gebruikt worden, en sleutels die de pagina's gebruiken
+  maar die niet in nl.js staan (bijvoorbeeld een tikfout: de pagina toont dan de kale sleutel).
+  Eindigt met code 1 bij ontbrekende of onbekende sleutels of verschillende plekken.
 */
 'use strict';
 const fs = require('fs');
@@ -33,13 +35,22 @@ const zelfde = (a, b) => JSON.stringify([...new Set(a)].sort()) === JSON.stringi
 let hashes = {};
 try { hashes = JSON.parse(fs.readFileSync(HASHBESTAND, 'utf8')); } catch (e) { hashes = {}; }
 
-if (process.argv.includes('--bijgewerkt')) {
-  TALEN.filter(t => t !== I18N.BRON).forEach(t => {
+const bij = process.argv.indexOf('--bijgewerkt');
+if (bij >= 0) {
+  const vertalingen = TALEN.filter(t => t !== I18N.BRON);
+  const gekozen = process.argv.slice(bij + 1).filter(a => !a.startsWith('--'));
+  const fout = gekozen.filter(t => !vertalingen.includes(t));
+  if (fout.length) {
+    console.log('Onbekende taal: ' + fout.join(', ') + ' (kies uit ' + vertalingen.join(', ') + ')');
+    process.exit(1);
+  }
+  (gekozen.length ? gekozen : vertalingen).forEach(t => {
     hashes[t] = {};
     Object.keys(W[t]).filter(k => k in nl).sort().forEach(k => { hashes[t][k] = hash(nl[k]); });
   });
   fs.writeFileSync(HASHBESTAND, JSON.stringify(hashes, null, 2) + '\n');
-  console.log('Vastgelegd: de vertalingen zijn bijgewerkt tot de huidige Nederlandse teksten.');
+  console.log('Vastgelegd: ' + (gekozen.length ? gekozen.map(t => t + '.js').join(' en ') : 'de vertalingen') +
+    ' bijgewerkt tot de huidige Nederlandse teksten.');
   process.exit(0);
 }
 
@@ -69,6 +80,17 @@ const voorvoegsels = (tekst.match(/['"][\w.]+['"]\s*\+/g) || []).map(s => s.repl
 const ongebruikt = Object.keys(nl).filter(k => !letterlijk.has(k) && !voorvoegsels.some(v => k.startsWith(v)));
 console.log('Nederlands (nl.js): ' + Object.keys(nl).length + ' sleutels');
 ongebruikt.forEach(k => regel('ongebruikt', k));
-if (!ongebruikt.length) regel('in orde', '');
+
+// Andersom: letterlijke sleutels in t('…'), data-i18n en data-i18n-attr die niet in nl.js staan.
+// Een sleutel gevolgd door + is een voorvoegsel ('gemeen.' + basis) en telt hier niet mee; blokcommentaar ook niet
+// (de gebruiksuitleg in i18n.js noemt voorbeeldsleutels).
+const code = tekst.replace(/\/\*[\s\S]*?\*\//g, '');
+const gebruikt = new Set((code.match(/\bt\(\s*['"][\w.]+['"]\s*[,)]/g) || []).map(s => s.match(/['"]([\w.]+)['"]/)[1]));
+(code.match(/data-i18n="[^"]+"/g) || []).forEach(a => gebruikt.add(a.slice(11, -1)));
+(code.match(/data-i18n-attr="[^"]+"/g) || []).forEach(a => a.slice(16, -1).split(";").forEach(p => gebruikt.add(p.split(':')[1].trim())));
+const onbekend = [...gebruikt].filter(k => !(k in nl)).sort();
+onbekend.forEach(k => regel('onbekend', k + '  (gebruikt, maar staat niet in nl.js)'));
+if (!ongebruikt.length && !onbekend.length) regel('in orde', '');
+fouten += onbekend.length;
 
 process.exit(fouten ? 1 : 0);
