@@ -61,6 +61,8 @@
   td.r, th.r { text-align: right; }
   td .stip { display: inline-block; width: 9px; height: 9px; border-radius: 2px; background: var(--c); margin-right: 8px; }
   tr.totaal td { border-bottom: 0; font-weight: 600; }
+  tr.subkop th { padding: 18px 0 6px; color: var(--tekst); font-size: 13px; font-weight: 600; }
+  tbody tr.subkop:first-child th { padding-top: 0; }
   .noot { color: var(--zacht); font-size: 12px; margin: 10px 0 0; }
 </style>
 </head>
@@ -164,6 +166,7 @@
   var K = window.VariantKern, C = K.C, E = K.E;
   var eur = K.eur;
   function $(id) { return document.getElementById(id); }
+  function subkop(t) { return '<tr class="subkop"><th colspan="2" scope="colgroup">' + t + '</th></tr>'; }
   var nf2 = new Intl.NumberFormat('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
   var nf0 = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 1 });
   var rekendatum = '01-' + C.calculatiedatum.split('-').reverse().join('-');
@@ -310,13 +313,14 @@
     var wijzigtLater = res.sim.rows.some(function (r, i) { return i > 0 && r.wijziging; });
     var grondslag = Math.max(0, Math.min(d.brutoSalaris, reg.maxPensioengevendSalaris) - reg.franchise) * parttime;
     $('parameters').innerHTML = '<table><tbody>' +
+      subkop('Gegevens deelnemer') +
       '<tr><td>Rekendatum</td><td class="r num">' + rekendatum + '</td></tr>' +
+      '<tr><td>Geboortedatum</td><td class="r num">' + d.geboortedatum.split('-').reverse().join('-') + '</td></tr>' +
+      '<tr><td>Leeftijd op de rekendatum</td><td class="r num">' + K.leeftijdTekst(d.leeftijdMaanden) + '</td></tr>' +
       '<tr><td>Bruto salaris (voltijd)</td><td class="r num">' + eur(d.brutoSalaris) + '/jr</td></tr>' +
       '<tr><td>Parttimepercentage' + (wijzigtLater ? ' (wijzigt later volgens schema)' : '') + '</td><td class="r num">' + nf0.format(parttime * 100) + '%</td></tr>' +
-      '<tr><td>Franchise (voltijd)</td><td class="r num">' + eur(reg.franchise) + '/jr</td></tr>' +
-      '<tr><td>Pensioengrondslag (salaris − franchise) × parttime</td><td class="r num">' + eur(grondslag) + '/jr</td></tr>' +
-      '<tr><td>Premie (' + nf0.format(reg.premiepercentage * 100) + '% van de grondslag)</td><td class="r num">' + eur(grondslag * reg.premiepercentage) + '/jr</td></tr>' +
       '<tr><td>Startkapitaal op de rekendatum</td><td class="r num">' + eur(d.startkapitaal) + '</td></tr>' +
+      subkop('Actuariële waarden') +
       '<tr><td>Inkoopfactor OP (' + res.jaar + ' jaar)</td><td class="r num">' + nf2.format(res.aOP) + '</td></tr>' +
       '<tr><td>Inkoopfactor partnerpensioen</td><td class="r num">' + nf2.format(C.partnerpensioen.inkoopfactorNP) + '</td></tr>' +
       '<tr><td>OP vóór uitruil</td><td class="r num">' + eur(u.standaard) + '/jr</td></tr>' +
@@ -324,6 +328,10 @@
       '<tr><td>Looptijd TOPHL</td><td class="r num">' + (u.t2 > 0 ? nf2.format(u.looptijdHL) + ' jr' : '–') + '</td></tr>' +
       '<tr><td>Inkoopfactor TOPHL (' + nf2.format(C.tophl.inkoopfactorPerJaar) + ' × looptijd)</td><td class="r num">' + (u.t2 > 0 ? nf2.format(u.inkoopHL) : '–') + '</td></tr>' +
       '<tr><td>Verlaging OP na einde TOPHL</td><td class="r num">' + (u.R > 0 ? eur(u.R) + '/jr' : '–') + '</td></tr>' +
+      subkop('Premie en rendement') +
+      '<tr><td>Franchise (voltijd)</td><td class="r num">' + eur(reg.franchise) + '/jr</td></tr>' +
+      '<tr><td>Pensioengrondslag (salaris − franchise) × parttime</td><td class="r num">' + eur(grondslag) + '/jr</td></tr>' +
+      '<tr><td>Premie (' + nf0.format(reg.premiepercentage * 100) + '% van de grondslag)</td><td class="r num">' + eur(grondslag * reg.premiepercentage) + '/jr</td></tr>' +
       '<tr><td>Nominaal rendement</td><td class="r num">' + pct3.format(o.nominaal * 100) + '%</td></tr>' +
       '<tr><td>Looptijd RTS (AOW-jaar ' + o.aowJaar + ' − ' + o.calcJaar + ')</td><td class="r num">' + o.looptijd + ' jr</td></tr>' +
       '<tr><td>Spotrate RTS bij ' + Math.max(1, o.looptijd) + ' jr (peildatum ' + C.rts.peildatum.split('-').reverse().join('-') + ')</td><td class="r num">− ' + pct3.format(o.spot * 100) + '%</td></tr>' +
