@@ -60,7 +60,14 @@
   if (global.PLANNER_CONFIG) {
     global.PLANNER_BASIS = clone(global.PLANNER_CONFIG);
     var ov = lees();
-    if (ov) merge(global.PLANNER_CONFIG, clone(ov));
+    if (ov) {
+      ov = clone(ov);
+      // De calculatiedatum volgt uit de kalenderdatum en is niet aan te passen; oude aanpassingen tellen niet mee.
+      delete ov.calculatiedatum;
+      // Oude naam van de inkoopfactoren OP.
+      if (ov.annuiteitsdelers) { ov.inkoopfactorenOP = ov.annuiteitsdelers; delete ov.annuiteitsdelers; }
+      merge(global.PLANNER_CONFIG, ov);
+    }
   }
 
   var editor = typeof document !== 'undefined' && document.documentElement && document.documentElement.hasAttribute('data-configbewerker');

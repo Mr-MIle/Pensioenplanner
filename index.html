@@ -597,7 +597,7 @@
       <summary>Hoe rekenen wij?</summary>
       <p><strong>Kapitaal.</strong> Elke maand wordt uw premie bijgeschreven. Het kapitaal groeit met een overrendement: een vast nominaal rendement per jaar, voor iedereen gelijk, min de spotrate uit de rentetermijnstructuur (RTS) van DNB. Welke spotrate dat is, hangt af van het aantal jaren tot het jaar waarin u de AOW-leeftijd bereikt. Hoe verder weg uw AOW, hoe langer de looptijd. Er is geen beschermingsrendement: bij tegenvallende beurzen kan het kapitaal ook dalen.</p>
       <p><strong>Toedeelfactor.</strong> Het rendement wordt per leeftijd aangepast met een toedeelfactor. Die is 1,05 tot 50 jaar en daalt daarna lineair naar 0,45 op 67 jaar. Naarmate u ouder wordt, krijgt u dus een kleiner deel van het rendement toegerekend.</p>
-      <p><strong>Maandbedrag.</strong> Het kapitaal wordt omgerekend naar een maandelijks pensioen met een fictieve deler die afhangt van uw leeftijd. Hoe ouder u bent bij de ingang, hoe lager de deler en hoe hoger het maandbedrag.</p>
+      <p><strong>Maandbedrag.</strong> Het kapitaal wordt omgerekend naar een maandelijks pensioen met een fictieve inkoopfactor die afhangt van uw leeftijd. Hoe ouder u bent bij de ingang, hoe lager de inkoopfactor en hoe hoger het maandbedrag.</p>
       <p><strong>Nominaal en reëel.</strong> Nominale bedragen zijn in de euro's van dat moment. Reële bedragen zijn omgerekend naar euro's van vandaag, met 2% prijsinflatie per jaar.</p>
       <p><strong>Partnerpensioen.</strong> Het partnerpensioen is een percentage van uw ouderdomspensioen, van 0% tot 70%.</p>
       <p><strong>Netto.</strong> Het nettobedrag is een indicatie op basis van een fictieve belastingtabel, geen officiële berekening.</p>
@@ -1135,7 +1135,7 @@
     $('kInleg').textContent = eur0.format(somBedrag(selSim.rows, 'inleg'));
     $('kInlegSub').textContent = 'Overrendement: ' + eur0.format(somBedrag(selSim.rows, 'over'));
     var pv = Math.min(C.partnerpensioen.maxPct, Math.max(C.partnerpensioen.minPct, partnerPct)) / 100;
-    var aOPv = E.delerVoor(jaar, C.annuiteitsdelers);
+    var aOPv = E.inkoopfactorVoor(jaar, C.inkoopfactorenOP);
     var perMaand = function (eind) { return naarBasis(eind / (aOPv + pv * C.partnerpensioen.inkoopfactorNP) / 12); };
     var toonK = true, toonP = false; var kapRe = REEEL;   // de planner toont alleen het kapitaal
     $('grafiek').innerHTML = tekenVermogen(selSim.rows, sk, {

@@ -109,7 +109,7 @@ tr.doel td{background:var(--head);font-weight:600}
   <div class="uitleg">
     <p><strong>Kapitaal:</strong> het kapitaal van de vorige maand, plus de premie-inleg, plus het overrendement, plus het stabiliteitsrendement.</p>
     <p><strong>Stabiliteitsrendement:</strong> Dit rendement is bedoeld om het renterisico te verminderen. Zo zorgen we ervoor dat wijzigingen in de rente niet te groot effect hebben op het in te kopen pensioen. Naarmate u ouder wordt, ziet u een groter effect van het stabiliteitsrendement.</p>
-    <p><strong>Verwacht pensioen:</strong> het verwachte ouderdomspensioen per jaar, gedeeld door 12. De ontwikkeling volgt het kapitaal, behalve het stabiliteitsrendement, dat in omgekeerde richting meetelt. De annuïteitsdeler is die van de pensioenleeftijd van <span id="pensLeeftijd"></span> jaar: <span id="deler"></span>.</p>
+    <p><strong>Verwacht pensioen:</strong> het verwachte ouderdomspensioen per jaar, gedeeld door 12. De ontwikkeling volgt het kapitaal, behalve het stabiliteitsrendement, dat in omgekeerde richting meetelt. De inkoopfactor OP is die van de pensioenleeftijd van <span id="pensLeeftijd"></span> jaar: <span id="inkoopOP"></span>.</p>
   </div>
 </main>
 
@@ -135,7 +135,7 @@ tr.doel td{background:var(--head);font-weight:600}
   var MAIN = { W: 960, H: 340, L: 96, R: 96, T: 48, B: 12 };
 
   var geo = null;      // gegevens en geometrie van de grafieken, nodig voor de muisaanwijzing
-  var huidig = null;   // gekozen deelnemer met reeks, deler en pensioenleeftijd
+  var huidig = null;   // gekozen deelnemer met reeks, inkoopfactor OP en pensioenleeftijd
   var toonP = true;    // verwacht pensioen per maand: standaard aan
   var toonK = false;   // verwacht vermogen (kapitaal): standaard uit
   var lastIdx = 0;     // gekozen maand, om de uitlezing na een knopklik te behouden
@@ -200,7 +200,7 @@ tr.doel td{background:var(--head);font-weight:600}
   // aandeel. Bij een negatief stabiliteitsrendement (rente gestegen) daalt het kapitaal en stijgt het pensioen.
   function bouwReeks(d) {
     var pl = pensioenLeeftijd(d);
-    var deler = cfg.annuiteitsdelers[pl];
+    var inkoopOP = cfg.inkoopfactorenOP[pl];
     var premieBasis = (Math.min(d.brutoSalaris, reg.maxPensioengevendSalaris) - reg.franchise) * reg.premiepercentage / 12;
     var schokMax = maxSchok(d);
     var aandeelK = naarLeeftijd(d, cfg.stabiliteit.kapitaalAandeelJong, cfg.stabiliteit.kapitaalAandeelOud);
@@ -209,7 +209,7 @@ tr.doel td{background:var(--head);font-weight:600}
     var rnd = mulberry32(SEED);
     var kap = d.startkapitaal;
     var kp = d.startkapitaal;
-    var vorigPensioen = kp / deler / 12;
+    var vorigPensioen = kp / inkoopOP / 12;
     var rijen = [];
     maandenLijst().forEach(function (mnd) {
       var jaarIdx = mnd.jaar - START_MAAND.jaar;
@@ -222,7 +222,7 @@ tr.doel td{background:var(--head);font-weight:600}
       var stabP = ruwe * aandeelP;                // deel dat in het verwachte pensioen terechtkomt (omgekeerd)
       kap += inleg + over + stab;
       kp += inleg + over - stabP;
-      var pensioen = kp / deler / 12;
+      var pensioen = kp / inkoopOP / 12;
       rijen.push({
         label: MAANDEN[mnd.maand - 1] + ' ' + mnd.jaar,
         idx: mnd.jaar * 12 + (mnd.maand - 1),
@@ -232,7 +232,7 @@ tr.doel td{background:var(--head);font-weight:600}
       });
       vorigPensioen = pensioen;
     });
-    return { deelnemer: d, rijen: rijen, deler: deler, pensLeeftijd: pl, schokMax: schokMax };
+    return { deelnemer: d, rijen: rijen, inkoopOP: inkoopOP, pensLeeftijd: pl, schokMax: schokMax };
   }
 
   function geld(v) { return eur.format(Math.round(v)); }
@@ -285,7 +285,7 @@ tr.doel td{background:var(--head);font-weight:600}
     }).join('');
 
     $('pensLeeftijd').textContent = huidig.pensLeeftijd;
-    $('deler').textContent = huidig.deler.toFixed(1).replace('.', ',');
+    $('inkoopOP').textContent = huidig.inkoopOP.toFixed(1).replace('.', ',');
   }
 
   // Toont de cijfers van één maand en markeert die maand in beide grafieken.

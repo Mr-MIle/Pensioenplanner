@@ -149,7 +149,7 @@ button:disabled { opacity: 0.6; cursor: wait; }
   function defs(c) {
     var cfg = c.cfg, E = c.E, pp = cfg.partnerpensioen, ta = cfg.topaow, th = cfg.tophl;
     var std = pp.standaardPct;
-    var aOP = E.delerVoor(c.preJ, cfg.annuiteitsdelers);
+    var aOP = E.inkoopfactorVoor(c.preJ, cfg.inkoopfactorenOP);
     function uit(opt, sim) { return E.uitkeringen(cfg, sim || c.simPre, opt, c.preJ); }
     function uitAOW(opt) { return E.uitkeringen(cfg, c.simAOW, opt, c.aowJ); }
     // Maximum TOPAOW uit de reglementstekst: min(maxPerJaar x werkfractie, (OP voor ruil - ondergrens) x aOP / inkoopfactor)
@@ -188,7 +188,7 @@ button:disabled { opacity: 0.6; cursor: wait; }
           return { verwacht: eur(exp) + ' (max ' + fmt(pp.maxPct) + '%)', gemeten: eur(u.partner), ok: near(u.partner, exp) };
         } },
       { id: 'PP-03', groep: 'Partnerpensioen', titel: 'Kapitaal klopt bij elk percentage',
-        uitleg: 'OP x annuïteit + NP x inkoopfactorNP = kapitaal, bij min, standaard en max.',
+        uitleg: 'OP x inkoopfactor OP + NP x inkoopfactorNP = kapitaal, bij min, standaard en max.',
         run: function () {
           var worst = 0;
           [pp.minPct, pp.standaardPct, pp.maxPct].forEach(function (p) {
@@ -197,7 +197,7 @@ button:disabled { opacity: 0.6; cursor: wait; }
             worst = Math.max(worst, Math.abs(rec - c.simAOW.kapitaal));
           });
           return { verwacht: 'afwijking onder € 0,01 op kapitaal ' + eur(c.simAOW.kapitaal), gemeten: 'afwijking ' + fmt(worst), ok: worst <= 0.01 + 1e-6 * c.simAOW.kapitaal };
-          function aOP_AOW() { return E.delerVoor(c.aowJ, cfg.annuiteitsdelers); }
+          function aOP_AOW() { return E.inkoopfactorVoor(c.aowJ, cfg.inkoopfactorenOP); }
         } },
       { id: 'PP-04', groep: 'Partnerpensioen', titel: 'Meer partnerpensioen geeft minder ouderdomspensioen',
         uitleg: 'Het OP bij maximaal partnerpensioen is lager dan bij minimaal.',
@@ -517,7 +517,7 @@ button:disabled { opacity: 0.6; cursor: wait; }
       { id: 'VRO-01', groep: 'Combinaties en grenzen', titel: 'Vervroegd pensioen op 60 jaar',
         uitleg: 'TOPAOW-maximum uit de config, ook bij 30% van het kapitaal. Het OP na TOPAOW blijft boven de ondergrens.',
         run: function () {
-          var a60 = E.delerVoor(60, cfg.annuiteitsdelers);
+          var a60 = E.inkoopfactorVoor(60, cfg.inkoopfactorenOP);
           var exp = function (u) { return Math.max(0, Math.min(ta.maxPerJaar, (u.standaard - ta.ondergrensOP) * a60 / ta.inkoopfactor)); };
           var u1 = E.uitkeringen(cfg, c.sim(60, {}), { partnerPct: std, topaow: 1e9 }, 60);
           var u2 = E.uitkeringen(cfg, c.sim(60, { startkapitaal: cfg.deelnemer.startkapitaal * 0.3 }), { partnerPct: std, topaow: 1e9 }, 60);

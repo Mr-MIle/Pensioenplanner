@@ -5,7 +5,7 @@
   (zie overrendement()). Het verschilt dus per deelnemer. Er is geen beschermingsrendement.
   Premie = (min(salaris, maximum) x loonindex - franchise x prijsindex) x parttimepercentage x premiepercentage / 12,
   bijgeschreven aan het eind van de maand. Die premie levert pas vanaf de volgende maand rendement op.
-  Uitkering: ouderdomspensioen per jaar = kapitaal / annuiteitsdeler. TOPAOW (AOW-overbrugging) loopt tot de AOW-leeftijd.
+  Uitkering: ouderdomspensioen per jaar = kapitaal / inkoopfactor OP. TOPAOW (AOW-overbrugging) loopt tot de AOW-leeftijd.
   TOPHL loopt van de pensioendatum tot een gekozen eerste van de maand, uiterlijk 10 jaar na de AOW-leeftijd.
   Na het einde van TOPHL daalt het levenslange OP kapitaalneutraal. Hoe langer TOPHL loopt, hoe duurder het is.
 */
@@ -36,8 +36,8 @@
     return t.factorVoor + (t.factorNa - t.factorVoor) * (ageM - s) / (e - s);
   }
 
-  // Annuiteitsdeler op een leeftijd in jaren, lineair geinterpoleerd.
-  function delerVoor(jaar, tabel) {
+  // Inkoopfactor OP op een leeftijd in jaren, lineair geinterpoleerd.
+  function inkoopfactorVoor(jaar, tabel) {
     const keys = Object.keys(tabel).map(Number).sort((a, b) => a - b);
     const x = Math.min(Math.max(jaar, keys[0]), keys[keys.length - 1]);
     const lo = Math.floor(x);
@@ -85,7 +85,7 @@
       let onttrokken = 0;
       if (deel && i === deel.idx) {
         onttrokken = S * deel.pct;
-        deelJaar = onttrokken / delerVoor(ageM / 12, cfg.annuiteitsdelers);
+        deelJaar = onttrokken / inkoopfactorVoor(ageM / 12, cfg.inkoopfactorenOP);
         S -= onttrokken;
       }
 
@@ -153,7 +153,7 @@
     const pp = cfg.partnerpensioen;
     const ta = cfg.topaow;
     const th = cfg.tophl;
-    const aOP = delerVoor(pensioenLeeftijdJaar, cfg.annuiteitsdelers);
+    const aOP = inkoopfactorVoor(pensioenLeeftijdJaar, cfg.inkoopfactorenOP);
     const pct = opt.partnerPct !== undefined ? opt.partnerPct : pp.standaardPct;
     const v = Math.min(pp.maxPct, Math.max(pp.minPct, pct)) / 100;
 
@@ -337,7 +337,7 @@
     maandIndex: maandIndex,
     maandLabel: maandLabel,
     toedeelfactor: toedeelfactor,
-    delerVoor: delerVoor,
+    inkoopfactorVoor: inkoopfactorVoor,
     simuleer: simuleer,
     uitkeringen: uitkeringen,
     jaarlijkseUitkering: jaarlijkseUitkering,

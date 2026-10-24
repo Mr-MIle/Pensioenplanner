@@ -40,7 +40,7 @@ check('2 AOW-datum: geen effect', near(uA.pre, uA.post) && near(uA.pre, uA.stand
 const pensJ = 62;
 const simH = E.simuleer(C, { pensioenLeeftijdMaanden: pensJ * 12, rente, deeltijd: null, parttimepercentages: std, startkapitaal: 80000 });
 const K3 = simH.kapitaal;
-const aOP62 = E.delerVoor(pensJ, C.annuiteitsdelers);
+const aOP62 = E.inkoopfactorVoor(pensJ, C.inkoopfactorenOP);
 const op0 = E.uitkeringen(C, simH, { partnerPct: pp.standaardPct, topaow: 0 }, pensJ);
 const maxT1 = op0.maxT1;
 const kOP0 = op0.standaard * aOP62;
@@ -146,7 +146,7 @@ check('15k TOPHL eindigt vóór AOW: tussen einde en AOW = OP_na - R + T1',
 const na = E.uitkeringen(C, simH, { ...h, tophlEindMaanden: aowM + 60 }, pensJ);
 check('15l TOPHL eindigt na AOW: op AOW = OP_na + T2 (geen TOPAOW)', near(E.jaarlijkseUitkering(na, aowM), na.opNa + na.t2, 1e-6));
 check('15m 133%-grens: OP na uitruil + TOPHL <= 133% van levenslang OP', na.opNa + na.t2 <= 1.33 * na.opNa + 1e-6);
-const aOP70 = E.delerVoor(70, C.annuiteitsdelers);
+const aOP70 = E.inkoopfactorVoor(70, C.inkoopfactorenOP);
 const p70 = E.uitkeringen(C, c70, { partnerPct: pp.standaardPct, topaow: 1e9, tophlPct: th.maxPctOP }, 70);
 check('15n kapitaalneutraal bij einde AOW + 10 jaar', near(p70.post * aOP70 + hlF(p70, 70) * p70.t2, p70.standaard * aOP70, 1e-6 * p70.standaard * aOP70));
 
@@ -175,8 +175,8 @@ check('16g dubbele inkoopfactorPerJaar geeft dubbele R', near(dubbel.R, 2 * enke
 const langst = E.uitkeringen(C, simH, { partnerPct: pp.standaardPct, topaow: 1e9, tophlPct: th.maxPctOP, tophlEindMaanden: aowM + th.jarenNaAOW * 12 }, pensJ);
 check('16h langste looptijd en maximale TOPHL: OP na einde blijft > 0 en zonder NaN', langst.post > 0 && [langst.pre, langst.post, langst.R].every(isFinite), langst.post.toFixed(2));
 
-// 4. Partnerpensioen: OP x annuiteit + NP x inkoopfactorNP = kapitaal; NP = percentage x OP
-const aOP67 = E.delerVoor(aowM / 12, C.annuiteitsdelers);
+// 4. Partnerpensioen: OP x inkoopfactor OP + NP x inkoopfactorNP = kapitaal; NP = percentage x OP
+const aOP67 = E.inkoopfactorVoor(aowM / 12, C.inkoopfactorenOP);
 const inkoop = pp.inkoopfactorNP;
 [pp.minPct, pp.maxPct / 2, pp.maxPct].forEach(pct => {
   const u = E.uitkeringen(C, simA, { partnerPct: pct }, aowM / 12);

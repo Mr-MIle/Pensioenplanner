@@ -165,6 +165,8 @@
   var eur = K.eur;
   function $(id) { return document.getElementById(id); }
   var nf2 = new Intl.NumberFormat('nl-NL', { minimumFractionDigits: 1, maximumFractionDigits: 2 });
+  var nf0 = new Intl.NumberFormat('nl-NL', { maximumFractionDigits: 1 });
+  var rekendatum = '01-' + C.calculatiedatum.split('-').reverse().join('-');
   var pct3 = new Intl.NumberFormat('nl-NL', { minimumFractionDigits: 3, maximumFractionDigits: 3 });
   var basis = 'netto';
   var reeel = null;   // null = standaard: pensioendatum binnen 2 jaar nominaal, anders reëel
@@ -260,7 +262,7 @@
       eind.value = res.eindKeuze;
     }
 
-    $('deelnemerInfo').textContent = 'Geboren ' + d.geboortedatum.split('-').reverse().join('-') + ' · salaris ' + eur(d.brutoSalaris) + ' · leeftijd ' + d.leeftijdJaar;
+    $('deelnemerInfo').textContent = 'Geboren ' + d.geboortedatum.split('-').reverse().join('-') + ' · salaris ' + eur(d.brutoSalaris) + ' · leeftijd ' + d.leeftijdJaar + ' op ' + rekendatum;
     $('leeftijdW').textContent = res.jaar + ' jaar';
     $('leeftijdS').textContent = 'Pensioendatum ' + res.tekst.pensioendatum + (res.voorAow ? ' · vóór de AOW-leeftijd' : (res.pensM === K.AOW_M ? ' · op de AOW-leeftijd' : ' · na de AOW-leeftijd'));
     $('partnerW').textContent = res.partnerPct + '%';
@@ -301,8 +303,21 @@
       '<tr class="totaal"><td>Kapitaal op ' + res.tekst.pensioendatum + ' (nominaal)</td><td class="r num">' + eur(res.kapitaalNominaal) + '</td><td class="r num">100%</td></tr></tbody></table>';
 
     var o = res.overrendement;
+    // Salaris en parttimepercentage op de rekendatum, zoals de rekenkern ze in de eerste maand gebruikt.
+    var reg = C.pensioenreglement;
+    var rij0 = res.sim.rows[0];
+    var parttime = rij0 ? rij0.schema : 1;
+    var wijzigtLater = res.sim.rows.some(function (r, i) { return i > 0 && r.wijziging; });
+    var grondslag = Math.max(0, Math.min(d.brutoSalaris, reg.maxPensioengevendSalaris) - reg.franchise) * parttime;
     $('parameters').innerHTML = '<table><tbody>' +
-      '<tr><td>Annuïteitsdeler OP (' + res.jaar + ' jaar)</td><td class="r num">' + nf2.format(res.aOP) + '</td></tr>' +
+      '<tr><td>Rekendatum</td><td class="r num">' + rekendatum + '</td></tr>' +
+      '<tr><td>Bruto salaris (voltijd)</td><td class="r num">' + eur(d.brutoSalaris) + '/jr</td></tr>' +
+      '<tr><td>Parttimepercentage' + (wijzigtLater ? ' (wijzigt later volgens schema)' : '') + '</td><td class="r num">' + nf0.format(parttime * 100) + '%</td></tr>' +
+      '<tr><td>Franchise (voltijd)</td><td class="r num">' + eur(reg.franchise) + '/jr</td></tr>' +
+      '<tr><td>Pensioengrondslag (salaris − franchise) × parttime</td><td class="r num">' + eur(grondslag) + '/jr</td></tr>' +
+      '<tr><td>Premie (' + nf0.format(reg.premiepercentage * 100) + '% van de grondslag)</td><td class="r num">' + eur(grondslag * reg.premiepercentage) + '/jr</td></tr>' +
+      '<tr><td>Startkapitaal op de rekendatum</td><td class="r num">' + eur(d.startkapitaal) + '</td></tr>' +
+      '<tr><td>Inkoopfactor OP (' + res.jaar + ' jaar)</td><td class="r num">' + nf2.format(res.aOP) + '</td></tr>' +
       '<tr><td>Inkoopfactor partnerpensioen</td><td class="r num">' + nf2.format(C.partnerpensioen.inkoopfactorNP) + '</td></tr>' +
       '<tr><td>OP vóór uitruil</td><td class="r num">' + eur(u.standaard) + '/jr</td></tr>' +
       '<tr><td>Inkoopfactor TOPAOW</td><td class="r num">' + nf2.format(C.topaow.inkoopfactor) + '</td></tr>' +
@@ -313,7 +328,7 @@
       '<tr><td>Looptijd RTS (AOW-jaar ' + o.aowJaar + ' − ' + o.calcJaar + ')</td><td class="r num">' + o.looptijd + ' jr</td></tr>' +
       '<tr><td>Spotrate RTS bij ' + Math.max(1, o.looptijd) + ' jr (peildatum ' + C.rts.peildatum.split('-').reverse().join('-') + ')</td><td class="r num">− ' + pct3.format(o.spot * 100) + '%</td></tr>' +
       '<tr class="totaal"><td>Overrendement na RTS</td><td class="r num">' + pct3.format(o.rente * 100) + '%</td></tr>' +
-      '</tbody></table><p class="noot">Bedragen in de tabel zijn bruto per jaar. Spotrates uit de RTS van DNB; overige parameters fictief, uit config.js.</p>';
+      '</tbody></table><p class="noot">Bedragen in de tabel zijn bruto per jaar; salaris, franchise en premie gelden op de rekendatum en groeien daarna mee met de inflatie. De rekendatum volgt uit de datum van vandaag: vanaf de 15e de eerste van de lopende maand, daarvoor de eerste van de vorige maand. Spotrates uit de RTS van DNB; overige parameters fictief, uit config.js.</p>';
   }
 
   vulDeelnemers();

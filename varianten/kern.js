@@ -116,7 +116,7 @@
     var bedragAow = E.jaarlijkseUitkering(u, AOW_M);
     var bedragNa = voorAow ? bedragAow : u.post;
     var tussenJaar = u.t2 > 0 && voorAow && eindKeuze < AOW_M ? E.jaarlijkseUitkering(u, eindKeuze) : null;
-    var aOP = E.delerVoor(jaar, C.annuiteitsdelers);
+    var aOP = E.inkoopfactorVoor(jaar, C.inkoopfactorenOP);
 
     return {
       k: k, C: C, deelnemer: deelnemer(k.deelnemer), birth: birth, jaar: jaar, pensM: pensM, pensIdx: pensIdx,

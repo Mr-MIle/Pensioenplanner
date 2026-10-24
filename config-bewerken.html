@@ -137,7 +137,7 @@ fieldset.breed { grid-column: 1 / -1; }
     toedeelschaal: 'Toedeelschaal',
     leeftijdStart: 'Leeftijd start afbouw (jaar)', leeftijdEind: 'Leeftijd einde afbouw (jaar)',
     factorVoor: 'Factor voor afbouw', factorNa: 'Factor na afbouw',
-    annuiteitsdelers: 'Annuïteitsdelers (leeftijd → deler)',
+    inkoopfactorenOP: 'Inkoopfactoren OP (leeftijd → inkoopfactor)',
     aowBrutoMaand: 'AOW bruto per maand (€)',
     belasting: 'Belasting (fictief)',
     schijven: 'Belastingschijven', tot: 'Tot (€/jaar, leeg = geen grens)', tarief: 'Tarief (fractie)',
@@ -174,9 +174,9 @@ fieldset.breed { grid-column: 1 / -1; }
     }
   };
 
-  var SECTIE_VOLGORDE = ['calculatiedatum', 'deelnemers', 'standaardDeelnemer', 'pensioenreglement', 'parttimepercentages', 'rendement',
-                         'rts', 'toedeelschaal', 'topaow', 'tophl', 'partnerpensioen', 'annuiteitsdelers', 'aowBrutoMaand', 'belasting', 'stabiliteit'];
-  var OVERSLAAN = ['deelnemer'];
+  var SECTIE_VOLGORDE = ['deelnemers', 'standaardDeelnemer', 'pensioenreglement', 'parttimepercentages', 'rendement',
+                         'rts', 'toedeelschaal', 'topaow', 'tophl', 'partnerpensioen', 'inkoopfactorenOP', 'aowBrutoMaand', 'belasting', 'stabiliteit'];
+  var OVERSLAAN = ['deelnemer', 'calculatiedatum'];   // calculatiedatum volgt uit de kalenderdatum (config.js)
 
   // ---------- hulpfuncties ----------
   function isObj(v) { return v !== null && typeof v === 'object' && !Array.isArray(v); }
@@ -229,7 +229,7 @@ fieldset.breed { grid-column: 1 / -1; }
     return Object.keys(obj).filter(function (k) { return OVERSLAAN.indexOf(k) < 0 || p.length; }).map(function (k) {
       var v = obj[k], pk = p.concat([k]);
       if (Array.isArray(v) && TABELLEN[k]) return '<h3>' + esc(LABELS[k] || k) + '</h3>' + tabel(pk, v, k);
-      if (k === 'annuiteitsdelers' && isObj(v)) {
+      if (k === 'inkoopfactorenOP' && isObj(v)) {
         return '<fieldset><legend>' + esc(LABELS[k]) + '</legend><div class="grid">' +
                Object.keys(v).map(function (a) { return veld(pk.concat([a]), v[a], a, 'Leeftijd ' + a); }).join('') + '</div></fieldset>';
       }

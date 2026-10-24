@@ -6,8 +6,13 @@
 */
 window.PLANNER_CONFIG = {
 
-  // Calculatiedatum: de maand waarop de projectie start (jjjj-mm). Altijd de eerste van de maand.
-  calculatiedatum: "2026-11",
+  // Calculatiedatum (rekendatum): de maand waarop de projectie start (jjjj-mm). Altijd de eerste van de maand.
+  // Volgt uit de kalenderdatum: op of na de 15e de eerste van deze maand, vóór de 15e de eerste van de vorige maand.
+  calculatiedatum: (function (nu) {
+    var j = nu.getFullYear(), m = nu.getMonth() + 1;
+    if (nu.getDate() < 15) { m--; if (m === 0) { m = 12; j--; } }
+    return j + '-' + (m < 10 ? '0' : '') + m;
+  })(new Date()),
 
   // Demo-deelnemers. In de planner kiest u er één via de keuzelijst bovenaan. Die bepaalt de geboortedatum
   // (dd-mm-jjjj, alleen de maand telt mee), het startkapitaal en het salaris. Alle waarden zijn fictief.
@@ -89,9 +94,9 @@ window.PLANNER_CONFIG = {
     factorNa: 0.45
   },
 
-  // Vereenvoudigde annuïteitsdelers (fictief): kapitaal gedeeld door deze factor = jaarlijks ouderdomspensioen.
-  // Hoe hoger de leeftijd, hoe lager de deler.
-  annuiteitsdelers: {
+  // Inkoopfactoren OP (vereenvoudigd, fictief): kapitaal per euro ouderdomspensioen per jaar. Kapitaal / inkoopfactor = jaarlijks OP.
+  // Hoe hoger de leeftijd, hoe lager de inkoopfactor.
+  inkoopfactorenOP: {
     40: 25.5, 41: 25.2, 42: 24.9, 43: 24.6, 44: 24.3, 45: 24.0, 46: 23.7, 47: 23.4,
     48: 23.1, 49: 22.8, 50: 22.5, 51: 22.2, 52: 21.9, 53: 21.6, 54: 21.3,
     55: 21.0, 56: 20.7, 57: 20.4, 58: 20.1, 59: 19.8, 60: 19.5,
@@ -130,7 +135,7 @@ window.PLANNER_CONFIG = {
   // inkoopfactorPerJaar: kapitaal per euro per jaar TOPHL, per jaar looptijd. Hoe langer TOPHL loopt, hoe duurder het is:
   // inkoopfactor = inkoopfactorPerJaar x looptijd in jaren (van de pensioendatum tot het einde, in hele maanden / 12).
   // Vereenvoudigd: geen rente of sterfte.
-  // Na het einde van TOPHL daalt het levenslange OP kapitaalneutraal met inkoopfactor x TOPHL / annuïteitsfactor.
+  // Na het einde van TOPHL daalt het levenslange OP kapitaalneutraal met inkoopfactor x TOPHL / inkoopfactor OP.
   tophl: {
     maxPctOP: 0.33,
     inkoopfactorPerJaar: 1,
@@ -138,7 +143,7 @@ window.PLANNER_CONFIG = {
   },
 
   // Partnerpensioen (NP): het percentage van het ouderdomspensioen (OP) vóór TOPAOW/TOPHL dat op de pensioendatum wordt ingekocht.
-  // inkoopfactorNP: kapitaal per euro NP per jaar. Kapitaal = OP x annuïteitsfactor OP + NP x inkoopfactorNP.
+  // inkoopfactorNP: kapitaal per euro NP per jaar. Kapitaal = OP x inkoopfactor OP + NP x inkoopfactorNP.
   partnerpensioen: {
     minPct: 0,
     maxPct: 70,
