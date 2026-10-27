@@ -320,6 +320,8 @@
     var wijzigtLater = res.sim.rows.some(function (r, i) { return i > 0 && r.wijziging; });
     var grondslag = Math.max(0, Math.min(d.brutoSalaris, reg.maxPensioengevendSalaris) - reg.franchise) * parttime;
     var pct3 = function (x) { return I.getal(x * 100, 3, 3) + '%'; };
+    // Alle inkoopfactoren op de rekendatumschaal, net als de inkoopfactor OP (X%-projectie 21.1.10).
+    var us = u.uitstel || 1;
     $('parameters').innerHTML = '<table><tbody>' +
       subkop(t('fondsB.pmDeelnemer')) +
       rij(t('fondsB.pmRekendatum'), rekendatum) +
@@ -329,14 +331,14 @@
       rij(t(wijzigtLater ? 'fondsB.pmParttimeLater' : 'fondsB.pmParttime'), I.getal(parttime * 100, 0, 1) + '%') +
       rij(t('fondsB.pmStartkapitaal'), eur(d.startkapitaal)) +
       subkop(t('fondsB.pmActuarieel')) +
-      rij(t('fondsB.pmInkoopOP', { leeftijd: t('kern.jaar', { n: res.jaar }) }), I.getal(res.aOP, 1, 2)) +
-      rij(t('fondsB.pmInkoopNP'), I.getal(C.partnerpensioen.inkoopfactorNP, 1, 2)) +
+      rij(t('fondsB.pmInkoopOP', { leeftijd: t('kern.jaar', { n: res.jaar }) }), I.getal(res.aOP, 2, 2)) +
+      rij(t('fondsB.pmInkoopNP'), I.getal(C.partnerpensioen.inkoopfactorNP * us, 2, 2)) +
       rij(t('fondsB.pmScrStart'), C.scr ? I.getal(C.scr.startwaarde, 3, 3) : '–') +
       rij(t('fondsB.pmScr', { n: C.scr ? C.scr.spreidingsperiode : '–' }), I.getal(u.scr, 4, 4)) +
       rij(t('fondsB.pmOpVoor'), pj(u.standaard)) +
-      rij(t('fondsB.pmInkoopTopaow'), I.getal(C.topaow.inkoopfactor, 1, 2)) +
+      rij(t('fondsB.pmInkoopTopaow'), I.getal(C.topaow.inkoopfactor * us, 2, 2)) +
       rij(t('fondsB.pmLooptijdHL'), u.t2 > 0 ? t('fondsB.jrKort', { n: I.getal(u.looptijdHL, 1, 2) }) : '–') +
-      rij(t('fondsB.pmInkoopHL', { factor: I.getal(C.tophl.inkoopfactorPerJaar, 1, 2) }), u.t2 > 0 ? I.getal(u.inkoopHL, 1, 2) : '–') +
+      rij(t('fondsB.pmInkoopHL', { factor: I.getal(C.tophl.inkoopfactorPerJaar * us, 2, 2) }), u.t2 > 0 ? I.getal(u.inkoopHL * us, 2, 2) : '–') +
       rij(t('fondsB.pmVerlaging'), u.R > 0 ? pj(u.R) : '–') +
       subkop(t('fondsB.pmPremie')) +
       rij(t('fondsB.pmFranchise'), pj(reg.franchise)) +

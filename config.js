@@ -105,9 +105,22 @@ window.PLANNER_CONFIG = {
     factorNa: 0.45
   },
 
-  // Inkoopfactoren OP (vereenvoudigd, fictief): kapitaal per euro ouderdomspensioen per jaar. Kapitaal / inkoopfactor = jaarlijks OP.
-  // Hoe hoger de leeftijd, hoe lager de inkoopfactor.
+  // Inkoopfactoren OP op de rekendatum (X%-projectie 21.1.10, fictief): kapitaal per euro ouderdomspensioen per jaar,
+  // naar de leeftijd van de deelnemer op de rekendatum, voor pensioen op de AOW-leeftijd (uitgestelde factor).
+  // Hoe jonger, hoe lager: het kapitaal groeit in de planner alleen met het overrendement, de rente zit in deze factor.
+  // Waarden: inkoopfactor bij ingang op 67 jaar (17,4) x (1 + spotrate RTS)^-looptijd, zonder sterfte.
   inkoopfactorenOP: {
+    20: 4.40, 21: 4.48, 22: 4.56, 23: 4.64, 24: 4.72, 25: 4.80, 26: 4.88, 27: 4.96, 28: 5.08, 29: 5.20,
+    30: 5.32, 31: 5.45, 32: 5.58, 33: 5.71, 34: 5.85, 35: 5.99, 36: 6.13, 37: 6.27, 38: 6.45, 39: 6.63,
+    40: 6.81, 41: 7.00, 42: 7.20, 43: 7.42, 44: 7.65, 45: 7.89, 46: 8.14, 47: 8.39, 48: 8.69, 49: 9.00,
+    50: 9.32, 51: 9.65, 52: 10.00, 53: 10.38, 54: 10.79, 55: 11.21, 56: 11.65, 57: 12.11, 58: 12.58, 59: 13.07,
+    60: 13.56, 61: 14.07, 62: 14.58, 63: 15.11, 64: 15.66, 65: 16.23, 66: 16.83, 67: 17.40
+  },
+
+  // Inkoopfactoren bij ingang (fictief), naar de pensioenleeftijd. Alleen de verhouding telt: stopt de deelnemer op een
+  // andere leeftijd dan de AOW-leeftijd, dan is de inkoopfactor OP = factor op de rekendatum x ingang(pensioenleeftijd)
+  // / ingang(AOW-leeftijd). Eerder stoppen is zo duurder per euro pensioen.
+  inkoopfactorenIngang: {
     40: 25.5, 41: 25.2, 42: 24.9, 43: 24.6, 44: 24.3, 45: 24.0, 46: 23.7, 47: 23.4,
     48: 23.1, 49: 22.8, 50: 22.5, 51: 22.2, 52: 21.9, 53: 21.6, 54: 21.3,
     55: 21.0, 56: 20.7, 57: 20.4, 58: 20.1, 59: 19.8, 60: 19.5,

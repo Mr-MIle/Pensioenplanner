@@ -130,7 +130,9 @@
     var bedragAow = E.jaarlijkseUitkering(u, AOW_M);
     var bedragNa = voorAow ? bedragAow : u.post;
     var tussenJaar = u.t2 > 0 && voorAow && eindKeuze < AOW_M ? E.jaarlijkseUitkering(u, eindKeuze) : null;
-    var aOP = E.inkoopfactorVoor(jaar, C.inkoopfactorenOP);
+    var aOP = E.inkoopfactorVoor(jaar, E.ingangTabel(C));
+    // Kapitaal per onderdeel: in ingangstermen maal SCR en uitstelfactor, zodat de som weer het kapitaal is.
+    var naarKap = (u.scr || 1) * (u.uitstel || 1);
 
     return {
       k: k, C: C, deelnemer: deelnemer(k.deelnemer), birth: birth, jaar: jaar, pensM: pensM, pensIdx: pensIdx,
@@ -138,7 +140,7 @@
       reeel: reeel, reeelStandaard: reeelStandaard,
       maandenTotPensioen: maandenTotPensioen, reeelFactor: reeelFactor,
       maxT1: maxHeel, tophlMogelijk: tophlMogelijk, eindMinM: eindMinM, eindMaxM: eindMaxM, eindStdM: eindStdM,
-      eindKeuze: eindKeuze, pctHL: pctHL, aOP: aOP, overrendement: orr,
+      eindKeuze: eindKeuze, pctHL: pctHL, aOP: u.aOP, overrendement: orr,
       // Bedragen per maand in de gekozen basis, zoals in het resultaatpaneel van de demo
       // (ook de leeftijd waarop reëel wordt omgerekend: de stopleeftijd, of de AOW-leeftijd voor 'later').
       maand: maand,
@@ -154,10 +156,10 @@
       kapitaalNominaal: sim.kapitaal,
       // Kapitaalverdeling op de pensioendatum (som = kapitaal).
       verdeling: {
-        partner: u.partner * C.partnerpensioen.inkoopfactorNP,
-        topaow: C.topaow.inkoopfactor * u.t1,
-        tophl: u.inkoopHL * u.t2,
-        levenslang: u.post * aOP
+        partner: u.partner * C.partnerpensioen.inkoopfactorNP * naarKap,
+        topaow: C.topaow.inkoopfactor * u.t1 * naarKap,
+        tophl: u.inkoopHL * u.t2 * naarKap,
+        levenslang: u.post * aOP * naarKap
       },
       tekst: {
         pensioendatum: E.maandLabel(pensIdx),

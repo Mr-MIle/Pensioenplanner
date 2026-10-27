@@ -49,6 +49,29 @@
     return tabel[lo] + (tabel[hi] - tabel[lo]) * (x - lo);
   }
 
+  // Tabel met inkoopfactoren bij ingang (naar pensioenleeftijd). Oude configuraties zonder inkoopfactorenIngang
+  // hadden die in inkoopfactorenOP.
+  function ingangTabel(cfg) { return cfg.inkoopfactorenIngang || cfg.inkoopfactorenOP; }
+
+  // Uitstelfactor (X%-projectie 21.1.10): de inkoopfactor OP hoort bij de leeftijd van de deelnemer op de rekendatum
+  // (inkoopfactorenOP, uitgesteld tot de AOW-leeftijd). Uitstelfactor = die factor / de factor bij ingang op de
+  // AOW-leeftijd. Inkoopfactor OP voor pensioenleeftijd p = ingang(p) x uitstelfactor. Zonder ingangstabel: 1.
+  function uitstelfactor(cfg) {
+    if (!cfg.inkoopfactorenIngang) return 1;
+    const nu = (maandIndex(cfg.calculatiedatum) - maandIndex(cfg.deelnemer.geboortedatum)) / 12;
+    return inkoopfactorVoor(nu, cfg.inkoopfactorenOP) / inkoopfactorVoor(cfg.pensioenreglement.aowLeeftijdMaanden / 12, cfg.inkoopfactorenIngang);
+  }
+
+  // Cumulatieve RTS-factor tot een aantal maanden na de rekendatum (X%-projectie 21.1.9):
+  // (1 + spot_k)^k x (1 + forward van jaar k naar k + 1)^(rest van het jaar). Zonder RTS: 1.
+  function rtsCumulatief(cfg, maanden) {
+    const tab = cfg.rts && cfg.rts.spotrates;
+    if (!tab || maanden <= 0) return 1;
+    const k = Math.floor(maanden / 12), rest = maanden / 12 - k;
+    const groei = function (n) { return n === 0 ? 1 : Math.pow(1 + spotrate(n, tab), n); };
+    return groei(k) * Math.pow(groei(k + 1) / groei(k), rest);
+  }
+
   // Parttimepercentage (0-1) in een maand. De lijst moet op datum gesorteerd zijn.
   function parttimePctVoor(i, lijst) {
     let pct = 100;
@@ -81,6 +104,7 @@
     const sc = cfg.scr;
     let scr = sc ? sc.startwaarde : 1;
     const toedScr = sc ? toedeelfactor(sc.leeftijdToedeling * 12, cfg.toedeelschaal) : 0;
+    const uitstel = uitstelfactor(cfg);
     const spreiding = sc ? Math.min(10, Math.max(1, Number(sc.spreidingsperiode) || 1)) : 1;   // 1 tot 10 jaar
 
     for (let i = calc; i < pensIdx; i++) {
@@ -103,7 +127,7 @@
       let onttrokken = 0;
       if (deel && i === deel.idx) {
         onttrokken = S * deel.pct;
-        deelJaar = onttrokken / inkoopfactorVoor(ageM / 12, cfg.inkoopfactorenOP) / scr;
+        deelJaar = onttrokken / (inkoopfactorVoor(ageM / 12, ingangTabel(cfg)) * uitstel) / scr;
         S -= onttrokken;
       }
 
@@ -120,7 +144,10 @@
       const vorigSchema = parttimePctVoor(i - 1, lijst);
       const werk = Math.max(0, schema * (1 - deelPct));
       const pe = Math.max(0, Math.min(cfg.deelnemer.brutoSalaris, reg.maxPensioengevendSalaris) * idxL - reg.franchise * idxP) * werk;
-      const inleg = pe * reg.premiepercentage / 12;
+      // Premie teruggerekend naar de rekendatum met de cumulatieve RTS (21.1.9): de inkoopfactor op de rekendatum
+      // rekent de rente al mee, alsof de premie er vanaf de rekendatum was.
+      const rtsFactor = rtsCumulatief(cfg, i + 1 - calc);
+      const inleg = pe * reg.premiepercentage / 12 / rtsFactor;
       S += inleg;
 
       totalen.inleg += inleg;
@@ -143,6 +170,7 @@
         wijziging: schema !== vorigSchema,
         toed: toed,
         scr: scr,                 // SCR aan het einde van de maand
+        rtsFactor: rtsFactor,     // cumulatieve RTS waarmee de premie van deze maand is gedeeld
         aanpassing: aanpassing    // aanpassing op 1 januari (0 in andere maanden)
       });
     }
@@ -175,14 +203,16 @@
     const pp = cfg.partnerpensioen;
     const ta = cfg.topaow;
     const th = cfg.tophl;
-    const aOP = inkoopfactorVoor(pensioenLeeftijdJaar, cfg.inkoopfactorenOP);
+    // Inkoopfactoren bij ingang; het kapitaal wordt eerst gedeeld door de uitstelfactor (inkoopfactor op de rekendatum).
+    const aOP = inkoopfactorVoor(pensioenLeeftijdJaar, ingangTabel(cfg));
+    const uitstel = uitstelfactor(cfg);
     const pct = opt.partnerPct !== undefined ? opt.partnerPct : pp.standaardPct;
     const v = Math.min(pp.maxPct, Math.max(pp.minPct, pct)) / 100;
 
     // Stap 1: OP vóór uitruil, en het NP daarover. Gedeeld door de SCR op de pensioendatum (X%-projectie 21.1.5):
     // alle dekkingen in de uitkeringsfase (OP, NP, TOPAOW, TOPHL) schalen zo mee.
     const scr = sim.scr || 1;
-    const opVoor = sim.kapitaal / scr / (aOP + v * pp.inkoopfactorNP);
+    const opVoor = sim.kapitaal / scr / uitstel / (aOP + v * pp.inkoopfactorNP);
     const partner = v * opVoor;
     const kOP = opVoor * aOP;
 
@@ -237,7 +267,9 @@
       tophlMogelijk: tophlMogelijk,
       voorAow: voorAow,
       nPre: nPre,
-      scr: scr
+      scr: scr,
+      uitstel: uitstel,             // uitstelfactor (inkoopfactor op de rekendatum / bij ingang op de AOW-leeftijd)
+      aOP: aOP * uitstel            // inkoopfactor OP op de rekendatum voor deze pensioenleeftijd
     };
     u.preReeel = u.pre / sim.inflIdx;
     u.postReeel = u.post / sim.inflIdx;
@@ -363,6 +395,9 @@
     maandLabel: maandLabel,
     toedeelfactor: toedeelfactor,
     inkoopfactorVoor: inkoopfactorVoor,
+    ingangTabel: ingangTabel,
+    uitstelfactor: uitstelfactor,
+    rtsCumulatief: rtsCumulatief,
     simuleer: simuleer,
     uitkeringen: uitkeringen,
     jaarlijkseUitkering: jaarlijkseUitkering,

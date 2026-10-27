@@ -149,7 +149,7 @@ button:disabled { opacity: 0.6; cursor: wait; }
   function defs(c) {
     var cfg = c.cfg, E = c.E, pp = cfg.partnerpensioen, ta = cfg.topaow, th = cfg.tophl;
     var std = pp.standaardPct;
-    var aOP = E.inkoopfactorVoor(c.preJ, cfg.inkoopfactorenOP);
+    var aOP = E.inkoopfactorVoor(c.preJ, E.ingangTabel(cfg));
     function uit(opt, sim) { return E.uitkeringen(cfg, sim || c.simPre, opt, c.preJ); }
     function uitAOW(opt) { return E.uitkeringen(cfg, c.simAOW, opt, c.aowJ); }
     // Maximum TOPAOW uit de reglementstekst: min(maxPerJaar x werkfractie, (OP voor ruil - ondergrens) x aOP / inkoopfactor)
@@ -190,14 +190,14 @@ button:disabled { opacity: 0.6; cursor: wait; }
       { id: 'PP-03', groep: 'Partnerpensioen', titel: 'Kapitaal klopt bij elk percentage',
         uitleg: 'OP x inkoopfactor OP + NP x inkoopfactorNP = kapitaal / SCR op de pensioendatum, bij min, standaard en max.',
         run: function () {
-          var worst = 0, K = c.simAOW.kapitaal / c.simAOW.scr;
+          var worst = 0, K = c.simAOW.kapitaal / c.simAOW.scr / E.uitstelfactor(cfg);
           [pp.minPct, pp.standaardPct, pp.maxPct].forEach(function (p) {
             var u = uitAOW({ partnerPct: p });
             var rec = u.standaard * aOP_AOW() + u.partner * pp.inkoopfactorNP;
             worst = Math.max(worst, Math.abs(rec - K));
           });
           return { verwacht: 'afwijking onder € 0,01 op kapitaal / SCR ' + eur(K), gemeten: 'afwijking ' + fmt(worst), ok: worst <= 0.01 + 1e-6 * K };
-          function aOP_AOW() { return E.inkoopfactorVoor(c.aowJ, cfg.inkoopfactorenOP); }
+          function aOP_AOW() { return E.inkoopfactorVoor(c.aowJ, E.ingangTabel(cfg)); }
         } },
       { id: 'PP-04', groep: 'Partnerpensioen', titel: 'Meer partnerpensioen geeft minder ouderdomspensioen',
         uitleg: 'Het OP bij maximaal partnerpensioen is lager dan bij minimaal.',
@@ -480,7 +480,7 @@ button:disabled { opacity: 0.6; cursor: wait; }
         uitleg: 'Alle drie de keuzes tegelijk: kapitaal / SCR blijft gelijk, en elk onderdeel staat op de grens uit de regel.',
         run: function () {
           var u = uit({ partnerPct: std, topaow: 1e9, tophlPct: th.maxPctOP });
-          var K = c.simPre.kapitaal / c.simPre.scr;
+          var K = c.simPre.kapitaal / c.simPre.scr / E.uitstelfactor(cfg);
           var kOP = u.standaard * aOP;
           var ident = kOP + u.partner * pp.inkoopfactorNP;
           var ok = near(ident, K, 1e-6 * K) && near(u.t1, maxT1(u)) && near(u.t2, hlMax(kOP, u.opNa, u.t1, hlF(u)));
@@ -493,7 +493,7 @@ button:disabled { opacity: 0.6; cursor: wait; }
           var X = ta.maxPerJaar / 2;
           var kOPdoel = ta.ondergrensOP * aOP + ta.inkoopfactor * X;
           var vGeklemd = Math.min(pp.maxPct, Math.max(pp.minPct, std)) / 100;
-          var K = kOPdoel * (aOP + vGeklemd * pp.inkoopfactorNP) / aOP;
+          var K = kOPdoel * (aOP + vGeklemd * pp.inkoopfactorNP) / aOP * E.uitstelfactor(cfg);   // kapitaal op de rekendatumschaal
           var hi = E.uitkeringen(cfg, fake(K), { partnerPct: std, topaow: 1e9 }, c.preJ);
           var lo = E.uitkeringen(cfg, fake(K * 0.99), { partnerPct: std, topaow: 1e9 }, c.preJ);
           var ok = near(hi.t1, X, 0.01) && near(hi.opNa, ta.ondergrensOP, 0.01) &&
@@ -517,7 +517,7 @@ button:disabled { opacity: 0.6; cursor: wait; }
       { id: 'VRO-01', groep: 'Combinaties en grenzen', titel: 'Vervroegd pensioen op 60 jaar',
         uitleg: 'TOPAOW-maximum uit de config, ook bij 30% van het kapitaal. Het OP na TOPAOW blijft boven de ondergrens.',
         run: function () {
-          var a60 = E.inkoopfactorVoor(60, cfg.inkoopfactorenOP);
+          var a60 = E.inkoopfactorVoor(60, E.ingangTabel(cfg));
           var exp = function (u) { return Math.max(0, Math.min(ta.maxPerJaar, (u.standaard - ta.ondergrensOP) * a60 / ta.inkoopfactor)); };
           var u1 = E.uitkeringen(cfg, c.sim(60, {}), { partnerPct: std, topaow: 1e9 }, 60);
           var u2 = E.uitkeringen(cfg, c.sim(60, { startkapitaal: cfg.deelnemer.startkapitaal * 0.3 }), { partnerPct: std, topaow: 1e9 }, 60);

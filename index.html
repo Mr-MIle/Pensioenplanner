@@ -1270,8 +1270,8 @@
     $('kInleg').textContent = eur0.format(somBedrag(selSim.rows, 'inleg'));
     $('kInlegSub').textContent = t('demo.kap.overBedrag', { bedrag: eur0.format(somBedrag(selSim.rows, 'over')) });
     var pv = Math.min(C.partnerpensioen.maxPct, Math.max(C.partnerpensioen.minPct, partnerPct)) / 100;
-    var aOPv = E.inkoopfactorVoor(jaar, C.inkoopfactorenOP);
-    var perMaand = function (eind) { return naarBasis(eind / (aOPv + pv * C.partnerpensioen.inkoopfactorNP) / 12); };
+    var aOPv = E.inkoopfactorVoor(jaar, E.ingangTabel(C)), uitstelV = E.uitstelfactor(C);
+    var perMaand = function (eind) { return naarBasis(eind / uitstelV / (aOPv + pv * C.partnerpensioen.inkoopfactorNP) / 12); };
     var toonK = true, toonP = false; var kapRe = REEEL;   // de planner toont alleen het kapitaal
     // De grafiek toont alles in één weergave: nominaal of reëel, net als de schakelaar. Het gekozen scenario staat
     // als gestapelde banden, de twee andere als stippellijn van het totaal.

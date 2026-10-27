@@ -69,6 +69,14 @@
       delete ov.calculatiedatum;
       // Oude naam van de inkoopfactoren OP.
       if (ov.annuiteitsdelers) { ov.inkoopfactorenOP = ov.annuiteitsdelers; delete ov.annuiteitsdelers; }
+      // Sinds 27 okt 2026 is inkoopfactorenOP de tabel op de rekendatum (stijgend met de leeftijd). Een bewaarde tabel
+      // die daalt met de leeftijd is de oude opzet: die hoort bij inkoopfactorenIngang.
+      if (ov.inkoopfactorenOP && !ov.inkoopfactorenIngang) {
+        var lft = Object.keys(ov.inkoopfactorenOP).map(Number).sort(function (a, b) { return a - b; });
+        if (lft.length > 1 && ov.inkoopfactorenOP[lft[0]] > ov.inkoopfactorenOP[lft[lft.length - 1]]) {
+          ov.inkoopfactorenIngang = ov.inkoopfactorenOP; delete ov.inkoopfactorenOP;
+        }
+      }
       merge(global.PLANNER_CONFIG, ov);
       actief = diff(global.PLANNER_BASIS, global.PLANNER_CONFIG) !== undefined;
     }

@@ -40,7 +40,7 @@ check('2 AOW-datum: geen effect', near(uA.pre, uA.post) && near(uA.pre, uA.stand
 const pensJ = 62;
 const simH = E.simuleer(C, { pensioenLeeftijdMaanden: pensJ * 12, rente, deeltijd: null, parttimepercentages: std, startkapitaal: 80000 });
 const K3 = simH.kapitaal;
-const aOP62 = E.inkoopfactorVoor(pensJ, C.inkoopfactorenOP);
+const aOP62 = E.inkoopfactorVoor(pensJ, E.ingangTabel(C));
 const op0 = E.uitkeringen(C, simH, { partnerPct: pp.standaardPct, topaow: 0 }, pensJ);
 const maxT1 = op0.maxT1;
 const kOP0 = op0.standaard * aOP62;
@@ -146,7 +146,7 @@ check('15k TOPHL eindigt vóór AOW: tussen einde en AOW = OP_na - R + T1',
 const na = E.uitkeringen(C, simH, { ...h, tophlEindMaanden: aowM + 60 }, pensJ);
 check('15l TOPHL eindigt na AOW: op AOW = OP_na + T2 (geen TOPAOW)', near(E.jaarlijkseUitkering(na, aowM), na.opNa + na.t2, 1e-6));
 check('15m 133%-grens: OP na uitruil + TOPHL <= 133% van levenslang OP', na.opNa + na.t2 <= 1.33 * na.opNa + 1e-6);
-const aOP70 = E.inkoopfactorVoor(70, C.inkoopfactorenOP);
+const aOP70 = E.inkoopfactorVoor(70, E.ingangTabel(C));
 const p70 = E.uitkeringen(C, c70, { partnerPct: pp.standaardPct, topaow: 1e9, tophlPct: th.maxPctOP }, 70);
 check('15n kapitaalneutraal bij einde AOW + 10 jaar', near(p70.post * aOP70 + hlF(p70, 70) * p70.t2, p70.standaard * aOP70, 1e-6 * p70.standaard * aOP70));
 
@@ -175,13 +175,13 @@ check('16g dubbele inkoopfactorPerJaar geeft dubbele R', near(dubbel.R, 2 * enke
 const langst = E.uitkeringen(C, simH, { partnerPct: pp.standaardPct, topaow: 1e9, tophlPct: th.maxPctOP, tophlEindMaanden: aowM + th.jarenNaAOW * 12 }, pensJ);
 check('16h langste looptijd en maximale TOPHL: OP na einde blijft > 0 en zonder NaN', langst.post > 0 && [langst.pre, langst.post, langst.R].every(isFinite), langst.post.toFixed(2));
 
-// 4. Partnerpensioen: OP x inkoopfactor OP + NP x inkoopfactorNP = kapitaal / SCR; NP = percentage x OP
-const aOP67 = E.inkoopfactorVoor(aowM / 12, C.inkoopfactorenOP);
+// 4. Partnerpensioen: OP x inkoopfactor OP + NP x inkoopfactorNP = kapitaal / SCR / uitstelfactor; NP = percentage x OP
+const aOP67 = E.inkoopfactorVoor(aowM / 12, E.ingangTabel(C));
 const inkoop = pp.inkoopfactorNP;
 [pp.minPct, pp.maxPct / 2, pp.maxPct].forEach(pct => {
   const u = E.uitkeringen(C, simA, { partnerPct: pct }, aowM / 12);
   const kap = u.standaard * aOP67 + u.partner * inkoop;
-  const kapScr = simA.kapitaal / simA.scr;
+  const kapScr = simA.kapitaal / simA.scr / E.uitstelfactor(C);
   check('4a identiteit kapitaal / SCR (' + pct + '%)', near(kap, kapScr, 1e-6 * kapScr), (kap - kapScr).toFixed(6));
   check('4b NP = ' + pct + '% van OP', near(u.partner, pct / 100 * u.standaard, 1e-6 * u.standaard + 1e-9));
 });
@@ -329,9 +329,35 @@ const kDeel = simD.rows.find((r, k) => calc + k === deelIdx);
 const kIdx = deelIdx - calc;
 const scrDeel = kIdx === 0 ? sc.startwaarde : (calc + kIdx) % 12 === 0
   ? simD.rows[kIdx - 1].scr / (1 + simD.rows[kIdx].aanpassing) : simD.rows[kIdx - 1].scr;
-let deelZelf = kDeel.onttrokken / E.inkoopfactorVoor((deelIdx - birth) / 12, C.inkoopfactorenOP) / scrDeel;
+let deelZelf = kDeel.onttrokken / (E.inkoopfactorVoor((deelIdx - birth) / 12, E.ingangTabel(C)) * E.uitstelfactor(C)) / scrDeel;
 simD.rows.forEach((r, k) => { if (calc + k > deelIdx && r.aanpassing !== 0) deelZelf *= 1 + r.aanpassing; });
 check('18i deeltijdpensioen / SCR op deeldatum, daarna januari-aanpassingen', near(simD.deelJaar, deelZelf, 1e-9 * deelZelf), simD.deelJaar.toFixed(2) + ' vs ' + deelZelf.toFixed(2));
+
+// 19. Inkoopfactor op de rekendatum (X%-projectie 21.1.10) en premiecorrectie met de cumulatieve RTS (21.1.9)
+// 19a: rekenvoorbeeld 21.1.9: spot 2,168% (1 jaar) en 2,259% (2 jaar), maand 15 geeft 1,02763
+const Crts = Object.assign({}, C, { rts: { spotrates: { 1: 0.02168, 2: 0.02259, 3: 0.0238 } } });
+check('19a cumulatieve RTS maand 15 = 1,02763', near(E.rtsCumulatief(Crts, 15), 1.02763, 5e-6), E.rtsCumulatief(Crts, 15).toFixed(6));
+check('19b cumulatieve RTS op hele jaren = (1 + spot)^jaren', near(E.rtsCumulatief(Crts, 24), Math.pow(1.02259, 2), 1e-12) && E.rtsCumulatief(Crts, 0) === 1);
+// 19c: elke premie in de maandtabel is gedeeld door de cumulatieve RTS tot het einde van die maand
+const premieOk = simA.rows.every((r, k) => near(r.rtsFactor, E.rtsCumulatief(C, k + 1), 1e-12));
+check('19c premie per maand gedeeld door de cumulatieve RTS tot die maand', premieOk && simA.rows[simA.rows.length - 1].rtsFactor > 1);
+// 19d: inkoopfactorenOP stijgt met de leeftijd op de rekendatum (jonger = lager)
+const lft = Object.keys(C.inkoopfactorenOP).map(Number).sort((a, b) => a - b);
+check('19d inkoopfactor op de rekendatum: jonger is lager', lft.every((a, i) => i === 0 || C.inkoopfactorenOP[a] > C.inkoopfactorenOP[lft[i - 1]]));
+// 19e: uitstelfactor = factor op de leeftijd op de rekendatum / ingangsfactor op de AOW-leeftijd
+const nuJ = (calc - birth) / 12;
+const uitstelVerwacht = E.inkoopfactorVoor(nuJ, C.inkoopfactorenOP) / E.inkoopfactorVoor(aowM / 12, C.inkoopfactorenIngang);
+check('19e uitstelfactor volgens de tabellen', near(E.uitstelfactor(C), uitstelVerwacht, 1e-12), E.uitstelfactor(C).toFixed(4));
+// 19f: op de AOW-leeftijd is de inkoopfactor OP precies de tabelwaarde op de rekendatum
+check('19f inkoopfactor OP bij pensioen op AOW = tabel op de rekendatum', near(uA.aOP, E.inkoopfactorVoor(nuJ, C.inkoopfactorenOP), 1e-9), uA.aOP.toFixed(3));
+// 19g: eerder stoppen geeft een hogere inkoopfactor dan op de AOW-leeftijd, later een lagere
+const u62 = E.uitkeringen(C, simH, { partnerPct: 0 }, 62), cLaat = E.simuleer(C, { pensioenLeeftijdMaanden: 70 * 12, rente, deeltijd: null, parttimepercentages: std, startkapitaal: 80000 });
+const u70 = E.uitkeringen(C, cLaat, { partnerPct: 0 }, 70);
+check('19g eerder stoppen: hogere inkoopfactor, later: lagere', u62.aOP > uA.aOP && u70.aOP < uA.aOP, [u62.aOP, uA.aOP, u70.aOP].map(x => x.toFixed(2)).join(' > '));
+// 19h: OP = kapitaal / SCR / inkoopfactor OP op de rekendatum (zonder partnerpensioen)
+check('19h OP = kapitaal / SCR / inkoopfactor op de rekendatum', near(uA.standaard, simA.kapitaal / simA.scr / uA.aOP, 1e-9 * uA.standaard), uA.standaard.toFixed(2));
+// 19i: zonder ingangstabel rekent de planner zoals vroeger (uitstelfactor 1, geen tabel op de rekendatum)
+check('19i zonder inkoopfactorenIngang is de uitstelfactor 1', E.uitstelfactor(Object.assign({}, C, { inkoopfactorenIngang: undefined })) === 1);
 
 results.forEach(r => console.log(r));
 console.log('\nFAILS: ' + results.filter(r => r.startsWith('FAIL')).length + ' / ' + results.length);
