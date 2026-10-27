@@ -201,6 +201,7 @@
   }
   .as-titel { font-size: 12px; font-weight: 600; }
   .legenda[hidden] { display: none; }
+  #legKapScenario::before { display: none; }
   table.vergelijk { table-layout: fixed; }
   table.vergelijk th, table.vergelijk td { white-space: normal; vertical-align: top; padding: 8px 6px; }
   table.vergelijk th:first-child, table.vergelijk td:first-child { width: 44%; }
@@ -585,7 +586,7 @@
       <span style="--c: var(--accent)" data-i18n="demo.kap.lgInleg"></span>
       <span style="--c: var(--warm)" data-i18n="demo.kap.lgOver"></span>
       <span style="--c: var(--neg)" data-i18n="demo.kap.lgNeg"></span>
-      <span class="stippel" id="legKapStip" style="--c: var(--fg)">Reëel totaal</span>
+      <span id="legKapScenario" style="display: contents"></span>
     </div>
   </section>
 
@@ -895,10 +896,11 @@
       });
     });
 
-    document.querySelectorAll('.seg').forEach(function (b) {
+    // Alleen de scenarioknoppen: de nominaal/reëel-knoppen hebben ook de klasse seg.
+    document.querySelectorAll('.seg[data-sc]').forEach(function (b) {
       b.addEventListener('click', function () {
         scenario = b.getAttribute('data-sc');
-        document.querySelectorAll('.seg').forEach(function (o) {
+        document.querySelectorAll('.seg[data-sc]').forEach(function (o) {
           var aan = o === b;
           o.classList.toggle('actief', aan);
           o.setAttribute('aria-pressed', aan ? 'true' : 'false');
@@ -1266,6 +1268,11 @@
     var aOPv = E.inkoopfactorVoor(jaar, C.inkoopfactorenOP);
     var perMaand = function (eind) { return naarBasis(eind / (aOPv + pv * C.partnerpensioen.inkoopfactorNP) / 12); };
     var toonK = true, toonP = false; var kapRe = REEEL;   // de planner toont alleen het kapitaal
+    // De grafiek toont alles in één weergave: nominaal of reëel, net als de schakelaar. Het gekozen scenario staat
+    // als gestapelde banden, de twee andere als stippellijn van het totaal.
+    var andereScenarios = [['pess', simLo, 'var(--neg)'], ['basis', sim, 'var(--fg)'], ['opt', simHi, 'var(--accent)']]
+      .filter(function (a) { return a[0] !== scenario; })
+      .map(function (a) { return { naam: t('demo.kap.' + a[0]), kleur: a[2], waarden: a[1].rows.map(function (r) { return r.eind * (kapRe ? r.defl : 1); }) }; });
     $('grafiek').innerHTML = tekenVermogen(selSim.rows, sk, {
       toonKapitaal: toonK,
       toonPensioen: toonP,
@@ -1273,11 +1280,12 @@
       pensLo: simLo.rows.map(function (r) { return perMaand(r.eind); }),
       pensHi: simHi.rows.map(function (r) { return perMaand(r.eind); }),
       reeel: kapRe,
-      kapLo: simLo.rows.map(function (r) { return r.eind * (kapRe ? r.defl : 1); }),
-      kapHi: simHi.rows.map(function (r) { return r.eind * (kapRe ? r.defl : 1); })
+      lijnen: andereScenarios
     });
     $('legendaKapitaal').hidden = !toonK;
-    $('legKapStip').textContent = t(kapRe ? 'demo.kap.nominaalTotaal' : 'demo.kap.reeelTotaal');
+    $('legKapScenario').innerHTML = andereScenarios.map(function (l) {
+      return '<span class="punt" style="--c: ' + l.kleur + '">' + t('demo.kap.lgScenario', { naam: l.naam }) + '</span>';
+    }).join('');
 
     // Maandtabel: altijd nominaal, met de reële eindwaarde in een eigen kolom. Volgt de nominaal/reëel-schakelaar niet.
     var somNom = function (veld) { return sim.rows.reduce(function (a, r) { return a + r[veld]; }, 0); };
@@ -1716,10 +1724,10 @@
           K *= 1 - f; P *= 1 - f; O *= 1 - f;
         }
         var m = o.reeel ? r.defl : 1;
-        return { base: K * m, top1: (K + P) * m, top2: (K + P + O) * m, dash: o.reeel ? (K + P + O) : r.reeel };
+        return { base: K * m, top1: (K + P) * m, top2: (K + P + O) * m };
       });
-      pts.forEach(function (p) { waardenK.push(p.base, p.top1, p.top2, p.dash); });
-      o.kapLo.concat(o.kapHi).forEach(function (v) { waardenK.push(v); });
+      pts.forEach(function (p) { waardenK.push(p.base, p.top1, p.top2); });
+      o.lijnen.forEach(function (l) { l.waarden.forEach(function (v) { waardenK.push(v); }); });
       sk = schaal(waardenK);
     }
     if (o.toonPensioen) sp = schaal([0].concat(o.pensioen, o.pensLo, o.pensHi));
@@ -1775,8 +1783,6 @@
           'L' + x(j + 1).toFixed(1) + ',' + yk(b1.top2).toFixed(1) + 'L' + x(j).toFixed(1) + ',' + yk(a1.top2).toFixed(1) + 'Z';
         overrendement += '<path d="' + dO + '" fill="' + kleur + '" fill-opacity="0.65"/>';
       }
-      var pR = '';
-      pts.forEach(function (p, i) { pR += (i ? 'L' : 'M') + x(i).toFixed(1) + ',' + yk(p.dash).toFixed(1); });
       var lijnK = function (arr, kleurL, naam) {
         var d = '';
         arr.forEach(function (v, i) { d += (i ? 'L' : 'M') + x(i).toFixed(1) + ',' + yk(v).toFixed(1); });
@@ -1785,8 +1791,7 @@
       kap = '<path d="' + vanaf0('base') + '" fill="var(--muted)" fill-opacity="0.28"/>' +
         '<path d="' + band('base', 'top1') + '" fill="var(--accent)" fill-opacity="0.55"/>' +
         overrendement +
-        '<path d="' + pR + '" fill="none" stroke="var(--fg)" stroke-width="1.75" stroke-dasharray="5 4"/>' +
-        lijnK(o.kapLo, 'var(--neg)', t('demo.kap.pess')) + lijnK(o.kapHi, 'var(--accent)', t('demo.kap.opt'));
+        o.lijnen.map(function (l) { return lijnK(l.waarden, l.kleur, l.naam); }).join('');
     }
 
     // Verwacht ouderdomspensioen per maand, met de bandbreedte
