@@ -47,6 +47,8 @@
   .chip:hover { border-color: var(--accent); }
   .chip[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
   .chip:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .chip small { display: block; font-size: 13px; font-weight: 600; color: var(--groen); }
+  .chip[aria-pressed="true"] small { color: #fff; }
   .schuif { margin: 18px 0 0; padding: 18px 22px; border-radius: 18px; background: #fff; border: 1px solid var(--lijn); }
   .schuif label { display: flex; justify-content: space-between; font-weight: 700; }
   .schuif input[type=range] { width: 100%; accent-color: var(--accent); margin-top: 10px; }
@@ -111,6 +113,15 @@
   .acties strong { display: block; }
   .acties span { color: var(--zacht); font-size: 16px; }
   .acties a { color: var(--accent-donker); }
+  .opbouw { width: 100%; border-collapse: collapse; font-size: 16px; background: var(--kaart); border: 1px solid var(--lijn); border-radius: 18px; overflow: hidden; }
+  .opbouw th, .opbouw td { padding: 10px 16px; border-bottom: 1px solid var(--lijn); text-align: right; font-variant-numeric: tabular-nums; }
+  .opbouw th[scope=row], .opbouw thead th:first-child { text-align: left; font-weight: 400; }
+  .opbouw thead th { font-size: 14px; color: var(--zacht); font-weight: 600; }
+  .opbouw th small { display: block; color: var(--zacht); font-size: 13px; }
+  .opbouw tr.basis th, .opbouw tr.totaal th, .opbouw tr.totaal td { font-weight: 700; }
+  .opbouw tr.totaal { background: var(--accent-zacht); }
+  .opbouw tr.totaal th, .opbouw tr.totaal td { border-bottom: 0; }
+  .opbouw td.leeg { text-align: left; color: var(--zacht); }
   .samenvatting { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; font-size: 16px; }
   .samenvatting li { display: flex; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--lijn); padding: 6px 0; }
   .samenvatting li span:first-child { color: var(--zacht); }
@@ -166,9 +177,11 @@
     deelnemer: C.standaardDeelnemer, start: 'aow', leeftijd: C.pensioenreglement.standaardPensioenleeftijd,
     partnerPct: C.partnerpensioen.standaardPct, partnerKeuze: 'max',
     overbrug: false, tijdelijk: false,   // AOW-overbrugging en tijdelijk hoger pensioen, los van elkaar aan of uit
-    topaow: 'max', tophlPct: 33, basis: 'netto',
+    // AOW-overbrugging begint bij € 0: een vooraf ingesteld maximum werkt als aanbeveling (AFM, keuzebegeleiding 2026).
+    topaow: 0, tophlPct: 33, basis: 'netto',
     reeel: null,  // null = standaard (pensioendatum binnen 2 jaar nominaal, anders reëel)
-    // Antwoorden op de doelvraag. Ze sturen alleen uitleg, nadruk en signalen; de standaardkeuzes blijven gelijk.
+    // Antwoorden op de doelvraag. Ze sturen uitleg, nadruk en signalen. Alleen het partnerantwoord zet ook een
+    // standaard klaar: met partner het maximale partnerpensioen, zonder partner geen.
     doel: null,     // 'nu' (meer in de eerste jaren) | 'zeker' (zekerheid voor later) | 'weetniet'
     partner: null,  // 'ja' | 'nee'
     bezit: {}       // huis, spaar, elders: wat de deelnemer naast dit pensioen heeft
@@ -184,6 +197,19 @@
     return Object.assign(k, extra || {});
   }
   function r() { return K.bereken(keuzes()); }
+  // Een andere keuze doorrekenen in dezelfde weergave als het resultaat. Zonder vaste reëel/nominaal-keuze kan de
+  // standaard per stopleeftijd verschillen; dan zouden de bedragen niet te vergelijken zijn.
+  function alsof(extra) { return K.bereken(keuzes(Object.assign({ reeel: r().reeel }, extra))); }
+  // Standaard partnerpensioen volgens het antwoord op de doelvraag.
+  function stdPartner() { return s.partner === 'nee' ? 0 : C.partnerpensioen.standaardPct; }
+  function zetPartnerStandaard() {
+    s.partnerKeuze = s.partner === 'nee' ? 'geen' : 'max';
+    s.partnerPct = stdPartner();
+  }
+  function verschil(v) {
+    if (Math.abs(v) < 0.5) return t('fondsA.opbouw.nul');
+    return (v > 0 ? '+ ' : '− ') + eur(Math.abs(v));
+  }
   function $(id) { return document.getElementById(id); }
   function esc(x) { return String(x).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
 
@@ -233,28 +259,34 @@
     return html + '</div>' + nav(WANNEER);
   }
 
-  // Stap 3: wanneer wil je stoppen?
+  // Stap 3: wanneer wil je stoppen? Bij elke leeftijd staat het bedrag, zodat je de stopmomenten kunt vergelijken.
   function schermWanneer() {
     var lijst = K.leeftijden(s.deelnemer);
     var aowJaar = K.AOW_M % 12 === 0 ? K.AOW_JAREN : null;
+    var res = r();
+    var opAow = alsof({ start: 'aow' });
     var html = coach(t('fondsA.wanneer.coach', { leeftijd: K.aowLabel() })) +
       '<h1>' + t('fondsA.wanneer.h1') + '</h1><div class="chips">';
-    html += '<button class="chip" type="button" data-start="aow" aria-pressed="' + (s.start === 'aow') + '">' + t('fondsA.wanneer.aow', { leeftijd: K.aowLabel() }) + '</button>';
+    html += '<button class="chip" type="button" data-start="aow" aria-pressed="' + (s.start === 'aow') + '">' + t('fondsA.wanneer.aow', { leeftijd: K.aowLabel() }) +
+      '<small>' + eur(opAow.eerst) + '</small></button>';
     lijst.forEach(function (j) {
       if (j === aowJaar) return;
-      html += '<button class="chip" type="button" data-leeftijd="' + j + '" aria-pressed="' + (s.start === 'ander' && s.leeftijd === j) + '">' + t('kern.jaar', { n: j }) + '</button>';
+      html += '<button class="chip" type="button" data-leeftijd="' + j + '" aria-pressed="' + (s.start === 'ander' && s.leeftijd === j) + '">' + t('kern.jaar', { n: j }) +
+        '<small>' + eur(alsof({ start: 'ander', leeftijd: j }).eerst) + '</small></button>';
     });
-    var res = r();
-    html += '</div><p class="tip">' + t('fondsA.wanneer.tip', { datum: res.tekst.pensioendatum, bedrag: eur(res.eerst), eenheid: eenheid(res) }) + '</p>';
+    html += '</div><p class="tip" style="margin-top:10px;font-size:15px">' + t('fondsA.wanneer.chipUitleg', { eenheid: eenheid(res) }) + '</p>' +
+      '<p class="tip">' + t('fondsA.wanneer.tip', { datum: res.tekst.pensioendatum, bedrag: eur(res.eerst), eenheid: eenheid(res) });
+    var dif = res.eerst - opAow.eerst;
+    if (s.start !== 'aow' && Math.abs(dif) >= 0.5) html += ' ' + t(dif > 0 ? 'fondsA.wanneer.tipMeer' : 'fondsA.wanneer.tipMinder', { bedrag: eur(Math.abs(dif)) });
+    html += '</p>' + signalenBij(WANNEER, res);
     return html + nav(PARTNER);
   }
 
   // Stap 4: partner
   function schermPartner() {
     var max = C.partnerpensioen.maxPct;
-    var uitleg = t('fondsA.partner.coach');
-    if (s.partner === 'ja') uitleg += ' ' + t('fondsA.partner.coachJa');
-    if (s.partner === 'nee') uitleg += ' ' + t('fondsA.partner.coachNee');
+    var uitleg = t('fondsA.partner.coach') + ' ' +
+      t(s.partner === 'ja' ? 'fondsA.partner.coachJa' : s.partner === 'nee' ? 'fondsA.partner.coachNee' : 'fondsA.partner.coachOnbekend');
     var html = coach(uitleg) +
       '<h1>' + t('fondsA.partner.h1') + '</h1><div class="keuzes">';
     var opties = [
@@ -275,7 +307,7 @@
         '<input id="partnerSchuif" type="range" min="' + C.partnerpensioen.minPct + '" max="' + max + '" step="5" value="' + s.partnerPct + '">' +
         '<small>' + t('fondsA.partner.schuifUitleg') + '</small></div>';
     }
-    return html + nav(VERDELING);
+    return html + signalenBij(PARTNER) + nav(VERDELING);
   }
 
   // Stap 5: verdeling
@@ -304,12 +336,15 @@
       '<span class="titel">' + t('fondsA.verdeling.gelijk') + past(s.doel === 'zeker') + '</span><span class="uitleg">' + t('fondsA.verdeling.gelijkUitleg') + '</span>' +
       '<span class="bedrag">' + regel(basisRes) + '</span></button>';
 
-    // Het bedrag op een tegel laat het effect van die keuze alleen zien.
+    // Het bedrag op een tegel laat het effect van die keuze alleen zien. De overbrugging begint bij € 0; staat
+    // ze uit, dan toont de tegel ter illustratie het maximum, met dat woord erbij.
     var resO = K.bereken(keuzes({ topaow: s.overbrug ? s.topaow : 'max', tophlPct: 0 }));
+    var bedragO = !s.overbrug ? t('fondsA.verdeling.overbrugMax', { regel: regel(resO) })
+      : resO.u.t1 > 0 ? regel(resO) : t('fondsA.verdeling.overbrugKies');
     html += '<button class="keuze" type="button" data-verdeling="overbrug" aria-pressed="' + metOverbrug + '"' + (magOverbrug ? '' : ' disabled') + '>' +
       '<span class="titel">' + t('fondsA.verdeling.overbrug') + past(magOverbrug && s.doel === 'nu') + '</span><span class="uitleg">' +
       t(magOverbrug ? 'fondsA.verdeling.overbrugUitleg' : 'fondsA.verdeling.overbrugNiet') + '</span>' +
-      (magOverbrug ? '<span class="bedrag">' + regel(resO) + '</span>' : '') + '</button>';
+      (magOverbrug ? '<span class="bedrag">' + bedragO + '</span>' : '') + '</button>';
 
     var resT = K.bereken(keuzes({ topaow: 0, tophlPct: s.tijdelijk ? s.tophlPct : 33 }));
     html += '<button class="keuze" type="button" data-verdeling="tijdelijk" aria-pressed="' + metTijdelijk + '"' + (magTijdelijk ? '' : ' disabled') + '>' +
@@ -317,14 +352,9 @@
       t(basisRes.voorAow ? 'fondsA.verdeling.tijdelijkTotAow' : 'fondsA.verdeling.tijdelijkEerst') + '</span>' +
       (magTijdelijk ? '<span class="bedrag">' + regel(resT) + '</span>' : '') + '</button></div>';
 
-    if (metOverbrug && metTijdelijk) {
-      var samen = r();
-      html += '<p class="tip">' + t('fondsA.verdeling.samen', { regel: regel(samen), eenheid: eenheid(samen), lager: eur(basisRes.later - samen.later) }) + '</p>';
-    }
-
     if (metOverbrug) {
       var max = resO.maxT1;
-      var waarde = s.topaow === 'max' ? max : s.topaow;
+      var waarde = s.topaow === 'max' ? max : Math.min(s.topaow, max);
       html += '<div class="schuif"><label for="t1Schuif"><span>' + t('fondsA.verdeling.t1') + '</span><span>' + eur(waarde) + '</span></label>' +
         '<input id="t1Schuif" type="range" min="0" max="' + max + '" step="500" value="' + waarde + '">' +
         '<small>' + t('fondsA.verdeling.t1Max', { bedrag: eur(max) }) + '</small></div>';
@@ -334,7 +364,7 @@
         '<input id="t2Schuif" type="range" min="5" max="33" step="1" value="' + s.tophlPct + '">' +
         '<small>' + t('fondsA.verdeling.t2Max') + '</small></div>';
     }
-    return html + nav(RESULTAAT, t('fondsA.verdeling.verder'));
+    return html + signalenBij(VERDELING) + nav(RESULTAAT, t('fondsA.verdeling.verder'));
   }
 
   // Stap 6: resultaat
@@ -389,16 +419,57 @@
       '<button type="button" data-naar="' + VERDELING + '">' + t('fondsA.resultaat.naarVerdeling') + '</button><button type="button" data-naar="' + DOEL + '">' + t('fondsA.resultaat.naarDoel') + '</button>' +
       '<button type="button" data-naar="' + WIE + '">' + t('fondsA.resultaat.naarWie') + '</button></div></div>';
 
+    html += opbouw(res);
+
     var sig = signalen(res);
     html += '<h2>' + t('fondsA.signaal.h2') + '</h2>' + (sig.length
-      ? '<div class="signalen">' + sig.map(function (g) {
-          return '<div class="signaal' + (g.info ? ' info' : '') + '"><strong>' + g.titel + '</strong><p>' + g.tekst + '</p>' +
-            (g.naar !== undefined ? '<button type="button" data-naar="' + g.naar + '">' + g.knop + '</button>' : '') + '</div>';
-        }).join('') + '</div>'
+      ? signaalLijst(sig, true)
       : '<div class="geen-signaal">' + t('fondsA.signaal.geen') + '</div>');
 
     html += vergelijkSalaris();
     return html + nav(WATNU, t('fondsA.resultaat.verder'));
+  }
+
+  // Wat elke keuze doet: van de standaard van Fonds A, keuze voor keuze, naar jouw bedrag. Elke rij is het verschil
+  // tussen twee totaalbedragen, zo tellen de rijen ook netto precies op.
+  function opbouw(res) {
+    var std = alsof({ start: 'aow', partnerPct: stdPartner(), topaow: 0, tophlPct: 0 });
+    var naStop = alsof({ partnerPct: stdPartner(), topaow: 0, tophlPct: 0 });
+    var naPartner = alsof({ topaow: 0, tophlPct: 0 });
+    var rijen = [];
+    function rij(label, sub, a, b, cls) {
+      return '<tr class="' + (cls || '') + '"><th scope="row">' + label + (sub ? '<small>' + sub + '</small>' : '') + '</th><td>' + a + '</td><td>' + b + '</td></tr>';
+    }
+    if (s.start !== 'aow') rijen.push(rij(t('fondsA.opbouw.stop', { stop: res.tekst.stop }), '', verschil(naStop.eerst - std.eerst), verschil(naStop.later - std.later)));
+    if (res.partnerPct !== stdPartner()) rijen.push(rij(t('fondsA.opbouw.partner', { pct: res.partnerPct, std: stdPartner() }), '',
+      verschil(naPartner.eerst - naStop.eerst), verschil(naPartner.later - naStop.later)));
+    if (res.u.t1 > 0 || res.u.t2 > 0) rijen.push(rij(t('fondsA.opbouw.verdeling', { verdeling: verdelingTekst(res) }), '',
+      verschil(res.eerst - naPartner.eerst), verschil(res.later - naPartner.later)));
+    return '<h2>' + t('fondsA.opbouw.h2') + '</h2><p class="tip" style="margin-top:0">' + t('fondsA.opbouw.uitleg', { eenheid: eenheid(res) }) + '</p>' +
+      '<table class="opbouw"><thead><tr><th></th><th scope="col">' + t('fondsA.opbouw.kolomStart') + '</th><th scope="col">' + t('fondsA.opbouw.kolomLater') + '</th></tr></thead><tbody>' +
+      rij(t('fondsA.opbouw.standaard'), t('fondsA.opbouw.standaardUitleg', { pct: stdPartner() }), eur(std.eerst), eur(std.later), 'basis') +
+      (rijen.length ? rijen.join('') : '<tr><td colspan="3" class="leeg">' + t('fondsA.opbouw.gelijk') + '</td></tr>') +
+      rij(t('fondsA.opbouw.totaal'), '', eur(res.eerst), eur(res.later), 'totaal') + '</tbody></table>';
+  }
+
+  function verdelingTekst(res) {
+    return res.u.t1 > 0 && res.u.t2 > 0 ? t('fondsA.watnu.vdBeide') : res.u.t1 > 0 ? t('fondsA.watnu.vdOverbrug')
+      : res.u.t2 > 0 ? t('fondsA.watnu.vdTijdelijk', { pct: Math.round(res.pctHL * 100) }) : t('fondsA.verdeling.gelijk');
+  }
+
+  function signaalLijst(sig, metKnop) {
+    return '<div class="signalen">' + sig.map(function (g) {
+      var knop = '';
+      if (g.reeelKnop) knop = '<button type="button" data-reeel="reeel">' + t('fondsA.signaal.knopReeel') + '</button>';
+      else if (metKnop && g.naar !== undefined) knop = '<button type="button" data-naar="' + g.naar + '">' + g.knop + '</button>';
+      return '<div class="signaal' + (g.info ? ' info' : '') + '"><strong>' + g.titel + '</strong><p>' + g.tekst + '</p>' + knop + '</div>';
+    }).join('') + '</div>';
+  }
+
+  // Signalen die bij een stap horen, direct in die stap: de deelnemer ziet het gevolg terwijl hij de keuze overweegt.
+  function signalenBij(stapNr, res) {
+    var sig = signalen(res || r()).filter(function (g) { return g.naar === stapNr; });
+    return sig.length ? '<h2>' + t('fondsA.signaal.h2Stap') + '</h2>' + signaalLijst(sig, false) : '';
   }
 
   // Salaris vlak vóór de pensioendatum naast het pensioen, in dezelfde weergave als de rest van het resultaat
@@ -463,8 +534,27 @@
       uit.push(Object.assign({ titel: t('fondsA.signaal.partnerGeenTitel'), tekst: t('fondsA.signaal.partnerGeen') }, naarPartner));
     }
     if (s.partner === 'nee' && res.partnerPct > 0) {
+      // Kosten in het levenslange bedrag, net als in de opbouw en het signaal over eerder stoppen.
       var zonder = K.bereken(keuzes({ partnerPct: 0 }));
-      uit.push(Object.assign({ info: true, titel: t('fondsA.signaal.partnerWelTitel'), tekst: t('fondsA.signaal.partnerWel', { kosten: eur(zonder.eerst - res.eerst) }) }, naarPartner));
+      uit.push(Object.assign({ info: true, titel: t('fondsA.signaal.partnerWelTitel'), tekst: t('fondsA.signaal.partnerWel', { kosten: eur(zonder.later - res.later) }) }, naarPartner));
+    }
+    // Keuzes die elkaar versterken: eerder stoppen en partnerpensioen verlagen allebei je eigen levenslange pensioen.
+    // Gerekend zonder verdeling. Het effect van eerder stoppen bij het gekozen partnerpensioen, zoals in de opbouw
+    // als dat de standaard is; samen is het verschil met stoppen op de AOW-leeftijd zonder partnerpensioen.
+    if (res.voorAow && res.partnerPct > 0) {
+      var jij = alsof({ topaow: 0, tophlPct: 0 }).later;
+      var opAow = alsof({ start: 'aow', topaow: 0, tophlPct: 0 }).later;
+      var geenPP = alsof({ partnerPct: 0, topaow: 0, tophlPct: 0 }).later;
+      var beideNiet = alsof({ start: 'aow', partnerPct: 0, topaow: 0, tophlPct: 0 }).later;
+      uit.push(Object.assign({ info: true, titel: t('fondsA.signaal.stopPartnerTitel'),
+        tekst: t('fondsA.signaal.stopPartner', { stop: eur(opAow - jij), pct: res.partnerPct, partner: eur(geenPP - jij), samen: eur(beideNiet - jij) }) }, naarPartner));
+    }
+    // Eerst meer en later minder, in nominale bedragen: de koopkracht daalt later dubbel (lager bedrag én inflatie).
+    // Koopkracht op de laatste leeftijd van de grafiek, omgerekend zoals de rekenkern reëel rekent.
+    if ((res.u.t1 > 0 || res.u.t2 > 0) && !res.reeel) {
+      var oud = C.pensioenreglement.grafiekEindLeeftijd;
+      uit.push({ info: true, naar: VERDELING, reeelKnop: true, titel: t('fondsA.signaal.koopkrachtTitel'),
+        tekst: t('fondsA.signaal.koopkracht', { later: eur(res.later), leeftijd: t('kern.jaar', { n: oud }), reeel: eur(res.later * res.reeelFactor(oud)) }) });
     }
     var v = salarisEnPensioen();
     var levenslang = v.fasen[v.fasen.length - 1];
@@ -492,8 +582,7 @@
     acties.push([t('fondsA.watnu.advies'), t('fondsA.watnu.adviesTekst')]);
     acties.push([t('fondsA.watnu.doorgeven'), t('fondsA.watnu.doorgevenTekst') + (twee ? ' ' + t('fondsA.watnu.herinnering') : '')]);
 
-    var verdeling = res.u.t1 > 0 && res.u.t2 > 0 ? t('fondsA.watnu.vdBeide') : res.u.t1 > 0 ? t('fondsA.watnu.vdOverbrug')
-      : res.u.t2 > 0 ? t('fondsA.watnu.vdTijdelijk', { pct: Math.round(res.pctHL * 100) }) : t('fondsA.verdeling.gelijk');
+    var verdeling = verdelingTekst(res);
     var samen = [
       [t('fondsA.watnu.smDeelnemer'), esc(K.naam(s.deelnemer))],
       [t('fondsA.watnu.smStoppen'), res.tekst.stop + ', ' + res.tekst.pensioendatum],
@@ -522,13 +611,19 @@
     var v = '';
     for (var i = 0; i < STAPPEN; i++) v += '<i class="' + (i <= stap ? 'klaar' : '') + '"></i>';
     $('voortgang').innerHTML = v;
-    var pil = $('pil');
-    if (stap >= WANNEER && stap <= VERDELING) {
-      var res = r();
-      pil.hidden = false;
-      pil.innerHTML = '<span>' + t('fondsA.pil') + '</span><strong>' + eur(res.eerst) + '</strong><span>' + t('fondsA.pilSub', { eenheid: eenheid(res) }) + '</span>';
-    } else pil.hidden = true;
+    tekenPil();
     if (focus) { var h = $('podium').querySelector('h1, .groot'); if (h) { h.setAttribute('tabindex', '-1'); h.focus({ preventScroll: true }); } window.scrollTo(0, 0); }
+  }
+
+  // Meelopend bedrag. Krijg je de eerste jaren meer, dan staat het lagere bedrag van daarna er direct naast.
+  function tekenPil() {
+    var pil = $('pil');
+    if (stap < WANNEER || stap > VERDELING) { pil.hidden = true; return; }
+    var res = r();
+    pil.hidden = false;
+    pil.innerHTML = '<span>' + t('fondsA.pil') + '</span><strong>' + eur(res.eerst) + '</strong>' +
+      (res.u.t1 > 0 || res.u.t2 > 0 ? '<span>' + t('fondsA.pilDaarna') + '</span><strong>' + eur(res.later) + '</strong>' : '') +
+      '<span>' + t('fondsA.pilSub', { eenheid: eenheid(res) }) + '</span>';
   }
 
   // Bij een schuif alleen opnieuw tekenen en de focus op de schuif houden.
@@ -544,18 +639,24 @@
     if (b.hasAttribute('data-naar')) { stap = Number(b.getAttribute('data-naar')); teken(true); return; }
     if (b.hasAttribute('data-print')) { window.print(); return; }
     if (b.hasAttribute('data-doel')) { s.doel = b.getAttribute('data-doel'); teken(false); return; }
-    if (b.hasAttribute('data-heeftpartner')) { s.partner = b.getAttribute('data-heeftpartner'); teken(false); return; }
+    if (b.hasAttribute('data-heeftpartner')) {
+      // Een (ander) antwoord zet de standaard voor het partnerpensioen klaar; daarna kan de deelnemer die zelf wijzigen.
+      var hp = b.getAttribute('data-heeftpartner');
+      if (hp !== s.partner) { s.partner = hp; zetPartnerStandaard(); }
+      teken(false); return;
+    }
     if (b.hasAttribute('data-bezit')) { var bz = b.getAttribute('data-bezit'); s.bezit[bz] = !s.bezit[bz]; teken(false); return; }
     if (b.hasAttribute('data-deelnemer')) {
       s.deelnemer = Number(b.getAttribute('data-deelnemer'));
       // Stopleeftijd die voor deze deelnemer niet meer kan: terug naar de AOW-leeftijd.
       if (s.start === 'ander' && K.leeftijden(s.deelnemer).indexOf(s.leeftijd) < 0) s.start = 'aow';
-      s.topaow = 'max';
+      s.topaow = 0;
       s.reeel = null;
       teken(false); return;
     }
+    // Een ander stopmoment geeft een ander maximum voor de overbrugging; het gekozen bedrag blijft, de rekenkern begrenst het.
     if (b.hasAttribute('data-start')) { s.start = 'aow'; teken(false); return; }
-    if (b.hasAttribute('data-leeftijd')) { s.start = 'ander'; s.leeftijd = Number(b.getAttribute('data-leeftijd')); s.topaow = 'max'; teken(false); return; }
+    if (b.hasAttribute('data-leeftijd')) { s.start = 'ander'; s.leeftijd = Number(b.getAttribute('data-leeftijd')); teken(false); return; }
     if (b.hasAttribute('data-partner')) {
       s.partnerKeuze = b.getAttribute('data-partner');
       s.partnerPct = s.partnerKeuze === 'max' ? C.partnerpensioen.maxPct : (s.partnerKeuze === 'geen' ? 0 : Math.round(C.partnerpensioen.maxPct / 2));
@@ -564,7 +665,7 @@
     if (b.hasAttribute('data-verdeling')) {
       var v = b.getAttribute('data-verdeling');
       if (v === 'gelijk') { s.overbrug = false; s.tijdelijk = false; }
-      if (v === 'overbrug') { s.overbrug = !s.overbrug; s.topaow = 'max'; }
+      if (v === 'overbrug') { s.overbrug = !s.overbrug; s.topaow = 0; }
       if (v === 'tijdelijk') s.tijdelijk = !s.tijdelijk;
       teken(false); return;
     }
@@ -582,8 +683,7 @@
     var tekst = leesSchuif(e.target);
     if (tekst === null) return;
     e.target.parentNode.querySelector('label span:last-child').textContent = tekst;
-    var strong = $('pil').querySelector('strong');
-    if (strong) strong.textContent = eur(r().eerst);
+    tekenPil();
   });
   document.addEventListener('change', function (e) {
     if (leesSchuif(e.target) !== null) tekenSchuif(e.target.id);
