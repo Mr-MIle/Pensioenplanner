@@ -5,7 +5,8 @@
   (zie overrendement()). Het verschilt dus per deelnemer. Er is geen beschermingsrendement.
   Premie = (min(salaris, maximum) x loonindex - franchise x prijsindex) x parttimepercentage x premiepercentage / 12,
   bijgeschreven aan het eind van de maand. Die premie levert pas vanaf de volgende maand rendement op.
-  Uitkering: ouderdomspensioen per jaar = kapitaal / inkoopfactor OP. TOPAOW (AOW-overbrugging) loopt tot de AOW-leeftijd.
+  Uitkering: ouderdomspensioen per jaar = kapitaal / SCR / inkoopfactor OP. De SCR (dekkingsgraad van het uitkeringscollectief)
+  loopt mee met hetzelfde rendement en wordt elke 1 januari over de spreidingsperiode verdeeld (zie config.scr). TOPAOW (AOW-overbrugging) loopt tot de AOW-leeftijd.
   TOPHL loopt van de pensioendatum tot een gekozen eerste van de maand, uiterlijk 10 jaar na de AOW-leeftijd.
   Na het einde van TOPHL daalt het levenslange OP kapitaalneutraal. Hoe langer TOPHL loopt, hoe duurder het is.
 */
@@ -76,6 +77,11 @@
     let deelJaar = 0;
     const rows = [];
     const totalen = { inleg: 0, over: 0 };
+    // SCR: zelfde rendement als het kapitaal (dus ook pessimistisch/optimistisch), met de toedeelfactor van het collectief.
+    const sc = cfg.scr;
+    let scr = sc ? sc.startwaarde : 1;
+    const toedScr = sc ? toedeelfactor(sc.leeftijdToedeling * 12, cfg.toedeelschaal) : 0;
+    const spreiding = sc ? Math.min(10, Math.max(1, Number(sc.spreidingsperiode) || 1)) : 1;   // 1 tot 10 jaar
 
     for (let i = calc; i < pensIdx; i++) {
       const ageM = i - birth;
@@ -84,11 +90,20 @@
       const idxP = Math.pow(1 + pi, jaar);
       const begin = S;
 
-      // Deeltijdpensioen: een deel van het kapitaal gaat in een keer naar uitkering.
+      // 1 januari (niet op de rekendatum zelf): het verschil met 1 wordt over de spreidingsperiode verdeeld. Een
+      // deeltijdpensioen dat al loopt, krijgt dezelfde aanpassing (X%-projectie 21.7).
+      let aanpassing = 0;
+      if (sc && i % 12 === 0 && i !== calc) {
+        aanpassing = (scr - 1) / spreiding;
+        scr /= 1 + aanpassing;
+        deelJaar *= 1 + aanpassing;
+      }
+
+      // Deeltijdpensioen: een deel van het kapitaal gaat in een keer naar uitkering, gedeeld door de SCR van dat moment.
       let onttrokken = 0;
       if (deel && i === deel.idx) {
         onttrokken = S * deel.pct;
-        deelJaar = onttrokken / inkoopfactorVoor(ageM / 12, cfg.inkoopfactorenOP);
+        deelJaar = onttrokken / inkoopfactorVoor(ageM / 12, cfg.inkoopfactorenOP) / scr;
         S -= onttrokken;
       }
 
@@ -96,6 +111,7 @@
       const toed = toedeelfactor(ageM, cfg.toedeelschaal);
       const over = S * rm * toed;
       S += over;
+      if (sc) scr *= 1 + rm * toedScr;
 
       // Premie over het pensioengevend salaris, pro rata met het parttimepercentage.
       // Tijdens deeltijdpensioen daalt de premiebasis evenredig: parttimepercentage x (1 - deelpercentage).
@@ -125,14 +141,17 @@
         werk: werk,
         schema: schema,
         wijziging: schema !== vorigSchema,
-        toed: toed
+        toed: toed,
+        scr: scr,                 // SCR aan het einde van de maand
+        aanpassing: aanpassing    // aanpassing op 1 januari (0 in andere maanden)
       });
     }
 
     return {
       rows: rows,
       kapitaal: S,
-      deelJaar: deelJaar,
+      scr: scr,                   // SCR op de pensioendatum
+      deelJaar: deelJaar,         // deeltijdpensioen per jaar, met de januari-aanpassingen tot de pensioendatum
       inflIdx: Math.pow(1 + pi, (pensIdx - calc) / 12),
       totalen: totalen
     };
@@ -160,8 +179,10 @@
     const pct = opt.partnerPct !== undefined ? opt.partnerPct : pp.standaardPct;
     const v = Math.min(pp.maxPct, Math.max(pp.minPct, pct)) / 100;
 
-    // Stap 1: OP vóór uitruil, en het NP daarover.
-    const opVoor = sim.kapitaal / (aOP + v * pp.inkoopfactorNP);
+    // Stap 1: OP vóór uitruil, en het NP daarover. Gedeeld door de SCR op de pensioendatum (X%-projectie 21.1.5):
+    // alle dekkingen in de uitkeringsfase (OP, NP, TOPAOW, TOPHL) schalen zo mee.
+    const scr = sim.scr || 1;
+    const opVoor = sim.kapitaal / scr / (aOP + v * pp.inkoopfactorNP);
     const partner = v * opVoor;
     const kOP = opVoor * aOP;
 
@@ -215,7 +236,8 @@
       maxT2: maxT2,
       tophlMogelijk: tophlMogelijk,
       voorAow: voorAow,
-      nPre: nPre
+      nPre: nPre,
+      scr: scr
     };
     u.preReeel = u.pre / sim.inflIdx;
     u.postReeel = u.post / sim.inflIdx;

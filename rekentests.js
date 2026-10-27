@@ -175,13 +175,14 @@ check('16g dubbele inkoopfactorPerJaar geeft dubbele R', near(dubbel.R, 2 * enke
 const langst = E.uitkeringen(C, simH, { partnerPct: pp.standaardPct, topaow: 1e9, tophlPct: th.maxPctOP, tophlEindMaanden: aowM + th.jarenNaAOW * 12 }, pensJ);
 check('16h langste looptijd en maximale TOPHL: OP na einde blijft > 0 en zonder NaN', langst.post > 0 && [langst.pre, langst.post, langst.R].every(isFinite), langst.post.toFixed(2));
 
-// 4. Partnerpensioen: OP x inkoopfactor OP + NP x inkoopfactorNP = kapitaal; NP = percentage x OP
+// 4. Partnerpensioen: OP x inkoopfactor OP + NP x inkoopfactorNP = kapitaal / SCR; NP = percentage x OP
 const aOP67 = E.inkoopfactorVoor(aowM / 12, C.inkoopfactorenOP);
 const inkoop = pp.inkoopfactorNP;
 [pp.minPct, pp.maxPct / 2, pp.maxPct].forEach(pct => {
   const u = E.uitkeringen(C, simA, { partnerPct: pct }, aowM / 12);
   const kap = u.standaard * aOP67 + u.partner * inkoop;
-  check('4a identiteit kapitaal (' + pct + '%)', near(kap, simA.kapitaal, 1e-6 * simA.kapitaal), (kap - simA.kapitaal).toFixed(6));
+  const kapScr = simA.kapitaal / simA.scr;
+  check('4a identiteit kapitaal / SCR (' + pct + '%)', near(kap, kapScr, 1e-6 * kapScr), (kap - kapScr).toFixed(6));
   check('4b NP = ' + pct + '% van OP', near(u.partner, pct / 100 * u.standaard, 1e-6 * u.standaard + 1e-9));
 });
 const uMin = E.uitkeringen(C, simA, { partnerPct: pp.minPct }, aowM / 12);
@@ -281,6 +282,56 @@ check('17e looptijd onder de tabel gebruikt de kortste looptijd', oOud.looptijd 
 const C99 = Object.assign({}, C, { rts: { spotrates: { 1: 0.01, 3: 0.03 } } });
 const o99 = E.overrendement(Object.assign({}, C99, { deelnemer: Object.assign({}, C.deelnemer, { geboortedatum: (calcJaar + 2 - 67) + '-01-01' }) }));
 check('17f looptijd 2 tussen 1 en 3 wordt lineair geïnterpoleerd', o99.looptijd === 2 && near(o99.spot, 0.02), o99.spot);
+
+// 18. SCR (X%-projectie 21.1.5 en 21.7)
+const sc = C.scr;
+const toed80 = E.toedeelfactor(sc.leeftijdToedeling * 12, C.toedeelschaal);
+// 18a: zelf nagerekend pad (maandgroei x toedeelfactor 80 jaar, spreiding op 1 januari) = SCR uit de rekenkern
+let scrZelf = sc.startwaarde;
+const rmA = Math.pow(1 + rente, 1 / 12) - 1;
+for (let i = calc; i < birth + aowM; i++) {
+  if (i % 12 === 0 && i !== calc) scrZelf /= 1 + (scrZelf - 1) / sc.spreidingsperiode;
+  scrZelf *= 1 + rmA * toed80;
+}
+check('18a SCR-pad nagerekend', near(simA.scr, scrZelf, 1e-12), simA.scr.toFixed(6) + ' vs ' + scrZelf.toFixed(6));
+// 18b: voorbeeld uit 21.7 (spreidingsperiode 3): 0,994 -> -0,2%, 1,02 -> +0,667%, 0,99 -> -0,333%
+const aanp = (x, n) => (x - 1) / n;
+check('18b aanpassing volgens 21.7', near(aanp(0.994, 3), -0.002) && near(aanp(1.02, 3), 0.02 / 3) && near(aanp(0.99, 3), -0.01 / 3));
+// 18c: de aanpassingen in de maandtabel staan alleen in januari en volgen (SCR - 1) / N
+const janOk = simA.rows.every((r, k) => {
+  const i = calc + k;
+  if (i % 12 !== 0 || i === calc) return r.aanpassing === 0;
+  const voor = k === 0 ? sc.startwaarde : simA.rows[k - 1].scr;
+  return near(r.aanpassing, (voor - 1) / sc.spreidingsperiode, 1e-12);
+});
+check('18c januari-aanpassing = (SCR - 1) / spreidingsperiode, alleen in januari', janOk);
+// 18d: rendement 0 geeft geen groei; de SCR schuift stapsgewijs naar 1
+const C0 = Object.assign({}, C, { scr: Object.assign({}, sc, { startwaarde: 1.06 }) });
+const sim0 = E.simuleer(C0, { pensioenLeeftijdMaanden: aowM, rente: 0, deeltijd: null, parttimepercentages: std, startkapitaal: 80000 });
+check('18d zonder rendement daalt een SCR van 1,06 naar 1', sim0.scr < 1.06 && sim0.scr >= 1 && near(sim0.scr, 1, 0.001), sim0.scr.toFixed(6));
+// 18e: spreidingsperiode 1 zet de SCR elke januari terug op 1
+const C1 = Object.assign({}, C, { scr: Object.assign({}, sc, { spreidingsperiode: 1 }) });
+const sim1 = E.simuleer(C1, { pensioenLeeftijdMaanden: aowM, rente, deeltijd: null, parttimepercentages: std, startkapitaal: 80000 });
+const terug1 = sim1.rows.every((r, k) => { const i = calc + k; return i % 12 !== 0 || i === calc || near(r.scr, 1 + rmA * toed80, 1e-12); });
+check('18e spreidingsperiode 1: SCR na januari = 1 x groei van die maand', terug1);
+// 18f: drie scenario's in de goede volgorde, uitkering = zonder SCR gedeeld door de SCR
+const margeA = E.scenarioMarge(C, aowM);
+const sLo = E.simuleer(C, { pensioenLeeftijdMaanden: aowM, rente: rente - margeA, deeltijd: null, parttimepercentages: std, startkapitaal: 80000 });
+const sHi = E.simuleer(C, { pensioenLeeftijdMaanden: aowM, rente: rente + margeA, deeltijd: null, parttimepercentages: std, startkapitaal: 80000 });
+check('18f SCR pessimistisch < basis < optimistisch', sLo.scr < simA.scr && simA.scr < sHi.scr, [sLo.scr, simA.scr, sHi.scr].map(x => x.toFixed(4)).join(' / '));
+const zonder = E.uitkeringen(Object.assign({}, C, { scr: undefined }), Object.assign({}, simA, { scr: 1 }), { partnerPct: 0 }, aowM / 12);
+check('18g uitkering met SCR = uitkering zonder SCR / SCR', near(uA.standaard, zonder.standaard / simA.scr, 1e-9 * zonder.standaard), uA.standaard.toFixed(2) + ' vs ' + (zonder.standaard / simA.scr).toFixed(2));
+// 18h: zonder scr-blok in de config rekent de planner met SCR 1
+const geenScr = E.simuleer(Object.assign({}, C, { scr: undefined }), { pensioenLeeftijdMaanden: aowM, rente, deeltijd: null, parttimepercentages: std, startkapitaal: 80000 });
+check('18h zonder scr-blok is de SCR 1', geenScr.scr === 1 && near(geenScr.kapitaal, simA.kapitaal));
+// 18i: deeltijdpensioen (21.7): gedeeld door de SCR op de deeldatum, daarna elke januari aangepast
+const kDeel = simD.rows.find((r, k) => calc + k === deelIdx);
+const kIdx = deelIdx - calc;
+const scrDeel = kIdx === 0 ? sc.startwaarde : (calc + kIdx) % 12 === 0
+  ? simD.rows[kIdx - 1].scr / (1 + simD.rows[kIdx].aanpassing) : simD.rows[kIdx - 1].scr;
+let deelZelf = kDeel.onttrokken / E.inkoopfactorVoor((deelIdx - birth) / 12, C.inkoopfactorenOP) / scrDeel;
+simD.rows.forEach((r, k) => { if (calc + k > deelIdx && r.aanpassing !== 0) deelZelf *= 1 + r.aanpassing; });
+check('18i deeltijdpensioen / SCR op deeldatum, daarna januari-aanpassingen', near(simD.deelJaar, deelZelf, 1e-9 * deelZelf), simD.deelJaar.toFixed(2) + ' vs ' + deelZelf.toFixed(2));
 
 results.forEach(r => console.log(r));
 console.log('\nFAILS: ' + results.filter(r => r.startsWith('FAIL')).length + ' / ' + results.length);

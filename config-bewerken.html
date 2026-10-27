@@ -135,6 +135,9 @@ fieldset.breed { grid-column: 1 / -1; }
     inflatiePrijs: 'Prijsinflatie (fractie per jaar)',
     yFactor: 'Y-factor bandbreedte',
     toedeelschaal: 'Toedeelschaal',
+    scr: 'SCR (dekkingsgraad uitkeringscollectief)',
+    startwaarde: 'SCR op de rekendatum', spreidingsperiode: 'Spreidingsperiode (jaar, 1 tot 10)',
+    leeftijdToedeling: 'Leeftijd voor de toedeelfactor (jaar)',
     leeftijdStart: 'Leeftijd start afbouw (jaar)', leeftijdEind: 'Leeftijd einde afbouw (jaar)',
     factorVoor: 'Factor voor afbouw', factorNa: 'Factor na afbouw',
     inkoopfactorenOP: 'Inkoopfactoren OP (leeftijd → inkoopfactor)',
@@ -175,7 +178,7 @@ fieldset.breed { grid-column: 1 / -1; }
   };
 
   var SECTIE_VOLGORDE = ['deelnemers', 'standaardDeelnemer', 'pensioenreglement', 'parttimepercentages', 'rendement',
-                         'rts', 'toedeelschaal', 'topaow', 'tophl', 'partnerpensioen', 'inkoopfactorenOP', 'aowBrutoMaand', 'belasting', 'stabiliteit'];
+                         'rts', 'toedeelschaal', 'scr', 'topaow', 'tophl', 'partnerpensioen', 'inkoopfactorenOP', 'aowBrutoMaand', 'belasting', 'stabiliteit'];
   var OVERSLAAN = ['deelnemer', 'calculatiedatum'];   // calculatiedatum volgt uit de kalenderdatum (config.js)
 
   // ---------- hulpfuncties ----------

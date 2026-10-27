@@ -139,6 +139,8 @@ I18N.voeg('nl', {
   'fondsB.pmActuarieel': 'Actuariële waarden',
   'fondsB.pmInkoopOP': 'Inkoopfactor OP ({leeftijd})',
   'fondsB.pmInkoopNP': 'Inkoopfactor partnerpensioen',
+  'fondsB.pmScrStart': 'SCR op de rekendatum',
+  'fondsB.pmScr': 'SCR op de pensioendatum ({n} jaar spreiding)',
   'fondsB.pmOpVoor': 'OP vóór uitruil',
   'fondsB.pmInkoopTopaow': 'Inkoopfactor TOPAOW',
   'fondsB.pmLooptijdHL': 'Looptijd TOPHL',
@@ -501,6 +503,7 @@ I18N.voeg('nl', {
   'demo.over.nomreeel': '<strong>Nominaal en reëel.</strong> Nominale bedragen zijn in de euro\'s van dat moment. Reële bedragen zijn omgerekend naar euro\'s van vandaag, met 2% prijsinflatie per jaar.',
   'demo.over.partner': '<strong>Partnerpensioen.</strong> Het partnerpensioen is een percentage van uw ouderdomspensioen, van 0% tot 70%.',
   'demo.over.netto': '<strong>Netto.</strong> Het nettobedrag is een indicatie op basis van een fictieve belastingtabel, geen officiële berekening.',
+  'demo.over.scr': '<strong>SCR.</strong> Op de pensioendatum stapt u in het collectief van gepensioneerden. De dekkingsgraad daarvan heet de SCR (spreading capital ratio). Uw startpensioen wordt door de SCR gedeeld: boven 1 begint u iets lager en stijgt uw pensioen daarna, onder 1 begint u iets hoger en daalt het daarna. De SCR beweegt mee met hetzelfde rendement als uw kapitaal en wordt elk jaar op 1 januari over een aantal jaren verdeeld. Daardoor liggen het pessimistische en het optimistische startpensioen dichter bij elkaar; het verschil komt terug in de aanpassingen ná de pensioendatum. Die aanpassingen ziet u niet in de bedragen.',
   'demo.wkp.gelezen': 'Ik heb dit gelezen',
 
   'demo.nav': 'Meer over deze planner',
@@ -598,6 +601,7 @@ I18N.voeg('nl', {
   'demo.tl.aria': 'Inkomen per kalenderjaar: werkinkomen, pensioen en AOW',
 
   'demo.kap.rente': 'Overrendement per jaar na RTS: {nominaal}% nominaal min {spot}% spotrate (looptijd {looptijd} jaar, tot het AOW-jaar {aowJaar}). Basis {basis}%, pessimistisch {pess}%, optimistisch {opt}%.',
+  'demo.kap.scr': 'SCR op de pensioendatum (spreiding over {n} jaar): basis {basis}, pessimistisch {pess}, optimistisch {opt}. Het pensioen bij de start wordt door de SCR gedeeld.',
   'demo.kap.nominaalBedrag': 'Nominaal: {bedrag}',
   'demo.kap.reeelBedrag': 'Reëel: {bedrag}',
   'demo.kap.overBedrag': 'Overrendement: {bedrag}',

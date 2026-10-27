@@ -86,6 +86,17 @@ window.PLANNER_CONFIG = {
     }
   },
 
+  // SCR (Spreading Capital Ratio, X%-projectie 21.1.5): de dekkingsgraad van het collectief in de uitkeringsfase.
+  // De uitkering op de pensioendatum wordt door de SCR van dat moment gedeeld. Per maand groeit de SCR met het
+  // overrendement na RTS maal de toedeelfactor op leeftijdToedeling (jaar). Elke 1 januari wordt het verschil met 1
+  // over spreidingsperiode jaar verdeeld: aanpassing = (SCR - 1) / spreidingsperiode, SCR = SCR / (1 + aanpassing).
+  // Geen boven- of ondergrens (zoals de specificatie). Zonder dit blok rekent de planner met SCR 1.
+  scr: {
+    startwaarde: 1.00,        // SCR van het fonds op de rekendatum (fictief)
+    spreidingsperiode: 3,     // jaren, tussen 1 en 10
+    leeftijdToedeling: 80     // de toedeelfactor van deze leeftijd geldt voor het hele collectief
+  },
+
   // Toedeelschaal uit de rekensystematiek: tot leeftijdStart de factorVoor, daarna lineair naar factorNa op leeftijdEind.
   toedeelschaal: {
     leeftijdStart: 50,

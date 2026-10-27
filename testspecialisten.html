@@ -70,7 +70,7 @@ button:disabled { opacity: 0.6; cursor: wait; }
     <a class="terugknop" href="config-bewerken.html">Configuratie bewerken &rarr;</a>
   </p>
   <h1>Testspecialisten: Pensioenplanner</h1>
-  <p class="intro">Deze pagina draait 38 tests tegen de huidige <code>engine.js</code>. Alle bedragen, grenzen en percentages worden uit <code>config.js</code> gelezen. In de tests staan alleen de testinvoer (zoals 40% deeltijd of 60% werkfractie) en de verwachte regel uit het reglement.</p>
+  <p class="intro">Deze pagina draait 41 tests tegen de huidige <code>engine.js</code>. Alle bedragen, grenzen en percentages worden uit <code>config.js</code> gelezen. In de tests staan alleen de testinvoer (zoals 40% deeltijd of 60% werkfractie) en de verwachte regel uit het reglement.</p>
 
   <div id="waarschuwing" class="waarschuwing"></div>
 
@@ -188,15 +188,15 @@ button:disabled { opacity: 0.6; cursor: wait; }
           return { verwacht: eur(exp) + ' (max ' + fmt(pp.maxPct) + '%)', gemeten: eur(u.partner), ok: near(u.partner, exp) };
         } },
       { id: 'PP-03', groep: 'Partnerpensioen', titel: 'Kapitaal klopt bij elk percentage',
-        uitleg: 'OP x inkoopfactor OP + NP x inkoopfactorNP = kapitaal, bij min, standaard en max.',
+        uitleg: 'OP x inkoopfactor OP + NP x inkoopfactorNP = kapitaal / SCR op de pensioendatum, bij min, standaard en max.',
         run: function () {
-          var worst = 0;
+          var worst = 0, K = c.simAOW.kapitaal / c.simAOW.scr;
           [pp.minPct, pp.standaardPct, pp.maxPct].forEach(function (p) {
             var u = uitAOW({ partnerPct: p });
             var rec = u.standaard * aOP_AOW() + u.partner * pp.inkoopfactorNP;
-            worst = Math.max(worst, Math.abs(rec - c.simAOW.kapitaal));
+            worst = Math.max(worst, Math.abs(rec - K));
           });
-          return { verwacht: 'afwijking onder € 0,01 op kapitaal ' + eur(c.simAOW.kapitaal), gemeten: 'afwijking ' + fmt(worst), ok: worst <= 0.01 + 1e-6 * c.simAOW.kapitaal };
+          return { verwacht: 'afwijking onder € 0,01 op kapitaal / SCR ' + eur(K), gemeten: 'afwijking ' + fmt(worst), ok: worst <= 0.01 + 1e-6 * K };
           function aOP_AOW() { return E.inkoopfactorVoor(c.aowJ, cfg.inkoopfactorenOP); }
         } },
       { id: 'PP-04', groep: 'Partnerpensioen', titel: 'Meer partnerpensioen geeft minder ouderdomspensioen',
@@ -477,10 +477,10 @@ button:disabled { opacity: 0.6; cursor: wait; }
 
       // Combinaties en grenzen (3)
       { id: 'COM-01', groep: 'Combinaties en grenzen', titel: 'Combinatie TOPAOW-max, TOPHL-max en partnerpensioen klopt',
-        uitleg: 'Alle drie de keuzes tegelijk: kapitaal blijft gelijk, en elk onderdeel staat op de grens uit de regel.',
+        uitleg: 'Alle drie de keuzes tegelijk: kapitaal / SCR blijft gelijk, en elk onderdeel staat op de grens uit de regel.',
         run: function () {
           var u = uit({ partnerPct: std, topaow: 1e9, tophlPct: th.maxPctOP });
-          var K = c.simPre.kapitaal;
+          var K = c.simPre.kapitaal / c.simPre.scr;
           var kOP = u.standaard * aOP;
           var ident = kOP + u.partner * pp.inkoopfactorNP;
           var ok = near(ident, K, 1e-6 * K) && near(u.t1, maxT1(u)) && near(u.t2, hlMax(kOP, u.opNa, u.t1, hlF(u)));
@@ -559,6 +559,35 @@ button:disabled { opacity: 0.6; cursor: wait; }
           ok = ok && near(cap, grens, 1e-6 * Math.max(1, grens));
           return { verwacht: 'TOPHL stijgt tot ' + eur(grens) + ' en blijft dan vlak',
                    gemeten: 'TOPHL bij hoogste keuze ' + eur(cap), ok: ok };
+        } },
+      { id: 'SCR-01', groep: 'SCR (dekkingsgraad uitkeringscollectief)', titel: 'Startpensioen = pensioen zonder SCR gedeeld door de SCR',
+        uitleg: 'Het ouderdomspensioen op de pensioendatum is kapitaal / inkoopfactor, gedeeld door de SCR van dat moment (X%-projectie 21.1.5).',
+        run: function () {
+          var met = uitAOW({ partnerPct: 0 });
+          var zonder = E.uitkeringen(cfg, fake(c.simAOW.kapitaal), { partnerPct: 0 }, c.aowJ);
+          var exp = zonder.standaard / c.simAOW.scr;
+          return { verwacht: eur(exp) + ' (SCR ' + fmt(c.simAOW.scr) + ')', gemeten: eur(met.standaard), ok: near(met.standaard, exp) };
+        } },
+      { id: 'SCR-02', groep: 'SCR (dekkingsgraad uitkeringscollectief)', titel: 'Spreiding op 1 januari',
+        uitleg: 'Alleen in januari (niet op de rekendatum): aanpassing = (SCR - 1) / spreidingsperiode, daarna SCR = SCR / (1 + aanpassing).',
+        run: function () {
+          if (!cfg.scr) return { verwacht: 'scr-blok in de configuratie', gemeten: 'geen scr-blok: SCR is 1', ok: c.simAOW.scr === 1 };
+          var rows = c.simAOW.rows, ok = true, n = 0;
+          rows.forEach(function (r, k) {
+            var i = c.calc + k;
+            var voor = k === 0 ? cfg.scr.startwaarde : rows[k - 1].scr;
+            if (i % 12 === 0 && i !== c.calc) { n++; if (!near(r.aanpassing, (voor - 1) / cfg.scr.spreidingsperiode, 1e-12)) ok = false; }
+            else if (r.aanpassing !== 0) ok = false;
+          });
+          return { verwacht: n + ' aanpassingen in januari volgens de regel, elders 0', gemeten: ok ? 'klopt' : 'wijkt af', ok: ok };
+        } },
+      { id: 'SCR-03', groep: 'SCR (dekkingsgraad uitkeringscollectief)', titel: 'Scenario-SCR in de goede volgorde',
+        uitleg: 'De SCR loopt met hetzelfde rendement als het kapitaal: pessimistisch < basis < optimistisch (bij een positieve marge).',
+        run: function () {
+          var marge = E.scenarioMarge(cfg, Math.round(c.aowJ * 12));
+          var lo = c.sim(c.aowJ, { rente: c.rente - marge }).scr, hi = c.sim(c.aowJ, { rente: c.rente + marge }).scr;
+          return { verwacht: 'pessimistisch < basis < optimistisch', gemeten: [lo, c.simAOW.scr, hi].map(function (x) { return fmt(x); }).join(' / '),
+                   ok: marge <= 0 || (lo < c.simAOW.scr && c.simAOW.scr < hi) };
         } }
     ];
   }

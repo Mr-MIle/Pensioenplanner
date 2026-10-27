@@ -135,6 +135,8 @@ I18N.voeg('da', {
   'fondsB.pmActuarieel': 'Aktuarmæssige værdier',
   'fondsB.pmInkoopOP': 'Købsfaktor OP ({leeftijd})',
   'fondsB.pmInkoopNP': 'Købsfaktor partnerpension',
+  'fondsB.pmScrStart': 'SCR på beregningsdatoen',
+  'fondsB.pmScr': 'SCR på pensionsdatoen ({n} års fordeling)',
   'fondsB.pmOpVoor': 'OP før ombytning',
   'fondsB.pmInkoopTopaow': 'Købsfaktor TOPAOW',
   'fondsB.pmLooptijdHL': 'Løbetid TOPHL',
@@ -495,6 +497,7 @@ I18N.voeg('da', {
   'demo.over.nomreeel': '<strong>Nominel og real.</strong> Nominelle beløb er i euro på det pågældende tidspunkt. Reale beløb er omregnet til dagens euro, med 2% prisinflation om året.',
   'demo.over.partner': '<strong>Partnerpension.</strong> Partnerpensionen er en procentdel af din alderspension, fra 0% til 70%.',
   'demo.over.netto': '<strong>Netto.</strong> Nettobeløbet er en indikation baseret på en fiktiv skattetabel, ikke en officiel beregning.',
+  'demo.over.scr': '<strong>SCR.</strong> På pensionsdatoen træder du ind i kollektivet af pensionister. Dets dækningsgrad kaldes SCR (spreading capital ratio). Din startpension deles med SCR: over 1 starter du lidt lavere, og din pension stiger derefter; under 1 starter du lidt højere, og den falder derefter. SCR følger samme afkast som din kapital og fordeles hvert år den 1. januar over et antal år. Derfor ligger den pessimistiske og den optimistiske startpension tættere på hinanden; forskellen kommer igen i reguleringerne efter pensionsdatoen. De reguleringer ses ikke i beløbene.',
   'demo.wkp.gelezen': 'Jeg har læst dette',
 
   'demo.nav': 'Mere om denne planlægger',
@@ -592,6 +595,7 @@ I18N.voeg('da', {
   'demo.tl.aria': 'Indkomst pr. kalenderår: arbejdsindkomst, pension og AOW',
 
   'demo.kap.rente': 'Merafkast pr. år efter rentekurve: {nominaal}% nominelt minus {spot}% spotrente (løbetid {looptijd} år, indtil AOW-året {aowJaar}). Basis {basis}%, pessimistisk {pess}%, optimistisk {opt}%.',
+  'demo.kap.scr': 'SCR på pensionsdatoen (fordelt over {n} år): basis {basis}, pessimistisk {pess}, optimistisk {opt}. Startpensionen deles med SCR.',
   'demo.kap.nominaalBedrag': 'Nominel: {bedrag}',
   'demo.kap.reeelBedrag': 'Real: {bedrag}',
   'demo.kap.overBedrag': 'Merafkast: {bedrag}',

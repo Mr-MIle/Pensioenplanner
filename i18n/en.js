@@ -135,6 +135,8 @@ I18N.voeg('en', {
   'fondsB.pmActuarieel': 'Actuarial values',
   'fondsB.pmInkoopOP': 'Purchase factor OP ({leeftijd})',
   'fondsB.pmInkoopNP': 'Purchase factor partner’s pension',
+  'fondsB.pmScrStart': 'SCR on the calculation date',
+  'fondsB.pmScr': 'SCR at the pension date ({n}-year spreading)',
   'fondsB.pmOpVoor': 'OP before exchange',
   'fondsB.pmInkoopTopaow': 'Purchase factor TOPAOW',
   'fondsB.pmLooptijdHL': 'Duration of TOPHL',
@@ -495,6 +497,7 @@ I18N.voeg('en', {
   'demo.over.nomreeel': '<strong>Nominal and real.</strong> Nominal amounts are in euros of that moment. Real amounts are converted to today’s euros, with 2% price inflation per year.',
   'demo.over.partner': '<strong>Partner’s pension.</strong> The partner’s pension is a percentage of your retirement pension, from 0% to 70%.',
   'demo.over.netto': '<strong>Net.</strong> The net amount is an indication based on a fictitious tax table, not an official calculation.',
+  'demo.over.scr': '<strong>SCR.</strong> On your pension date you join the collective of pensioners. Its funding ratio is called the SCR (spreading capital ratio). Your starting pension is divided by the SCR: above 1 you start a little lower and your pension rises afterwards, below 1 you start a little higher and it falls afterwards. The SCR moves with the same return as your capital and is spread over a number of years every 1 January. As a result, the pessimistic and optimistic starting pensions are closer together; the difference returns in the adjustments after the pension date. Those adjustments are not shown in the amounts.',
   'demo.wkp.gelezen': 'I have read this',
 
   'demo.nav': 'More about this planner',
@@ -592,6 +595,7 @@ I18N.voeg('en', {
   'demo.tl.aria': 'Income per calendar year: earned income, pension and AOW',
 
   'demo.kap.rente': 'Excess return per year after term structure: {nominaal}% nominal minus {spot}% spot rate (maturity {looptijd} years, until the AOW year {aowJaar}). Base {basis}%, pessimistic {pess}%, optimistic {opt}%.',
+  'demo.kap.scr': 'SCR at the pension date (spread over {n} years): base {basis}, pessimistic {pess}, optimistic {opt}. The starting pension is divided by the SCR.',
   'demo.kap.nominaalBedrag': 'Nominal: {bedrag}',
   'demo.kap.reeelBedrag': 'Real: {bedrag}',
   'demo.kap.overBedrag': 'Excess return: {bedrag}',

@@ -331,6 +331,8 @@
       subkop(t('fondsB.pmActuarieel')) +
       rij(t('fondsB.pmInkoopOP', { leeftijd: t('kern.jaar', { n: res.jaar }) }), I.getal(res.aOP, 1, 2)) +
       rij(t('fondsB.pmInkoopNP'), I.getal(C.partnerpensioen.inkoopfactorNP, 1, 2)) +
+      rij(t('fondsB.pmScrStart'), C.scr ? I.getal(C.scr.startwaarde, 3, 3) : '–') +
+      rij(t('fondsB.pmScr', { n: C.scr ? C.scr.spreidingsperiode : '–' }), I.getal(u.scr, 4, 4)) +
       rij(t('fondsB.pmOpVoor'), pj(u.standaard)) +
       rij(t('fondsB.pmInkoopTopaow'), I.getal(C.topaow.inkoopfactor, 1, 2)) +
       rij(t('fondsB.pmLooptijdHL'), u.t2 > 0 ? t('fondsB.jrKort', { n: I.getal(u.looptijdHL, 1, 2) }) : '–') +

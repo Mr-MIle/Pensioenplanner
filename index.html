@@ -646,6 +646,7 @@
       <p data-i18n="demo.over.maandbedrag"></p>
       <p data-i18n="demo.over.nomreeel"></p>
       <p data-i18n="demo.over.partner"></p>
+      <p data-i18n="demo.over.scr"></p>
       <p data-i18n="demo.over.netto"></p>
     </details>
     <p class="wkp-voet"><button class="wkp-open" type="button" data-wkp-open data-i18n="demo.popupsOpnieuw"></button></p>
@@ -1173,8 +1174,10 @@
     // Kapitaal van het gekozen scenario (basis, pessimistisch of optimistisch).
     var selSim = scenario === 'pess' ? simLo : (scenario === 'opt' ? simHi : sim);
     var pct2 = function (v) { return I.getal(v * 100, 2, 2); };
+    var scr3 = function (v) { return I.getal(v, 3, 3); };
     $('scenarioRente').textContent = t('demo.kap.rente', { nominaal: pct2(orr.nominaal), spot: pct2(orr.spot), looptijd: orr.looptijd, aowJaar: orr.aowJaar,
-      basis: pct2(rente), pess: pct2(rente - marge), opt: pct2(rente + marge) });
+      basis: pct2(rente), pess: pct2(rente - marge), opt: pct2(rente + marge) }) +
+      (C.scr ? ' ' + t('demo.kap.scr', { n: C.scr.spreidingsperiode, basis: scr3(sim.scr), pess: scr3(simLo.scr), opt: scr3(simHi.scr) }) : '');
 
     var pensLabel = E.maandLabel(birthIdx + gekozenMaanden);
     var deelJaar = u.deelJaar;
@@ -1276,9 +1279,9 @@
     $('grafiek').innerHTML = tekenVermogen(selSim.rows, sk, {
       toonKapitaal: toonK,
       toonPensioen: toonP,
-      pensioen: selSim.rows.map(function (r) { return perMaand(r.eind); }),
-      pensLo: simLo.rows.map(function (r) { return perMaand(r.eind); }),
-      pensHi: simHi.rows.map(function (r) { return perMaand(r.eind); }),
+      pensioen: selSim.rows.map(function (r) { return perMaand(r.eind / r.scr); }),
+      pensLo: simLo.rows.map(function (r) { return perMaand(r.eind / r.scr); }),
+      pensHi: simHi.rows.map(function (r) { return perMaand(r.eind / r.scr); }),
       reeel: kapRe,
       lijnen: andereScenarios
     });
