@@ -169,6 +169,7 @@
   table.maand tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--accent-soft) 35%, transparent); }
   .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
   table.maand tbody tr.wijz td { background: var(--accent-soft); font-weight: 600; }
+  table.maand .scr-jan { color: var(--muted); font-size: 12px; margin-left: 6px; font-weight: 400; }
   .voet { font-size: 13px; color: var(--muted); }
   .voet p { margin: 0 0 6px; }
 
@@ -629,6 +630,7 @@
             <th data-i18n="demo.mt.kol6"></th>
             <th data-i18n="demo.mt.kol7"></th>
             <th data-i18n="demo.mt.kol8"></th>
+            <th data-i18n="demo.mt.kolScr" data-i18n-attr="title:demo.mt.kolScrUitleg"></th>
           </tr>
         </thead>
         <tbody id="tabel"></tbody>
@@ -1307,6 +1309,8 @@
         '<td>' + (r.onttrokken ? eur0.format(r.onttrokken * k) : '–') + '</td>' +
         '<td>' + eur0.format(r.eind * k) + '</td>' +
         '<td>' + eur0.format(r.reeel) + '</td>' +
+        // SCR aan het einde van de maand; in januari ook de spreiding van die dag (X%-projectie 21.1.5).
+        '<td>' + (C.scr ? I.getal(r.scr, 4, 4) + (r.aanpassing ? '<span class="scr-jan">' + t('demo.mt.scrJan', { pct: (r.aanpassing > 0 ? '+' : '') + I.getal(r.aanpassing * 100, 2, 2) }) + '</span>' : '') : '–') + '</td>' +
         '</tr>';
     }).join('');
     laatsteBerekening = { sim: sim, u: u, pensIdx: pensIdx, startIdx: birthIdx + gekozenMaanden, birth: birthIdx, deelIdx: deel ? deel.idx : null, deelJaar: u.deelJaar };
