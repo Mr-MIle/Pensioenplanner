@@ -1960,6 +1960,9 @@
     $("wkpVink").focus();
   }
 
+  // De pop-up staat in de HTML ná de eerste vertaalronde van de pagina; vaste teksten (zoals bij het vinkje) hier vertalen.
+  window.I18N.vertaal($("wkpDialog"));
+
   $("wkpVink").addEventListener("change", function () {
     s.gelezen[huidig] = this.checked;
     bewaar();
