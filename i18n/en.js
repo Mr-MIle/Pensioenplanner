@@ -150,6 +150,7 @@ I18N.voeg('en', {
   'fondsB.pmLooptijdRts': 'Term structure maturity (AOW year {aow} − {calc})',
   'fondsB.pmSpot': 'Spot rate at {n} yrs (reference date {datum})',
   'fondsB.pmOverrendement': 'Excess return after term structure',
+  'fondsB.pmOverrendementMaand': 'Excess return after term structure per month ((1 + annual)^(1/12) − 1)',
   'fondsB.pmNoot': 'Amounts in the table are gross per year; salary, franchise and contribution apply on the calculation date and then grow with inflation. The calculation date follows from today’s date: from the 15th, the first of the current month; before that, the first of the previous month. Spot rates from the term structure (RTS) of De Nederlandsche Bank; other parameters fictitious, from config.js.',
 
   'fondsC.paginatitel': 'Fonds C · Compare options',

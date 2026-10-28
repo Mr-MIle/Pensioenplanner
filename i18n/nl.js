@@ -154,6 +154,7 @@ I18N.voeg('nl', {
   'fondsB.pmLooptijdRts': 'Looptijd RTS (AOW-jaar {aow} − {calc})',
   'fondsB.pmSpot': 'Spotrate RTS bij {n} jr (peildatum {datum})',
   'fondsB.pmOverrendement': 'Overrendement na RTS',
+  'fondsB.pmOverrendementMaand': 'Overrendement na RTS per maand ((1 + jaar)^(1/12) − 1)',
   'fondsB.pmNoot': 'Bedragen in de tabel zijn bruto per jaar; salaris, franchise en premie gelden op de rekendatum en groeien daarna mee met de inflatie. De rekendatum volgt uit de datum van vandaag: vanaf de 15e de eerste van de lopende maand, daarvoor de eerste van de vorige maand. Spotrates uit de RTS van DNB; overige parameters fictief, uit config.js.'
   ,
   // Fonds C: keuzes naast elkaar (varianten/fonds-c.html)

@@ -150,6 +150,7 @@ I18N.voeg('da', {
   'fondsB.pmLooptijdRts': 'Løbetid rentekurve (AOW-år {aow} − {calc})',
   'fondsB.pmSpot': 'Spotrente ved {n} år (opgørelsesdato {datum})',
   'fondsB.pmOverrendement': 'Merafkast efter rentekurve',
+  'fondsB.pmOverrendementMaand': 'Merafkast efter rentekurve pr. måned ((1 + årlig)^(1/12) − 1)',
   'fondsB.pmNoot': 'Beløbene i tabellen er brutto pr. år; løn, bundfradrag og bidrag gælder på beregningsdatoen og vokser derefter med inflationen. Beregningsdatoen følger af dagens dato: fra den 15. den første i indeværende måned, før den 15. den første i forrige måned. Spotrenter fra rentekurven (RTS) fra De Nederlandsche Bank; øvrige parametre er fiktive, fra config.js.',
 
   'fondsC.paginatitel': 'Fonds C · Sammenlign valg',

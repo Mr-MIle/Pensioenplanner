@@ -61,8 +61,13 @@
   td.r, th.r { text-align: right; }
   td .stip { display: inline-block; width: 9px; height: 9px; border-radius: 2px; background: var(--c); margin-right: 8px; }
   tr.totaal td { border-bottom: 0; font-weight: 600; }
-  tr.subkop th { padding: 18px 0 6px; color: var(--tekst); font-size: 13px; font-weight: 600; }
-  tbody tr.subkop:first-child th { padding-top: 0; }
+  .pm-groep { border-bottom: 1px solid var(--lijn); }
+  .pm-groep summary { padding: 10px 0; color: var(--tekst); font-size: 13px; font-weight: 600; cursor: pointer; list-style: none; display: flex; align-items: center; gap: 8px; }
+  .pm-groep summary::-webkit-details-marker { display: none; }
+  .pm-groep summary::before { content: ""; width: 6px; height: 6px; border-right: 1.5px solid var(--zacht); border-bottom: 1.5px solid var(--zacht); transform: rotate(-45deg); transition: transform .15s; }
+  .pm-groep[open] summary::before { transform: rotate(45deg); }
+  .pm-groep table { margin-bottom: 10px; }
+  .pm-groep tr:last-child td { border-bottom: 0; }
   .noot { color: var(--zacht); font-size: 12px; margin: 10px 0 0; }
 </style>
 </head>
@@ -171,7 +176,12 @@
   var K = window.VariantKern, C = K.C, I = K.I, t = K.t;
   var eur = K.eur;
   function $(id) { return document.getElementById(id); }
-  function subkop(tekst) { return '<tr class="subkop"><th colspan="2" scope="colgroup">' + tekst + '</th></tr>'; }
+  // Rekenparameters per onderwerp, standaard ingeklapt. Wat de gebruiker openklapt blijft open bij het herberekenen.
+  var groepOpen = {};
+  function groep(sleutel, titel, rijen) {
+    return '<details class="pm-groep" data-groep="' + sleutel + '"' + (groepOpen[sleutel] ? ' open' : '') + '><summary>' + titel +
+      '</summary><table><tbody>' + rijen + '</tbody></table></details>';
+  }
   function rij(label, waarde) { return '<tr><td>' + label + '</td><td class="r num">' + waarde + '</td></tr>'; }
   function pj(v) { return t('fondsB.perJaarKort', { bedrag: eur(v) }); }
   var basis = 'netto';
@@ -322,15 +332,15 @@
     var pct3 = function (x) { return I.getal(x * 100, 3, 3) + '%'; };
     // Alle inkoopfactoren op de rekendatumschaal, net als de inkoopfactor OP (X%-projectie 21.1.10).
     var us = u.uitstel || 1;
-    $('parameters').innerHTML = '<table><tbody>' +
-      subkop(t('fondsB.pmDeelnemer')) +
+    $('parameters').innerHTML =
+      groep('deelnemer', t('fondsB.pmDeelnemer'),
       rij(t('fondsB.pmRekendatum'), rekendatum) +
       rij(t('fondsB.pmGeboortedatum'), I.datum(d.geboortedatum)) +
       rij(t('fondsB.pmLeeftijd'), K.leeftijdTekst(d.leeftijdMaanden)) +
       rij(t('fondsB.pmSalaris'), pj(d.brutoSalaris)) +
       rij(t(wijzigtLater ? 'fondsB.pmParttimeLater' : 'fondsB.pmParttime'), I.getal(parttime * 100, 0, 1) + '%') +
-      rij(t('fondsB.pmStartkapitaal'), eur(d.startkapitaal)) +
-      subkop(t('fondsB.pmActuarieel')) +
+      rij(t('fondsB.pmStartkapitaal'), eur(d.startkapitaal))) +
+      groep('actuarieel', t('fondsB.pmActuarieel'),
       rij(t('fondsB.pmInkoopOP', { leeftijd: t('kern.jaar', { n: res.jaar }) }), I.getal(res.aOP, 2, 2)) +
       rij(t('fondsB.pmInkoopNP'), I.getal(C.partnerpensioen.inkoopfactorNP * us, 2, 2)) +
       rij(t('fondsB.pmScrStart'), C.scr ? I.getal(C.scr.startwaarde, 3, 3) : '–') +
@@ -339,8 +349,8 @@
       rij(t('fondsB.pmInkoopTopaow'), I.getal(C.topaow.inkoopfactor * us, 2, 2)) +
       rij(t('fondsB.pmLooptijdHL'), u.t2 > 0 ? t('fondsB.jrKort', { n: I.getal(u.looptijdHL, 1, 2) }) : '–') +
       rij(t('fondsB.pmInkoopHL', { factor: I.getal(C.tophl.inkoopfactorPerJaar * us, 2, 2) }), u.t2 > 0 ? I.getal(u.inkoopHL * us, 2, 2) : '–') +
-      rij(t('fondsB.pmVerlaging'), u.R > 0 ? pj(u.R) : '–') +
-      subkop(t('fondsB.pmPremie')) +
+      rij(t('fondsB.pmVerlaging'), u.R > 0 ? pj(u.R) : '–')) +
+      groep('premie', t('fondsB.pmPremie'),
       rij(t('fondsB.pmFranchise'), pj(reg.franchise)) +
       rij(t('fondsB.pmGrondslag'), pj(grondslag)) +
       rij(t('fondsB.pmPremieRegel', { pct: I.getal(reg.premiepercentage * 100, 0, 1) }), pj(grondslag * reg.premiepercentage)) +
@@ -348,8 +358,16 @@
       rij(t('fondsB.pmLooptijdRts', { aow: o.aowJaar, calc: o.calcJaar }), t('fondsB.jrKort', { n: o.looptijd })) +
       rij(t('fondsB.pmSpot', { n: Math.max(1, o.looptijd), datum: I.datum(C.rts.peildatum) }), '− ' + pct3(o.spot)) +
       '<tr class="totaal"><td>' + t('fondsB.pmOverrendement') + '</td><td class="r num">' + pct3(o.rente) + '</td></tr>' +
-      '</tbody></table><p class="noot">' + t('fondsB.pmNoot') + '</p>';
+      // Per maand zoals de rekenkern bijschrijft: (1 + overrendement)^(1/12) − 1.
+      '<tr class="totaal"><td>' + t('fondsB.pmOverrendementMaand') + '</td><td class="r num">' + I.getal((Math.pow(1 + o.rente, 1 / 12) - 1) * 100, 4, 4) + '%</td></tr>') +
+      '<p class="noot">' + t('fondsB.pmNoot') + '</p>';
   }
+
+  // toggle borrelt niet op: luister in de capture-fase.
+  $('parameters').addEventListener('toggle', function (e) {
+    var g = e.target.getAttribute && e.target.getAttribute('data-groep');
+    if (g) groepOpen[g] = e.target.open;
+  }, true);
 
   vulDeelnemers();
   zetLeeftijdBereik();
