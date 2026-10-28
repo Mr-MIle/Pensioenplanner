@@ -49,8 +49,16 @@
     } catch (e) { return null; }
   }
 
+  // Een aangepaste RTS hoort bij de curve uit config.js waarop hij is gemaakt. Die peildatum gaat mee,
+  // zodat de aanpassing vervalt zodra config.js een nieuwe curve heeft (zie hieronder).
+  var RTS_BASIS = '_rtsBasisPeildatum';
+
   function schrijf(obj) {
     try {
+      if (obj && obj.rts && global.PLANNER_BASIS && global.PLANNER_BASIS.rts) {
+        obj = clone(obj);
+        obj[RTS_BASIS] = global.PLANNER_BASIS.rts.peildatum;
+      }
       if (obj && Object.keys(obj).length) global.localStorage.setItem(KEY, JSON.stringify(obj));
       else global.localStorage.removeItem(KEY);
       return true;
@@ -67,6 +75,11 @@
       ov = clone(ov);
       // De calculatiedatum volgt uit de kalenderdatum en is niet aan te passen; oude aanpassingen tellen niet mee.
       delete ov.calculatiedatum;
+      // De RTS in config.js wordt maandelijks bijgewerkt (scripts/rts-bijwerken.js). Een aanpassing op een oudere
+      // curve telt dan niet meer mee. Aanpassingen van vóór 28 okt 2026 hebben geen peildatum: die horen bij 2026-09-30.
+      var rtsBasis = ov[RTS_BASIS] || '2026-09-30';
+      delete ov[RTS_BASIS];
+      if (ov.rts && global.PLANNER_BASIS.rts && rtsBasis !== global.PLANNER_BASIS.rts.peildatum) delete ov.rts;
       // Oude naam van de inkoopfactoren OP.
       if (ov.annuiteitsdelers) { ov.inkoopfactorenOP = ov.annuiteitsdelers; delete ov.annuiteitsdelers; }
       // Sinds 27 okt 2026 is inkoopfactorenOP de tabel op de rekendatum (stijgend met de leeftijd). Een bewaarde tabel

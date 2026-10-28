@@ -1,0 +1,71 @@
+# Pensioenplanner: RTS maandelijks bijwerken vanuit de DNB Statistics API.
+# DNB publiceert de RTS op de 5e werkdag. De workflow draait van de 1e tot de 12e dagelijks en doet niets
+# zolang er geen nieuwe peildatum is. Bij een nieuwe curve: config.js en rts/jjjj-mm.json bijwerken,
+# rekentests draaien, committen naar main (Vercel deployt daarna vanzelf).
+# Mislukt er iets, dan blijft de oude curve staan en stuurt GitHub een mail.
+
+name: RTS bijwerken
+
+on:
+  schedule:
+    - cron: '0 7 1-12 * *'   # 07:00 UTC
+  workflow_dispatch:
+    inputs:
+      forceer:
+        description: 'Grote verschuiving t.o.v. de huidige curve toestaan'
+        type: boolean
+        default: false
+      proef:
+        description: 'Alleen ophalen en controleren, niets committen'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: rts-bijwerken
+  cancel-in-progress: false
+
+jobs:
+  bijwerken:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: RTS ophalen bij DNB
+        id: rts
+        env:
+          DNB_PRIMARYKEY: ${{ secrets.DNB_PRIMARYKEY }}
+          DNB_SECONDARYKEY: ${{ secrets.DNB_SECONDARYKEY }}
+        run: node scripts/rts-bijwerken.js ${{ inputs.forceer && '--forceer' || '' }}
+
+      - name: Rekentests
+        if: steps.rts.outputs.bijgewerkt == 'ja'
+        run: |
+          node rekentests.js | tee tests.txt
+          grep -q '^FAILS: 0 /' tests.txt || { echo "Rekentests falen met de nieuwe RTS; er wordt niets gecommit."; exit 1; }
+
+      - name: Wijziging tonen
+        if: steps.rts.outputs.bijgewerkt == 'ja'
+        run: git diff --stat
+
+      - name: Committen
+        if: steps.rts.outputs.bijgewerkt == 'ja' && !inputs.proef
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add config.js rts/
+          git commit -m "RTS bijgewerkt naar peildatum ${{ steps.rts.outputs.peildatum }} (DNB)"
+          git push
+
+      # Na een geslaagde update toch rood, zodat de mail van GitHub waarschuwt dat de API-versie vervangen moet worden.
+      - name: API-versie controleren
+        if: steps.rts.outputs.verouderd == 'ja'
+        run: |
+          echo "::error::DNB meldt dat de API-versie in scripts/rts-bijwerken.js verouderd is (verwijdering verwacht: ${{ steps.rts.outputs.verwijderdatum }}). Zoek de nieuwe versie op api.portal.dnb.nl."
+          exit 1
