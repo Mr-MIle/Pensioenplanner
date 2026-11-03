@@ -407,6 +407,7 @@ I18N.voeg('en', {
   'demo.navPot': 'Pension pot per month',
   'demo.navVarianten': 'Design variants',
   'demo.navTest': 'Test specialists (Dutch)',
+  'demo.navOver': 'About this demo',
   'demo.popupsOpnieuw': 'View the pop-ups again',
   'demo.deelnemer': 'Participant',
   'demo.opgebouwd': 'Pension capital built up on',
@@ -690,5 +691,24 @@ I18N.voeg('en', {
   'pot.hUitleg': 'How the amounts fit together',
   'pot.uitlegKapitaal': '<strong>Capital:</strong> the capital of the previous month, plus the contribution, plus the excess return, plus the stability return.',
   'pot.uitlegStab': '<strong>Stability return:</strong> This return is meant to reduce interest rate risk. It ensures that changes in interest rates do not have too great an effect on the pension to be purchased. As you get older, you see a larger effect of the stability return.',
-  'pot.uitlegPensioen': '<strong>Expected pension:</strong> the expected retirement pension per year, divided by 12. It follows the capital, except for the stability return, which counts in the opposite direction. The purchase factor OP is that of the retirement age of {leeftijd}: {factor}.'
+  'pot.uitlegPensioen': '<strong>Expected pension:</strong> the expected retirement pension per year, divided by 12. It follows the capital, except for the stability return, which counts in the opposite direction. The purchase factor OP is that of the retirement age of {leeftijd}: {factor}.',
+
+  // Over deze demo (over-deze-demo.html)
+  'over.titel': 'About this demo',
+  'over.terug': '&larr; Back to the pension planner',
+  'over.h1': 'About this demo',
+  'over.sub': 'What this pension planner shows and how the site is made.',
+  'over.hWat': 'What is this?',
+  'over.wat': 'This pension planner is a demonstration. As a participant, you explore your choices step by step and immediately see what they mean for your pension:',
+  'over.keuzeLeeftijd': 'retiring earlier or later;',
+  'over.keuzeDeeltijd': 'part-time retirement: you keep working part of the time and take part of your pension;',
+  'over.keuzeAow': 'AOW bridging: an extra payment until you reach the age for the Dutch state pension (AOW);',
+  'over.keuzeHoogLaag': 'a higher or lower pension at the start;',
+  'over.keuzePartner': 'the partner’s pension.',
+  'over.fictief': 'All participants, amounts and funds on this site are fictitious. The results are not advice and not a commitment.',
+  'over.hGemaakt': 'How is the site made?',
+  'over.stap1': '<strong>Describe.</strong> I describe in plain language what needs to change.',
+  'over.stap2': '<strong>Plan and build.</strong> Claude Code makes a plan and, once I approve it, changes the code and the texts in three languages (Dutch, English and Danish).',
+  'over.stap3': '<strong>Check.</strong> I check every change and the automated tests run.',
+  'over.stap4': '<strong>Live.</strong> Through GitHub and Vercel the change is live within a minute.'
 });

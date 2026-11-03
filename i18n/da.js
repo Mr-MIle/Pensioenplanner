@@ -407,6 +407,7 @@ I18N.voeg('da', {
   'demo.navPot': 'Pensionsopsparing pr. måned',
   'demo.navVarianten': 'Designvarianter',
   'demo.navTest': 'Testspecialister (hollandsk)',
+  'demo.navOver': 'Om denne demo',
   'demo.popupsOpnieuw': 'Se pop-ups igen',
   'demo.deelnemer': 'Deltager',
   'demo.opgebouwd': 'Opsparet pensionskapital den',
@@ -690,5 +691,24 @@ I18N.voeg('da', {
   'pot.hUitleg': 'Sådan hænger beløbene sammen',
   'pot.uitlegKapitaal': '<strong>Kapital:</strong> forrige måneds kapital, plus indbetalingen, plus merafkastet, plus stabilitetsafkastet.',
   'pot.uitlegStab': '<strong>Stabilitetsafkast:</strong> Dette afkast skal mindske renterisikoen. Det sikrer, at renteændringer ikke får for stor virkning på den pension, der skal købes. Jo ældre du bliver, jo større virkning ser du af stabilitetsafkastet.',
-  'pot.uitlegPensioen': '<strong>Forventet pension:</strong> den forventede alderspension pr. år, divideret med 12. Udviklingen følger kapitalen, bortset fra stabilitetsafkastet, som tæller i modsat retning. Købsfaktoren OP er den for pensionsalderen {leeftijd} år: {factor}.'
+  'pot.uitlegPensioen': '<strong>Forventet pension:</strong> den forventede alderspension pr. år, divideret med 12. Udviklingen følger kapitalen, bortset fra stabilitetsafkastet, som tæller i modsat retning. Købsfaktoren OP er den for pensionsalderen {leeftijd} år: {factor}.',
+
+  // Over deze demo (over-deze-demo.html)
+  'over.titel': 'Om denne demo',
+  'over.terug': '&larr; Tilbage til pensionsplanlæggeren',
+  'over.h1': 'Om denne demo',
+  'over.sub': 'Hvad denne pensionsplanlægger viser, og hvordan webstedet bliver lavet.',
+  'over.hWat': 'Hvad er det?',
+  'over.wat': 'Denne pensionsplanlægger er en demonstration. Som deltager udforsker du trin for trin dine valg og ser straks, hvad de betyder for din pension:',
+  'over.keuzeLeeftijd': 'at stoppe med at arbejde tidligere eller senere;',
+  'over.keuzeDeeltijd': 'delpension: du arbejder videre på deltid og tager en del af din pension;',
+  'over.keuzeAow': 'AOW-overgang: en ekstra udbetaling, indtil du når alderen for den hollandske folkepension (AOW);',
+  'over.keuzeHoogLaag': 'en højere eller lavere pension i begyndelsen;',
+  'over.keuzePartner': 'partnerpensionen.',
+  'over.fictief': 'Alle deltagere, beløb og pensionskasser på dette websted er fiktive. Resultaterne er ikke rådgivning og ikke et tilsagn.',
+  'over.hGemaakt': 'Hvordan bliver webstedet lavet?',
+  'over.stap1': '<strong>Beskrive.</strong> Jeg beskriver med almindelige ord, hvad der skal ændres.',
+  'over.stap2': '<strong>Plan og udførelse.</strong> Claude Code laver en plan og ændrer efter min godkendelse koden og teksterne på tre sprog (hollandsk, engelsk og dansk).',
+  'over.stap3': '<strong>Kontrol.</strong> Jeg kontrollerer hver ændring, og de automatiske test kører.',
+  'over.stap4': '<strong>Live.</strong> Via GitHub og Vercel er ændringen live inden for et minut.'
 });
