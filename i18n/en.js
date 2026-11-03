@@ -407,6 +407,7 @@ I18N.voeg('en', {
   'demo.navPot': 'Pension pot per month',
   'demo.navVarianten': 'Design variants',
   'demo.navTest': 'Test specialists (Dutch)',
+  'demo.navOver': 'About this demo',
   'demo.popupsOpnieuw': 'View the pop-ups again',
   'demo.deelnemer': 'Participant',
   'demo.opgebouwd': 'Pension capital built up on',
@@ -690,5 +691,24 @@ I18N.voeg('en', {
   'pot.hUitleg': 'How the amounts fit together',
   'pot.uitlegKapitaal': '<strong>Capital:</strong> the capital of the previous month, plus the contribution, plus the excess return, plus the stability return.',
   'pot.uitlegStab': '<strong>Stability return:</strong> This return is meant to reduce interest rate risk. It ensures that changes in interest rates do not have too great an effect on the pension to be purchased. As you get older, you see a larger effect of the stability return.',
-  'pot.uitlegPensioen': '<strong>Expected pension:</strong> the expected retirement pension per year, divided by 12. It follows the capital, except for the stability return, which counts in the opposite direction. The purchase factor OP is that of the retirement age of {leeftijd}: {factor}.'
+  'pot.uitlegPensioen': '<strong>Expected pension:</strong> the expected retirement pension per year, divided by 12. It follows the capital, except for the stability return, which counts in the opposite direction. The purchase factor OP is that of the retirement age of {leeftijd}: {factor}.',
+
+  // About this demo (over-deze-demo.html)
+  'over.titel': 'About this demo',
+  'over.terug': '&larr; Back to the pension planner',
+  'over.h1': 'About this demo',
+  'over.intro': 'What this pension planner shows and how the site is made.',
+  'over.watH2': 'What is this?',
+  'over.watTekst': 'This pension planner is a demonstration. Here you can explore your pension choices as a member:',
+  'over.keuze1': 'stopping work earlier or later;',
+  'over.keuze2': 'part-time retirement;',
+  'over.keuze3': 'bridging until the Dutch state pension (AOW) starts;',
+  'over.keuze4': 'a higher or lower pension in the first years;',
+  'over.keuze5': 'partner’s pension.',
+  'over.fictief': 'All members, amounts and funds are fictitious. The results are not advice and not a commitment.',
+  'over.hoeH2': 'How is the site made?',
+  'over.stap1': 'I describe what needs to change.',
+  'over.stap2': 'Claude Code makes a plan and, after my approval, updates the code and the texts in three languages.',
+  'over.stap3': 'I check every change and the automated tests run.',
+  'over.stap4': 'Via GitHub and Vercel the change is live within a minute.'
 });

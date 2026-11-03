@@ -413,6 +413,7 @@ I18N.voeg('nl', {
   'demo.navPot': 'Pensioenpot per maand',
   'demo.navVarianten': 'Ontwerpvarianten',
   'demo.navTest': 'Testspecialisten',
+  'demo.navOver': 'Over deze demo',
   'demo.popupsOpnieuw': 'Pop-ups opnieuw bekijken',
   'demo.deelnemer': 'Deelnemer',
   'demo.opgebouwd': 'Opgebouwd pensioenvermogen op',
@@ -696,5 +697,24 @@ I18N.voeg('nl', {
   'pot.hUitleg': 'Hoe de bedragen samenhangen',
   'pot.uitlegKapitaal': '<strong>Kapitaal:</strong> het kapitaal van de vorige maand, plus de premie-inleg, plus het overrendement, plus het stabiliteitsrendement.',
   'pot.uitlegStab': '<strong>Stabiliteitsrendement:</strong> Dit rendement is bedoeld om het renterisico te verminderen. Zo zorgen we ervoor dat wijzigingen in de rente niet te groot effect hebben op het in te kopen pensioen. Naarmate u ouder wordt, ziet u een groter effect van het stabiliteitsrendement.',
-  'pot.uitlegPensioen': '<strong>Verwacht pensioen:</strong> het verwachte ouderdomspensioen per jaar, gedeeld door 12. De ontwikkeling volgt het kapitaal, behalve het stabiliteitsrendement, dat in omgekeerde richting meetelt. De inkoopfactor OP is die van de pensioenleeftijd van {leeftijd} jaar: {factor}.'
+  'pot.uitlegPensioen': '<strong>Verwacht pensioen:</strong> het verwachte ouderdomspensioen per jaar, gedeeld door 12. De ontwikkeling volgt het kapitaal, behalve het stabiliteitsrendement, dat in omgekeerde richting meetelt. De inkoopfactor OP is die van de pensioenleeftijd van {leeftijd} jaar: {factor}.',
+
+  // Over deze demo (over-deze-demo.html)
+  'over.titel': 'Over deze demo',
+  'over.terug': '&larr; Terug naar de pensioenplanner',
+  'over.h1': 'Over deze demo',
+  'over.intro': 'Wat deze pensioenplanner laat zien en hoe de site gemaakt wordt.',
+  'over.watH2': 'Wat is dit?',
+  'over.watTekst': 'Deze pensioenplanner is een demonstratie. Een deelnemer verkent hier zijn keuzes voor het pensioen:',
+  'over.keuze1': 'eerder of later stoppen met werken;',
+  'over.keuze2': 'deeltijdpensioen;',
+  'over.keuze3': 'AOW-overbrugging;',
+  'over.keuze4': 'een hoger of lager pensioen in het begin;',
+  'over.keuze5': 'partnerpensioen.',
+  'over.fictief': 'Alle deelnemers, bedragen en fondsen zijn fictief. De uitkomsten zijn geen advies en geen toezegging.',
+  'over.hoeH2': 'Hoe wordt de site gemaakt?',
+  'over.stap1': 'Ik beschrijf wat er moet veranderen.',
+  'over.stap2': 'Claude Code maakt een plan en past na mijn akkoord de code en de teksten in drie talen aan.',
+  'over.stap3': 'Ik controleer elke wijziging en de automatische tests draaien.',
+  'over.stap4': 'Via GitHub en Vercel staat de wijziging binnen een minuut live.'
 });

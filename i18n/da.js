@@ -407,6 +407,7 @@ I18N.voeg('da', {
   'demo.navPot': 'Pensionsopsparing pr. måned',
   'demo.navVarianten': 'Designvarianter',
   'demo.navTest': 'Testspecialister (hollandsk)',
+  'demo.navOver': 'Om denne demo',
   'demo.popupsOpnieuw': 'Se pop-ups igen',
   'demo.deelnemer': 'Deltager',
   'demo.opgebouwd': 'Opsparet pensionskapital den',
@@ -690,5 +691,24 @@ I18N.voeg('da', {
   'pot.hUitleg': 'Sådan hænger beløbene sammen',
   'pot.uitlegKapitaal': '<strong>Kapital:</strong> forrige måneds kapital, plus indbetalingen, plus merafkastet, plus stabilitetsafkastet.',
   'pot.uitlegStab': '<strong>Stabilitetsafkast:</strong> Dette afkast skal mindske renterisikoen. Det sikrer, at renteændringer ikke får for stor virkning på den pension, der skal købes. Jo ældre du bliver, jo større virkning ser du af stabilitetsafkastet.',
-  'pot.uitlegPensioen': '<strong>Forventet pension:</strong> den forventede alderspension pr. år, divideret med 12. Udviklingen følger kapitalen, bortset fra stabilitetsafkastet, som tæller i modsat retning. Købsfaktoren OP er den for pensionsalderen {leeftijd} år: {factor}.'
+  'pot.uitlegPensioen': '<strong>Forventet pension:</strong> den forventede alderspension pr. år, divideret med 12. Udviklingen følger kapitalen, bortset fra stabilitetsafkastet, som tæller i modsat retning. Købsfaktoren OP er den for pensionsalderen {leeftijd} år: {factor}.',
+
+  // Om denne demo (over-deze-demo.html)
+  'over.titel': 'Om denne demo',
+  'over.terug': '&larr; Tilbage til pensionsplanlæggeren',
+  'over.h1': 'Om denne demo',
+  'over.intro': 'Hvad denne pensionsplanlægger viser, og hvordan sitet bliver lavet.',
+  'over.watH2': 'Hvad er det?',
+  'over.watTekst': 'Denne pensionsplanlægger er en demonstration. Her kan du som medlem udforske dine pensionsvalg:',
+  'over.keuze1': 'at stoppe med at arbejde tidligere eller senere;',
+  'over.keuze2': 'deltidspension;',
+  'over.keuze3': 'overbygning, indtil den hollandske folkepension (AOW) begynder;',
+  'over.keuze4': 'en højere eller lavere pension i begyndelsen;',
+  'over.keuze5': 'partnerpension.',
+  'over.fictief': 'Alle medlemmer, beløb og fonde er fiktive. Resultaterne er hverken rådgivning eller et tilsagn.',
+  'over.hoeH2': 'Hvordan bliver sitet lavet?',
+  'over.stap1': 'Jeg beskriver, hvad der skal ændres.',
+  'over.stap2': 'Claude Code laver en plan og ændrer efter min godkendelse koden og teksterne på tre sprog.',
+  'over.stap3': 'Jeg kontrollerer hver ændring, og de automatiske tests kører.',
+  'over.stap4': 'Via GitHub og Vercel er ændringen live inden for et minut.'
 });
