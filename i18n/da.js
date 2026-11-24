@@ -407,7 +407,6 @@ I18N.voeg('da', {
   'demo.navPot': 'Pensionsopsparing pr. måned',
   'demo.navVarianten': 'Designvarianter',
   'demo.navTest': 'Testspecialister (hollandsk)',
-  'demo.navOver': 'Om denne demo',
   'demo.popupsOpnieuw': 'Se pop-ups igen',
   'demo.deelnemer': 'Deltager',
   'demo.opgebouwd': 'Opsparet pensionskapital den',
@@ -691,19 +690,5 @@ I18N.voeg('da', {
   'pot.hUitleg': 'Sådan hænger beløbene sammen',
   'pot.uitlegKapitaal': '<strong>Kapital:</strong> forrige måneds kapital, plus indbetalingen, plus merafkastet, plus stabilitetsafkastet.',
   'pot.uitlegStab': '<strong>Stabilitetsafkast:</strong> Dette afkast skal mindske renterisikoen. Det sikrer, at renteændringer ikke får for stor virkning på den pension, der skal købes. Jo ældre du bliver, jo større virkning ser du af stabilitetsafkastet.',
-  'pot.uitlegPensioen': '<strong>Forventet pension:</strong> den forventede alderspension pr. år, divideret med 12. Udviklingen følger kapitalen, bortset fra stabilitetsafkastet, som tæller i modsat retning. Købsfaktoren OP er den for pensionsalderen {leeftijd} år: {factor}.',
-
-  // Over deze demo (over-deze-demo.html)
-  'over.titel': 'Om denne demo',
-  'over.terug': '&larr; Tilbage til pensionsplanlæggeren',
-  'over.h1': 'Om denne demo',
-  'over.sub': 'Hvad denne pensionsplanlægger viser, og hvordan siden bliver lavet.',
-  'over.hWat': 'Hvad er det?',
-  'over.wat': 'Denne pensionsplanlægger er en demonstration. Som deltager udforsker du dine valg: at stoppe med at arbejde tidligere eller senere, delpension, brobygning frem til den hollandske folkepension (AOW), en højere eller lavere pension i begyndelsen og ægtefællepension. Ved hvert valg ser du med det samme, hvad det betyder for din pension.',
-  'over.fictief': '<strong>Bemærk:</strong> alle deltagere, beløb og pensionskasser i denne demo er fiktive. Resultaterne er ikke rådgivning og ikke et tilsagn.',
-  'over.hHoe': 'Hvordan bliver siden lavet?',
-  'over.stap1': '<strong>Jeg beskriver, hvad der skal ændres</strong>, i almindeligt sprog.',
-  'over.stap2': '<strong>Claude Code laver en plan</strong> og retter, når jeg har godkendt den, koden og teksterne på tre sprog (hollandsk, engelsk og dansk).',
-  'over.stap3': '<strong>Jeg kontrollerer hver ændring</strong>, og de automatiske tests kører.',
-  'over.stap4': '<strong>Via GitHub og Vercel</strong> er ændringen live inden for et minut.'
+  'pot.uitlegPensioen': '<strong>Forventet pension:</strong> den forventede alderspension pr. år, divideret med 12. Udviklingen følger kapitalen, bortset fra stabilitetsafkastet, som tæller i modsat retning. Købsfaktoren OP er den for pensionsalderen {leeftijd} år: {factor}.'
 });
