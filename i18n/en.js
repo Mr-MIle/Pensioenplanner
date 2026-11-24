@@ -407,6 +407,7 @@ I18N.voeg('en', {
   'demo.navPot': 'Pension pot per month',
   'demo.navVarianten': 'Design variants',
   'demo.navTest': 'Test specialists (Dutch)',
+  'demo.navOver': 'About this demo',
   'demo.popupsOpnieuw': 'View the pop-ups again',
   'demo.deelnemer': 'Participant',
   'demo.opgebouwd': 'Pension capital built up on',
@@ -690,5 +691,19 @@ I18N.voeg('en', {
   'pot.hUitleg': 'How the amounts fit together',
   'pot.uitlegKapitaal': '<strong>Capital:</strong> the capital of the previous month, plus the contribution, plus the excess return, plus the stability return.',
   'pot.uitlegStab': '<strong>Stability return:</strong> This return is meant to reduce interest rate risk. It ensures that changes in interest rates do not have too great an effect on the pension to be purchased. As you get older, you see a larger effect of the stability return.',
-  'pot.uitlegPensioen': '<strong>Expected pension:</strong> the expected retirement pension per year, divided by 12. It follows the capital, except for the stability return, which counts in the opposite direction. The purchase factor OP is that of the retirement age of {leeftijd}: {factor}.'
+  'pot.uitlegPensioen': '<strong>Expected pension:</strong> the expected retirement pension per year, divided by 12. It follows the capital, except for the stability return, which counts in the opposite direction. The purchase factor OP is that of the retirement age of {leeftijd}: {factor}.',
+
+  // Over deze demo (over-deze-demo.html)
+  'over.titel': 'About this demo',
+  'over.terug': '&larr; Back to the pension planner',
+  'over.h1': 'About this demo',
+  'over.sub': 'What this pension planner shows, and how the site is made.',
+  'over.hWat': 'What is this?',
+  'over.wat': 'This pension planner is a demonstration. As a participant, you explore your choices: stopping work earlier or later, partial retirement, bridging the period until the Dutch state pension (AOW) starts, a higher or lower pension at first, and partner\'s pension. For each choice you immediately see what it means for your pension.',
+  'over.fictief': '<strong>Please note:</strong> all participants, amounts and pension funds in this demo are fictitious. The results are not advice and not a promise.',
+  'over.hHoe': 'How is the site made?',
+  'over.stap1': '<strong>I describe what needs to change</strong>, in plain language.',
+  'over.stap2': '<strong>Claude Code makes a plan</strong> and, once I approve it, updates the code and the texts in three languages (Dutch, English and Danish).',
+  'over.stap3': '<strong>I check every change</strong>, and the automated tests run.',
+  'over.stap4': '<strong>Through GitHub and Vercel</strong> the change is live within a minute.'
 });
